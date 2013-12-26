@@ -1,44 +1,43 @@
-% Pandoc User's Guide
+% Pandocユーザーズガイド 日本語版
 % John MacFarlane
+% Japanese Translation: Yuki Fujiwara
 % January 19, 2013
 
-Synopsis
-========
+書式
+====
 
 pandoc [*options*] [*input-file*]...
 
-Description
-===========
+説明
+====
 
-Pandoc is a [Haskell] library for converting from one markup format to
-another, and a command-line tool that uses this library. It can read
-[markdown] and (subsets of) [Textile], [reStructuredText], [HTML],
-[LaTeX], [MediaWiki markup], [Haddock markup], [OPML], and [DocBook]; and
-it can write plain text, [markdown], [reStructuredText], [XHTML], [HTML 5],
-[LaTeX] (including [beamer] slide shows), [ConTeXt], [RTF], [OPML], [DocBook],
-[OpenDocument], [ODT], [Word docx], [GNU Texinfo], [MediaWiki markup],
-[EPUB] (v2 or v3), [FictionBook2], [Textile], [groff man] pages, [Emacs
-Org-Mode], [AsciiDoc], and [Slidy], [Slideous], [DZSlides], [reveal.js]
-or [S5] HTML slide shows. It can also produce [PDF] output on systems
-where LaTeX is installed.
+Pandocは [Haskell] で書かれたライブラリおよびコマンドラインツールであり、
+あるマークアップ形式で書かれた文書を別の形式へ変換するものです。
 
-Pandoc's enhanced version of markdown includes syntax for footnotes,
-tables, flexible ordered lists, definition lists, fenced code blocks,
-superscript, subscript, strikeout, title blocks, automatic tables of
-contents, embedded LaTeX math, citations, and markdown inside HTML block
-elements. (These enhancements, described below under
-[Pandoc's markdown](#pandocs-markdown), can be disabled using the
-`markdown_strict` input or output format.)
+対応している入力形式は以下の通りです： [markdown]、[Textile] （のサブセット、以下同様）、
+[reStructuredText]、 [HTML]、[LaTeX]、[MediaWiki markup]、[Haddock markup]、[OPML]、[DocBook]。
 
-In contrast to most existing tools for converting markdown to HTML, which
-use regex substitutions, Pandoc has a modular design: it consists of a
-set of readers, which parse text in a given format and produce a native
-representation of the document, and a set of writers, which convert
-this native representation into a target format. Thus, adding an input
-or output format requires only adding a reader or writer.
+出力形式は以下の通りです：プレーンテキスト、[markdown]、[reStructuredText]、[XHTML]、[HTML 5]、
+[LaTeX] （[beamer]スライドショーを含む）、[ConTeXt]、[RTF]、[OPML]、[DocBook]、
+[OpenDocument]、[ODT]、[Word docx]、[GNU Texinfo]、[MediaWiki markup]、
+[EPUB] (v2またはv3)、[FictionBook2]、[Textile]、[groff man]ページ、 [Emacs Org-Mode]、[AsciiDoc]、
+およびスライドショーの形式である[Slidy]、[Slideous]、[DZSlides]、[reveal.js]、[S5] HTMLスライドショー。
 
-Using `pandoc`
---------------
+Pandocによる拡張Markdown書式は以下を含みます：脚注、表、柔軟な順序付きリスト、
+定義リスト、囲う形式のコードブロック、上付き文字、下付き文字、取り消し線、
+タイトルブロック、目次の自動作成、LaTeX数式の埋め込み、引用、HTMLブロック要素のMarkdownへの埋め込み。
+（これらの拡張については、以下の [Pandoc's markdown](#pandocs-markdown) にて説明されます。
+また、これらの拡張は入力および出力形式として`markdown_strict`を与えることで無効にできます。）
+
+正規表現による置換を使ってHTMLからMarkdownに変換する多くのツールに対して、
+Pandocはモジュール式のデザインで構成されています。
+Pandocは、与えられた形式のテキストを解析してHaskell Native形式に変換するReader、
+およびHaskell Native形式をターゲットの出力形式に変換するWriterで構成されており、
+これらは各々の入力・出力形式ごとに存在します。
+つまり、入力または出力形式を追加するには、ReaderまたはWriterを追加するだけでよいのです。
+
+`pandoc` の使い方
+----------------
 
 If no *input-file* is specified, input is read from *stdin*.
 Otherwise, the *input-files* are concatenated (with a blank
@@ -506,7 +505,7 @@ Options affecting specific writers
 
 `-c` *URL*, `--css=`*URL*
 :   Link to a CSS style sheet. This option can be be used repeatedly to
-    include multiple files. They will be included in the order specified. 
+    include multiple files. They will be included in the order specified.
 
 `--reference-odt=`*FILE*
 :   Use the specified file as a style reference in producing an ODT.
