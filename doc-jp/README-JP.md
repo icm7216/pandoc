@@ -26,7 +26,7 @@ Pandocは [Haskell] で書かれたライブラリおよびコマンドライン
 Pandocによる拡張Markdown書式は以下を含みます：脚注、表、柔軟な順序付きリスト、
 定義リスト、囲う形式のコードブロック、上付き文字、下付き文字、取り消し線、
 タイトルブロック、目次の自動作成、LaTeX数式の埋め込み、引用、HTMLブロック要素のMarkdownへの埋め込み。
-（これらの拡張については、以下の [Pandoc's markdown](#pandocs-markdown) にて説明されます。
+（これらの拡張については、以下の [Pandocによる拡張Markdown](#pandocs-markdown) にて説明されます。
 また、これらの拡張は入力および出力形式として`markdown_strict`を与えることで無効にできます。）
 
 正規表現による置換を使ってHTMLからMarkdownに変換する多くのツールに対して、
@@ -39,89 +39,98 @@ Pandocは、与えられた形式のテキストを解析してHaskell Native形
 `pandoc` の使い方
 ----------------
 
-If no *input-file* is specified, input is read from *stdin*.
-Otherwise, the *input-files* are concatenated (with a blank
-line between each) and used as input.  Output goes to *stdout* by
-default (though output to *stdout* is disabled for the `odt`, `docx`,
-`epub`, and `epub3` output formats).  For output to a file, use the
-`-o` option:
+入力ファイルとして*input-file*が指定されていない場合は、
+入力として標準入力 *stdin* が指定されます。
+*input-file*が指定されている場合は、それが入力として指定されます。
+（ファイルを複数とることも可能です。）
+
+出力ファイルはデフォルトで標準出力 *stdout* に出力されます。
+（ただし出力フォーマットが`odt`、`docx`、`epub`、`epub3`の場合は、
+標準出力への出力が無効となります。）
+ファイルへ出力したい場合は、`-o`オプションを使用してください：
 
     pandoc -o output.html input.txt
 
-Instead of a file, an absolute URI may be given.  In this case
-pandoc will fetch the content using HTTP:
+ファイルの代わりに、絶対パスのURIを指定することもできます。
+この場合、PandocはHTTPを用いてコンテンツを取得します。
 
     pandoc -f html -t markdown http://www.fsf.org
 
-If multiple input files are given, `pandoc` will concatenate them all (with
-blank lines between them) before parsing.
+複数の*input-file*が指定されている場合、Pandocは解析の前に、
+各入力ファイルを結合してその間に空行を挿入します。
 
-The format of the input and output can be specified explicitly using
-command-line options.  The input format can be specified using the
-`-r/--read` or `-f/--from` options, the output format using the
-`-w/--write` or `-t/--to` options.  Thus, to convert `hello.txt` from
-markdown to LaTeX, you could type:
+入力および出力フォーマットはオプションを用いて明示的に指定できます。
+入力フォーマットは`-r/--read`または`-f/--from`により、
+出力フォーマットは`-w/--write`または`-t/--to`により指定できます。
+例えば、LaTeXファイルの`hello.txt`を入力とし、Markdownに出力する場合は、
+以下のようなコマンドを作れるでしょう：
 
     pandoc -f markdown -t latex hello.txt
 
-To convert `hello.html` from html to markdown:
+HTMLファイルの`hello.html`をMarkdownに変換する場合はこうです：
 
     pandoc -f html -t markdown hello.html
 
-Supported output formats are listed below under the `-t/--to` option.
-Supported input formats are listed below under the `-f/--from` option. Note
-that the `rst`, `textile`, `latex`, and `html` readers are not complete;
-there are some constructs that they do not parse.
+サポートされている出力フォーマットについては、後の`-t/--to`オプションの項で、
+入力フォーマットについては、`-f/--from`オプションの項でリストアップします。
+注意：`rst`、`textile`、`latex`、`html`のReaderはそれぞれのフォーマットを
+完全にサポートしません。これらの文書の要素には、無視されるものがあります。
 
-If the input or output format is not specified explicitly, `pandoc`
-will attempt to guess it from the extensions of
-the input and output filenames.  Thus, for example,
+入力または出力フォーマットが明示されていない場合、
+Pandocはファイル名の拡張子から入力・出力フォーマットを推測しようとします。
+例えば、このように、
 
     pandoc -o hello.tex hello.txt
 
-will convert `hello.txt` from markdown to LaTeX.  If no output file
-is specified (so that output goes to *stdout*), or if the output file's
-extension is unknown, the output format will default to HTML.
-If no input file is specified (so that input comes from *stdin*), or
-if the input files' extensions are unknown, the input format will
-be assumed to be markdown unless explicitly specified.
+は`hello.txt`をMarkdownからLaTeX形式に変換します。
 
-Pandoc uses the UTF-8 character encoding for both input and output.
-If your local character encoding is not UTF-8, you
-should pipe input and output through `iconv`:
+出力ファイルが指定されていない場合（この場合標準出力に出力されます）、
+または出力ファイルの拡張子が不明な場合は、`-t/--to`オプションで明示しない限り、
+出力フォーマットはデフォルトとしてHTMLが選ばれます。
+入力ファイルが指定されていない場合（この場合は入力を標準入力から得ます）、
+または入力ファイルの拡張子が不明な場合は、`-f/--from`オプションで明示しない限り、
+入力フォーマットはMarkdownとして扱います。
+
+Pandocは入力・出力のデフォルトエンコーディングとしてUTF-8を採用しています。
+UTF-8以外の文字コードを利用したい場合は、`iconv`などの文字コード変換ツールにより
+入力や出力をパイプする必要があります：
 
     iconv -t utf-8 input.txt | pandoc | iconv -f utf-8
 
-Creating a PDF
---------------
+PDFを作成する [creating-a-pdf]
+------------
 
-Earlier versions of pandoc came with a program, `markdown2pdf`, that
-used pandoc and pdflatex to produce a PDF.  This is no longer needed,
-since `pandoc` can now produce `pdf` output itself. To produce a PDF, simply
-specify an output file with a `.pdf` extension. Pandoc will create a latex
-file and use pdflatex (or another engine, see `--latex-engine`) to convert it
-to PDF:
+初期のPandocは、PDF生成のためにPandocとpdfLaTeXを用いる `markdown2pdf` というプログラムとともに発展しました。
+現在はPandoc自身がPDFを生成できるため、このプログラムは必要ありません。
+
+PDFを生成するには、単に出力ファイルの拡張子として `.pdf` を指定するだけです。
+Pandocは内部でLaTeXファイルを作成し、それをpdfLaTeXを用いてPDFに変換します。
+（他のLaTeXエンジンを利用するには、`--latex-engine`の項をご覧ください。）
 
     pandoc test.txt -o test.pdf
 
-Production of a PDF requires that a LaTeX engine be installed (see
-`--latex-engine`, below), and assumes that the following LaTeX packages are
-available: `amssymb`, `amsmath`, `ifxetex`, `ifluatex`, `listings` (if the
-`--listings` option is used), `fancyvrb`, `longtable`, `booktabs`, `url`,
-`graphicx`, `hyperref`, `ulem`, `babel` (if the `lang` variable is set),
-`fontspec` (if `xelatex` or `lualatex` is used as the LaTeX engine), `xltxtra`
-and `xunicode` (if `xelatex` is used).
+（訳注：pdfLaTeXは日本語に対応していません。その代わりに、LuaLaTeXの利用を推奨します。
+インストールやコマンドなどの詳細は以下のページをご覧ください。
+[HTML - 多様なフォーマットに対応！ドキュメント変換ツールPandocを知ろう - Qiita](http://qiita.com/sky_y/items/80bcd0f353ef5b8980ee) ）
+
+PDFの生成のためには、LaTeXエンジンがインストールされている必要があります
+（詳細は以下の `--latex-engine` の項をご覧ください）。
+以下のLaTeXパッケージは有効であると見なされます：
+`amssymb`, `amsmath`, `ifxetex`, `ifluatex`, `listings` (`--listings`オプションが有効の場合),
+`fancyvrb`, `longtable`, `booktabs`, `url`, `graphicx`, `hyperref`, `ulem`,
+`babel` (`lang`オプションが有効の場合),
+`fontspec` (LaTeXエンジンとして`xelatex`または`lualatex`が指定されている場合),
+`xltxtra` and `xunicode` (LaTeXエンジンとして`xelatex`が指定されている場合).
 
 `hsmarkdown`
 ------------
 
-A user who wants a drop-in replacement for `Markdown.pl` may create
-a symbolic link to the `pandoc` executable called `hsmarkdown`. When
-invoked under the name `hsmarkdown`, `pandoc` will behave as if
-invoked with `-f markdown_strict --email-obfuscation=references`,
-and all command-line options will be treated as regular arguments.
-However, this approach does not work under Cygwin, due to problems with
-its simulation of symbolic links.
+`Markdown.pl`の暫定的な置き換えとしてPandocを利用したいユーザは、
+`pandoc`実行ファイルへのシンボリックリンクを`hsmarkdown`として利用することができます。
+Pandocを`hsmarkdown`として呼びだした場合、
+Pandocはオプション `-f markdown_strict --email-obfuscation=references` が指定されたものとして呼びだされ、
+全てのコマンドラインオプションは通常の引数として取り扱われます。
+ただし、Cygwinの下ではシンボリックリンクのシミュレーションの問題により、この方法では動作しません。
 
 [Cygwin]:  http://www.cygwin.com/
 [`iconv`]: http://www.gnu.org/software/libiconv/
@@ -129,160 +138,157 @@ its simulation of symbolic links.
 [TeX Live]: http://www.tug.org/texlive/
 [MacTeX]:   http://www.tug.org/mactex/
 
-Options
-=======
 
-General options
----------------
+オプション
+========
+
+一般的なオプション [general-options]
+----------------
 
 `-f` *FORMAT*, `-r` *FORMAT*, `--from=`*FORMAT*, `--read=`*FORMAT*
-:   Specify input format.  *FORMAT* can be `native` (native Haskell),
-    `json` (JSON version of native AST), `markdown` (pandoc's
-    extended markdown), `markdown_strict` (original unextended markdown),
-    `markdown_phpextra` (PHP Markdown Extra extended markdown),
-    `markdown_github` (github extended markdown),
+:	入力フォーマットを指定します。*FORMAT* として指定できるのは以下のフォーマットです：
+	`native` (Native Haskell; Haskellで読み込める形式のデータ構造),
+	`json` (ネイティブASTのJSONバージョン),
+	`markdown` (Pandocによる拡張Markdown), `markdown_strict` (オリジナルの拡張されていないMarkdown),
+    `markdown_phpextra` (PHP Markdown Extraによる拡張Markdown),
+    `markdown_github` (GitHubによる拡張Markdown),
     `textile` (Textile), `rst` (reStructuredText), `html` (HTML),
-    `docbook` (DocBook), `opml` (OPML), `mediawiki` (MediaWiki markup),
-    `haddock` (Haddock markup), or `latex` (LaTeX).
-    If `+lhs` is appended to `markdown`, `rst`, `latex`, or `html`,
-    the input will be treated as literate Haskell source:
-    see [Literate Haskell support](#literate-haskell-support), below.
-    Markdown syntax extensions can be individually enabled or disabled
-    by appending `+EXTENSION` or `-EXTENSION` to the format name.
-    So, for example, `markdown_strict+footnotes+definition_lists`
-    is strict markdown with footnotes and definition lists enabled,
-    and `markdown-pipe_tables+hard_line_breaks` is pandoc's markdown
-    without pipe tables and with hard line breaks. See [Pandoc's
-    markdown](#pandocs-markdown), below, for a list of extensions and
-    their names.
+    `docbook` (DocBook), `opml` (OPML), `mediawiki` (MediaWikiマークアップ),
+    `haddock` (Haddockマークアップ), `latex` (LaTeX)。
+	`+lhs` をフォーマット `markdown`, `rst`, `latex`, `html` の後ろにつけ加えた場合、
+	その入力はLiterate Haskellのソースコードとして扱われます
+	（詳細は下記の[Literate Haskellのサポート](#literate-haskell-support)を参照）。
+	Markdownの拡張文法は、フォーマットの末尾に`+EXTENSION`または`-EXTENSION`をつけ加えることで
+	それぞれ有効・無効を切り替えられます。
+	例えば、`markdown_strict+footnotes+definition_lists`は、
+	`markdown_strict`をベースにして脚注と定義リストを有効にしたもの、という意味になります。
+	同様に、`markdown-pipe_tables+hard_line_breaks`は、
+	PandocのMarkdownからパイプテーブルを無効にし強制改行を有効にしたもの、という意味です。
+	拡張とその名前の詳細については、下記の[Pandocによる拡張Markdown](#pandocs-markdown)をご覧ください。
+
 
 `-t` *FORMAT*, `-w` *FORMAT*, `--to=`*FORMAT*, `--write=`*FORMAT*
-:   Specify output format.  *FORMAT* can be `native` (native Haskell),
-    `json` (JSON version of native AST), `plain` (plain text),
-    `markdown` (pandoc's extended markdown), `markdown_strict` (original
-    unextended markdown), `markdown_phpextra` (PHP Markdown extra
-    extended markdown), `markdown_github` (github extended markdown),
+:	出力フォーマットを指定します。*FORMAT*として指定できるのは以下のフォーマットです：
+	`native` (Native Haskell), `json` (ネイティブASTのJSONバージョン),
+	`plain` (プレーンテキスト), `markdown` (Pandocによる拡張Markdown),
+	`markdown_strict` (オリジナルの拡張されていないMarkdown),
+	`markdown_phpextra` (PHP Markdown extra extended markdown),
+	`markdown_github` (GitHubによる拡張Markdown),
     `rst` (reStructuredText), `html` (XHTML 1), `html5` (HTML 5),
-    `latex` (LaTeX), `beamer` (LaTeX beamer slide show),
-    `context` (ConTeXt), `man` (groff man), `mediawiki` (MediaWiki markup),
+    `latex` (LaTeX), `beamer` (LaTeX beamer スライドショー),
+    `context` (ConTeXt), `man` (groff man), `mediawiki` (MediaWiki マークアップ),
     `textile` (Textile), `org` (Emacs Org-Mode), `texinfo` (GNU Texinfo),
     `opml` (OPML), `docbook` (DocBook), `opendocument` (OpenDocument), `odt`
-    (OpenOffice text document), `docx` (Word docx),
-    `rtf` (rich text format), `epub` (EPUB v2 book), `epub3`
+    (OpenOffice/LibreOffice Writerドキュメント), `docx` (Word docx),
+    `rtf` (リッチテキストフォーマット), `epub` (EPUB v2 book), `epub3`
     (EPUB v3), `fb2` (FictionBook2 e-book), `asciidoc` (AsciiDoc), `slidy`
-    (Slidy HTML and javascript slide show), `slideous` (Slideous HTML and
-    javascript slide show), `dzslides` (DZSlides HTML5 + javascript slide
-    show), `revealjs` (reveal.js HTML5 + javascript slide show), `s5`
-    (S5 HTML and javascript slide show), or the path of a custom
-    lua writer (see [Custom writers](#custom-writers), below). Note that
-    `odt`, `epub`, and `epub3` output will not be directed to *stdout*; an
-    output filename must be specified using the `-o/--output` option. If
-    `+lhs` is appended to `markdown`, `rst`, `latex`, `beamer`, `html`, or
-    `html5`, the output will be rendered as literate Haskell source: see
-    [Literate Haskell support](#literate-haskell-support), below.  Markdown
-    syntax extensions can be individually enabled or disabled by appending
-    `+EXTENSION` or `-EXTENSION` to the format name, as described above
-    under `-f`.
+    (Slidy HTML and javascript スライドショー), `slideous` (Slideous HTML and
+    javascript スライドショー), `dzslides` (DZSlides HTML5 + javascript スライドショー),
+	`revealjs` (reveal.js HTML5 + javascript スライドショー),
+	`s5` (S5 HTML and javascript スライドショー),
+	または カスタム Lua Writer へのパス(詳細は下記の [カスタムWriter](#custom-writers) を参照)。
+	注意：`odt`, `epub`, `epub3`の出力は 標準出力 *stdout* に出力されないため、
+	出力ファイル名を `-o/--output`オプションにより必ず指定する必要があります。
+	`+lhs`を`markdown`, `rst`, `latex`, `beamer`, `html`, `html5`のいずれかの後ろにつけ加えた場合、
+	出力はLiterate Haskellソースコードとして出力されます （詳細は下記の[Literate Haskellのサポート](#literate-haskell-support)を参照）。
+	Markdownの拡張文法は、`+EXTENSION` または `-EXTENSION` をフォーマット名の後ろにつけ加えることにより、
+	それぞれ有効または無効を切り替えることができます（上記の `-f` セクションでの説明と同様）。
+
 
 `-o` *FILE*, `--output=`*FILE*
-:   Write output to *FILE* instead of *stdout*.  If *FILE* is
-    `-`, output will go to *stdout*.  (Exception: if the output
-    format is `odt`, `docx`, `epub`, or `epub3`, output to stdout is disabled.)
+:	標準出力 *stdout* に出力するのではなく、ファイル *FILE* へ出力するようにします。
+	*FILE* として `-`を指定した場合、標準出力 *stdout*へ出力するようにします。
+	（例外：出力フォーマットが`odt`, `docx`, `epub`, `epub3`のいずれかの場合、
+	標準出力への出力は無効になります。）
 
 `--data-dir=`*DIRECTORY*
-:   Specify the user data directory to search for pandoc data files.
-    If this option is not specified, the default user data directory
-    will be used.  This is
+:	Pandocデータファイルを検索するために、ユーザデータディレクトリを指定します。
+	このオプションが指定されていない場合、デフォルトとして下記のユーザデータディレクトリが使用されます。
+
+	デフォルトのユーザデータディレクトリは、Unixの場合は
 
         $HOME/.pandoc
 
-    in unix,
+    Windows XPの場合は
 
         C:\Documents And Settings\USERNAME\Application Data\pandoc
 
-    in Windows XP, and
+    Windows 7の場合は
 
         C:\Users\USERNAME\AppData\Roaming\pandoc
 
-    in Windows 7. (You can find the default user data directory
-    on your system by looking at the output of `pandoc --version`.)
-    A `reference.odt`, `reference.docx`, `default.csl`,
-    `epub.css`, `templates`, `slidy`, `slideous`, or `s5` directory
-    placed in this directory will override pandoc's normal defaults.
+	です。（デフォルトのユーザデータディレクトリが分からない場合は、
+	`pandoc --version`コマンドの出力の中から見つけることができます。）
+	ユーザデータディレクトリに`reference.odt`, `reference.docx`, `default.csl`,
+    `epub.css`ファイル、`templates`, `slidy`, `slideous`, `s5`ディレクトリを置いた場合、
+	それらはPandocで通常使用されるのデフォルトのファイル・フォルダと置き換えられます。
+
 
 `-v`, `--version`
-:   Print version.
+:   バージョンを出力します。
 
 `-h`, `--help`
-:   Show usage message.
+:   使用方法を表示します。
 
-Reader options
---------------
+Readerのオプション [reader-options]
+----------------
 
 `-R`, `--parse-raw`
-:   Parse untranslatable HTML codes and LaTeX environments as raw HTML
-    or LaTeX, instead of ignoring them.  Affects only HTML and LaTeX
-    input. Raw HTML can be printed in markdown, reStructuredText, HTML,
-    Slidy, Slideous, DZSlides, reveal.js, and S5 output; raw LaTeX
-    can be printed in markdown, reStructuredText, LaTeX, and ConTeXt output.
-    The default is for the readers to omit untranslatable HTML codes and
-    LaTeX environments.  (The LaTeX reader does pass through untranslatable
-    LaTeX *commands*, even if `-R` is not specified.)
+:	解釈できないHTMLコードまたはLaTeX環境を無視する代わりに、
+	生(raw)のHTMLまたはLaTeXソースとしてそのまま出力します。
+	このオプションはHTMLまたはLaTeXソースの入力時のみに影響します。
+	生のHTMLは出力がMarkdown, reStructuredText, HTML, Slidy, Slideous, DZSlides,
+	reveal.js, S5の場合に表示され、
+	生のLaTeXは出力がMarkdown, reStructuredText, LaTeX, ConTeXtの場合に表示されます。
+	デフォルト動作では、Readerは解釈できないHTMLコードまたはLaTeX環境を無視します。
+	（LaTeX Readerは、たとえ`-R`が指定されていない場合でも、LaTeX *コマンド* をそのまま出力します。）
 
 `-S`, `--smart`
-:   Produce typographically correct output, converting straight quotes
-    to curly quotes, `---` to em-dashes, `--` to en-dashes, and
-    `...` to ellipses. Nonbreaking spaces are inserted after certain
-    abbreviations, such as "Mr." (Note: This option is significant only when
-    the input format is `markdown`, `markdown_strict`, or `textile`. It
-    is selected automatically when the input format is `textile` or the
-    output format is `latex` or `context`, unless `--no-tex-ligatures`
-    is used.)
+:	タイポグラフィ的に正しく出力します。
+	具体的には、直線状の引用符を曲がった引用符に、`---`をemダッシュ「`—`」に、`--`をenダッシュ「`–`」に、 `...`を3点リーダーに変換します。
+	また、"Mr."のようなある種の略記・略称に対しては、自動的な改行のないスペース(Nonbreaking Space)がその後に挿入されます。
+	（注意：入力フォーマットが`markdown`, `markdown_strict`, `textile`の場合にこのオプションは重要です。
+	また、入力フォーマットが`textile`の場合や出力ファイルが`latex`, `context`の場合は、
+	`--no-tex-ligatures`を有効にしない限り、このオプションが有効になります。）
 
 `--old-dashes`
-:   Selects the pandoc <= 1.8.2.1 behavior for parsing smart dashes: `-` before
-    a numeral is an en-dash, and `--` is an em-dash.  This option is selected
-    automatically for `textile` input.
+:	ダッシュ記号の解釈をPandoc バージョン <= 1.8.2.1 の振る舞いと同等にします：
+	数字の前の`-`をenダッシュに、`--`をemダッシュに変換します。
+	このオプションは`textile`入力の際に自動的に選択されます。
 
 `--base-header-level=`*NUMBER*
-:   Specify the base level for headers (defaults to 1).
+:	ヘッダのベースレベルを指定します（デフォルトは1）。
+	（訳注：ヘッダのベースレベルは、HTMLにおける最上位ヘッダのレベルと対応します。
+	例えば`--base-header-level=3`の場合は、HTMLのヘッダが`<h3>`から始まります。）
 
 `--indented-code-classes=`*CLASSES*
-:   Specify classes to use for indented code blocks--for example,
-    `perl,numberLines` or `haskell`. Multiple classes may be separated
-    by spaces or commas.
+:	通常のインデントコードブロックに対して適用する構文強調表示用クラスを指定します。
+	例えば、`perl,numberLines`や`haskell`のように指定します。複数のクラスを指定する場合は、スペースかコンマで区切ります。
+	訳注：構文強調表示が可能な言語については下記の [訳注：構文強調表示が可能なプログラミング言語について](#code-highlighting) を参照して下さい。
 
 `--default-image-extension=`*EXTENSION*
-:   Specify a default extension to use when image paths/URLs have no
-    extension.  This allows you to use the same source for formats that
-    require different kinds of images.  Currently this option only affects
-    the markdown and LaTeX readers.
+:	画像パス・URLの拡張子が無い場合のデフォルト拡張子を指定します。
+	このコマンドにより、異なる種類の画像を必要とするフォーマットに対し、同一のソースを利用できるようになります。
+	現在のところ、このオプションはMarkdownとLaTeXのReaderのみに影響を与えます。
 
 `--filter=`*EXECUTABLE*
-:   Specify an executable to be used as a filter transforming the
-    Pandoc AST after the input is parsed and before the output is
-    written.  The executable should read JSON from stdin and write
-    JSON to stdout.  The JSON must be formatted like  pandoc's own
-    JSON input and output.  The name of the output format will be
-    passed to the filter as the first argument.  Hence,
+:	Pandocの入力処理と出力処理の間に挟んでPandoc ASTの変換処理を行うフィルタの実行ファイルを指定します。
+	この実行ファイルは標準入力からJSONを読み、JSONを標準出力へ出力する必要があります。
+	このJSONはPandoc自身の入力および出力のようなフォーマットでなければなりません。
+	出力フォーマット名はフィルタへ第1引数として渡されます。したがって、
 
         pandoc --filter ./caps.py -t latex
 
-    is equivalent to
+	は以下と等価です：
 
         pandoc -t json | ./caps.py latex | pandoc -f json -t latex
 
-    The latter form may be useful for debugging filters.
+	後者のコマンド形式はフィルタをデバッグする際に有用です。
 
-    Filters may be written in any language.  `Text.Pandoc.JSON`
-    exports `toJSONFilter` to facilitate writing filters in Haskell.
-    Those who would prefer to write filters in python can use the
-    module `pandocfilters`, installable from PyPI. See
-    <http://github.com/jgm/pandocfilters> for the module and several
-    examples.  Note that the *EXECUTABLE* will be sought in the user's
-    `PATH`, and not in the working directory, if no directory is
-    provided.  If you want to run a script in the working directory,
-    preface the filename with `./`.
+	フィルタは任意の言語で書くことができます。Haskellでは`Text.Pandoc.JSON`は`toJSONFilter`をエクスポートし、Haskellでフィルタを書くことを容易にします。
+	Pythonでフィルタを書きたい方は、モジュール`pandocfilters`をPyPIからインストールできます。このモジュールといくつかの例については、<http://github.com/jgm/pandocfilters>をご覧ください。
+	注意：Pandocは実行ファイル*EXECUTABLE*をユーザの環境変数`PATH`から見つけますが、ディレクトリ名を明示していない場合、カレントディレクトリにある実行ファイルは無視されます。
+	カレントディレクトリにあるスクリプトをフィルタとして実行したい場合は、そのスクリプト名の前に `./` を付けて下さい。
 
 `-M` *KEY[=VAL]*, `--metadata=`*KEY[:VAL]*
 :   Set the metadata field *KEY* to the value *VAL*.  A value specified
@@ -293,20 +299,25 @@ Reader options
     But unlike `--variable`, `--metadata` affects the metadata of the
     underlying document (which is accessible from filters and may be
     printed in some output formats).
+:	メタデータとしてフィールド *KEY* に対し値 *VAL* をセットします。コマンドラインで指定された値は文書中の値を上書きします。
+	値はYAMLのbooleanまたはstring値として解釈されます。値 *VAL* が指定されてない場合、その値はboolean値の`true`として見なします。
+	`--variable`や`--metadata`のようなオプションは、その文書に内在するメタデータへ影響を与えます（このメタデータはフィルタからアクセス可能であり、ある出力フォーマットでは表示されることがあります）。
 
 `--normalize`
-:   Normalize the document after reading:  merge adjacent
-    `Str` or `Emph` elements, for example, and remove repeated `Space`s.
+:   入力処理の後に文書を簡素化します：例えば、隣接した`Str`や`Emph`要素をマージしたり、
+	複数繰り返される`Space`を取り除いたりします。
 
 `-p`, `--preserve-tabs`
 :   Preserve tabs instead of converting them to spaces (the default).
     Note that this will only affect tabs in literal code spans and code
     blocks; tabs in regular text will be treated as spaces.
+:	このオプションを指定すると、タブ文字がスペースに変換されなくなります（デフォルトではタブ文字はスペースに変換されます）。
+	注意：このオプションは文字通りのコード表示やコードブロックのみで有効です。通常のテキスト中のタブ文字はスペースとして扱われます。
 
 `--tab-stop=`*NUMBER*
-:   Specify the number of spaces per tab (default is 4).
+:	タブ文字をスペースに変換する際に、1つのタブ文字を何個のスペースで置換するかを指定します（デフォルト値は4）。
 
-General writer options
+一般的なWriterオプション [general-writer-options]
 ----------------------
 
 `-s`, `--standalone`
@@ -317,7 +328,7 @@ General writer options
 
 `--template=`*FILE*
 :   Use *FILE* as a custom template for the generated document. Implies
-    `--standalone`. See [Templates](#templates) below for a description
+    `--standalone`. See [テンプレート](#templates) below for a description
     of template syntax. If no extension is specified, an extension
     corresponding to the writer will be added, so that `--template=special`
     looks for `special.html` for HTML output.  If the template is not
@@ -712,8 +723,8 @@ Options for wrapper scripts
 [mimeTeX]: http://www.forkosh.com/mimetex.html
 [CSL]: http://CitationStyles.org
 
-Templates
-=========
+テンプレート [templates]
+==========
 
 When the `-s/--standalone` option is used, pandoc uses a template to
 add header and footer material that is needed for a self-standing
@@ -848,8 +859,8 @@ is to fork the pandoc-templates repository
 (<http://github.com/jgm/pandoc-templates>) and merge in changes after each
 pandoc release.
 
-Pandoc's markdown
-=================
+Pandocによる拡張Markdown [pandocs-markdown]
+=======================
 
 Pandoc understands an extended and slightly revised version of
 John Gruber's [markdown] syntax.  This document explains the syntax,
@@ -1180,6 +1191,28 @@ This is equivalent to:
 
 To prevent all highlighting, use the `--no-highlight` flag.
 To set the highlighting style, use `--highlight-style`.
+
+
+### 訳注：構文強調表示が可能なプログラミング言語について [code-highlighting]
+
+このドキュメントの原文では明示されていませんが、 構文強調表示可能なプログラミング言語の種類は、
+Pandoc作者のJohn MacFarlaneが同じく作成した[highlighting-kate]に依存します。
+
+highlighting-kateで利用可能な言語は以下の通りです：
+actionscript, ada, apache, asn1, asp, awk, bash, bibtex, boo,
+c, changelog, clojure, cmake, coffee, coldfusion, commonlisp, cpp, cs, css, curry,
+d, diff, djangotemplate, doxygen, doxygenlua, dtd, eiffel, email, erlang,
+fortran, fsharp, gnuassembler, go, haskell, haxe, html, ini, java, javadoc,
+javascript, json, jsp, julia, latex, lex, literatecurry, literatehaskell, lua,
+makefile, mandoc, matlab, maxima, metafont, mips, modula2, modula3, monobasic,
+nasm, noweb, objectivec, objectivecpp, ocaml, octave, pascal, perl, php, pike,
+postscript, prolog, python, r, relaxngcompact, rhtml, ruby, rust, scala, scheme,
+sci, sed, sgml, sql, sqlmysql, sqlpostgresql, tcl, texinfo, verilog, vhdl,
+xml, xorg, xslt, xul, yacc, yaml.
+
+[highlighting-kate]: http://johnmacfarlane.net/highlighting-kate/
+
+
 
 Line blocks
 -----------
@@ -2855,7 +2888,7 @@ The following fields are recognized:
 `stylesheet`
   ~ A string value (path to CSS stylesheet).
 
-Literate Haskell support
+Literate Haskellのサポート [literate-haskell-support]
 ========================
 
 If you append `+lhs` (or `+literate_haskell`) to an appropriate input or output
@@ -2901,7 +2934,7 @@ ordinary HTML (without bird tracks).
 writes HTML with the Haskell code in bird tracks, so it can be copied
 and pasted as literate Haskell source.
 
-Custom writers
+カスタムWriter [custom-writers]
 ==============
 
 Pandoc can be extended with custom writers written in [lua].  (Pandoc
