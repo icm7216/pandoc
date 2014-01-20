@@ -638,131 +638,115 @@ HTMLにおける数式の表示  [math-rendering-in-html]
 テンプレート [templates]
 ==========
 
-When the `-s/--standalone` option is used, pandoc uses a template to
-add header and footer material that is needed for a self-standing
-document.  To see the default template that is used, just type
-
-`-s/--standalone`オプションを使用している場合、Pandocは完全で独立した文書を生成するために、
+`-s/--standalone`オプションを使用している場合、Pandocは完全で独立した文書を生成するために、ヘッダとフッタをつけ加えるためのテンプレートを使用します。
+デフォルトテンプレートを見るには、以下を実行してください（ただし`FORMAT`は出力フォーマットの名前）：
 
     pandoc -D FORMAT
 
-where `FORMAT` is the name of the output format. A custom template
-can be specified using the `--template` option.  You can also override
-the system default templates for a given output format `FORMAT`
-by putting a file `templates/default.FORMAT` in the user data
-directory (see `--data-dir`, above). *Exceptions:* For `odt` output,
-customize the `default.opendocument` template.  For `pdf` output,
-customize the `default.latex` template.
+カスタムテンプレートは`--template`オプションで指定することができます。
+また、カスタムテンプレートをユーザデータディレクトリ（`--data-dir`を参照）の `templates/default.FORMAT`に置くことで、 与えられた出力フォーマット`FORMAT`に対するシステムのデフォルトテンプレートの代わりに使用することができます。
+*例外*：`odt`出力については、`default.opendocument`を使用して下さい。また、`pdf`出力については、`default.latex`を使用して下さい。
 
-Templates may contain *variables*.  Variable names are sequences of
-alphanumerics, `-`, and `_`, starting with a letter.  A variable name
-surrounded by `$` signs will be replaced by its value.  For example,
-the string `$title$` in
+テンプレートには*変数*が含まれます。変数名は英数字、`-`および`_`の並びから成り、1文字目は英字です。変数名を`$`記号で囲むと、その値に置換されます。
+例えば、以下のような`$title$`は
 
     <title>$title$</title>
 
-will be replaced by the document title.
+その文書のタイトルに置き換えられます。
 
-To write a literal `$` in a template, use `$$`.
+テンプレート内で`$`を文字通りに入力したい場合は、`$$`を使用して下さい。
 
 Some variables are set automatically by pandoc.  These vary somewhat
 depending on the output format, but include metadata fields (such
 as `title`, `author`, and `date`) as well as the following:
 
+いくつかの変数はPandocによって自動的に設定されます。これらは出力フォーマットによって変化しますが、メタデータフィールド（`title`や`author`、`date`など）と同様に以下も含みます：
+
 `header-includes`
-:   contents specified by `-H/--include-in-header` (may have multiple
-    values)
+:   `-H/--include-in-header`によって指定される内容（複数の値を取ることができます）
 
 `toc`
-:   non-null value if `--toc/--table-of-contents` was specified
+:   `--toc/--table-of-contents`が指定されたときの非null値
 
 `include-before`
-:   contents specified by `-B/--include-before-body` (may have
-    multiple values)
+:	`-B/--include-before-body`によって指定される内容（複数の値を取ることができます）
 
 `include-after`
-:   contents specified by `-A/--include-after-body` (may have
-    multiple values)
+:	`-A/--include-after-body`によって指定される内容（複数の値を取ることができます）
 
 `body`
-:   body of document
+:   文書の本体(body)
 
 `lang`
-:   language code for HTML or LaTeX documents
+:   HTMLまたはLaTeX文書の言語コード
 
 `slidy-url`
-:   base URL for Slidy documents (defaults to
-    `http://www.w3.org/Talks/Tools/Slidy2`)
+:   Slidy文書のベースURL（デフォルトは`http://www.w3.org/Talks/Tools/Slidy2`）
 
 `slideous-url`
-:   base URL for Slideous documents (defaults to `default`)
+:   Slideous文書のベースURL（デフォルトは`default`）
 
 `s5-url`
-:   base URL for S5 documents (defaults to `ui/default`)
+:   S5文書のベースURL（デフォルトは`ui/default`）
 
 `revealjs-url`
-:   base URL for reveal.js documents (defaults to `reveal.js`)
+:   reveal.js文書のベースURL（デフォルトは`reveal.js`）
 
 `theme`
-:   reveal.js or LaTeX beamer theme
+:   reveal.jsまたはLaTeX Beamerテーマ
 
 `transition`
-:   reveal.js transition
+:   reveal.jsのトランジション（遷移）
 
 `fontsize`
-:   font size (10pt, 11pt, 12pt) for LaTeX documents
+:   LaTeX文書のフォントサイズ（10pt, 11pt, 12pt）
 
 `documentclass`
-:   document class for LaTeX documents
+:   LaTeX文書のドキュメントクラス
 
 `classoption`
-:   option for LaTeX documentclass, e.g. `oneside`; may be repeated
-    for multiple options
+:   LaTeXにおけるdocumentclassのオプション（例：`oneside`）；複数の値を繰り返し指定することができます
 
 `geometry`
-:   options for LaTeX `geometry` class, e.g. `margin=1in`;
-    may be repeated for multiple options
+:   LaTeXにおける`geometry`クラスのオプション（例：`margin=1in`）；複数の値を繰り返し指定することができます
 
 `mainfont`, `sansfont`, `monofont`, `mathfont`
-:   fonts for LaTeX documents (works only with xelatex
-    and lualatex)
+:   LaTeX文書のフォント（XeLaTeXまたはLuaLaTeXのみで有効）
 
 `colortheme`
-:   colortheme for LaTeX beamer documents
+:   LaTeX Beamer文書のcolortheme
 
 `fonttheme`
-:   fonttheme for LaTeX beamer documents
+:   LaTeX Beamer文書のfonttheme
 
 `linkcolor`
-:   color for internal links in LaTeX documents (`red`, `green`,
-    `magenta`, `cyan`, `blue`, `black`)
+:   LaTeX文書における内部リンクの色 （`red`, `green`, `magenta`, `cyan`, `blue`, `black`）
 
 `urlcolor`
-:   color for external links in LaTeX documents
+:   LaTeX文書における外部リンクの色
 
 `citecolor`
-:   color for citation links in LaTeX documents
+:   LaTeX文書における引用リンクの色
 
 `links-as-notes`
-:   causes links to be printed as footnotes in LaTeX documents
+:   LaTeX文書においてリンクを脚注として表示
 
 `biblio-style`
-:   bibliography style in LaTeX, when used with `--natbib`
+:   LaTeXにおける参考文献のスタイル（`--natbib`とともに使用する際に）
 
 `section`
-:   section number in man pages
+:   manページにおけるセクション番号
 
 `header`
-:   header in man pages
+:   manページにおけるヘッダ
 
 `footer`
-:   footer in man pages
+:   manページにおけるフッタ
 
-Variables may be set at the command line using the `-V/--variable`
-option.  Variables set in this way override metadata fields with
-the same name.
+変数は`-V/--variable`オプションを使用することで、コマンドラインから設定することができます。
+このように設定された変数は同名のメタデータフィールドを上書きします。
 
-Templates may contain conditionals.  The syntax is as follows:
+テンプレートには条件分岐を含めることができます。文法は以下の通りです：
 
     $if(variable)$
     X
@@ -770,34 +754,24 @@ Templates may contain conditionals.  The syntax is as follows:
     Y
     $endif$
 
-This will include `X` in the template if `variable` has a non-null
-value; otherwise it will include `Y`. `X` and `Y` are placeholders for
-any valid template text, and may include interpolated variables or other
-conditionals. The `$else$` section may be omitted.
+この場合、`variable`が非null値の場合に`X`を適用し、そうでない場合は`Y`を適用します。
+`X`と`Y`は有効なテンプレートテキストのプレースホルダーであり、変数やその他の条件分岐を含むことができます。
 
-When variables can have multiple values (for example, `author` in
-a multi-author document), you can use the `$for$` keyword:
+変数が複数の値からなる場合（例えば`author`が複数の著者の場合）、`$for$`キーワードを使用することができます：
 
     $for(author)$
     <meta name="author" content="$author$" />
     $endfor$
 
-You can optionally specify a separator to be used between
-consecutive items:
+また、連続したアイテムとアイテムの間に使用するセパレータをオプションとして指定することもできます：
 
     $for(author)$$author$$sep$, $endfor$
 
-A dot can be used to select a field of a variable that takes
-an object as its value.  So, for example:
+ドット（`.`）はオブジェクト変数のフィールドを指定するのに使用できます。例えば：
 
     $author.name$ ($author.affiliation$)
 
-If you use custom templates, you may need to revise them as pandoc
-changes.  We recommend tracking the changes in the default templates,
-and modifying your custom templates accordingly. An easy way to do this
-is to fork the pandoc-templates repository
-(<http://github.com/jgm/pandoc-templates>) and merge in changes after each
-pandoc release.
+カスタムテンプレートを使用する際には、Pandocのアップデートによる変更をそのテンプレートに反映させる必要があります。我々としては、デフォルトテンプレートの変更を追跡し、それに応じてあなたのカスタムテンプレートを変更することをお勧めします。これを行う簡単な方法として、pandoc-templatesリポジトリ(<http://github.com/jgm/pandoc-templates>)をフォークし、新しいPandocがリリースされた後に変更をマージすることができます。
 
 Pandocによる拡張Markdown [pandocs-markdown]
 =======================
