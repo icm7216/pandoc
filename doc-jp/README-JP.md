@@ -172,7 +172,7 @@ Pandocはオプション `-f markdown_strict --email-obfuscation=references` が
 	`native` (Native Haskell), `json` (ネイティブASTのJSONバージョン),
 	`plain` (プレーンテキスト), `markdown` (Pandocによる拡張Markdown),
 	`markdown_strict` (オリジナルの拡張されていないMarkdown),
-	`markdown_phpextra` (PHP Markdown extra extended markdown),
+	`markdown_phpextra` (PHP Markdown Extraによる拡張Markdown),
 	`markdown_github` (GitHubによる拡張Markdown),
     `rst` (reStructuredText), `html` (XHTML 1), `html5` (HTML 5),
     `latex` (LaTeX), `beamer` (LaTeX beamer スライドショー),
@@ -198,8 +198,7 @@ Pandocはオプション `-f markdown_strict --email-obfuscation=references` が
 `-o` *FILE*, `--output=`*FILE*
 :	標準出力 *stdout* に出力するのではなく、ファイル *FILE* へ出力するようにします。
 	*FILE* として `-`を指定した場合、標準出力 *stdout*へ出力するようにします。
-	（例外：出力フォーマットが`odt`, `docx`, `epub`, `epub3`のいずれかの場合、
-	標準出力への出力は無効になります。）
+	（例外：出力フォーマットが`odt`, `docx`, `epub`, `epub3`のいずれかの場合、標準出力への出力は無効になります。）
 
 `--data-dir=`*DIRECTORY*
 :	Pandocデータファイルを検索するために、ユーザデータディレクトリを指定します。
@@ -257,9 +256,9 @@ Readerのオプション [reader-options]
 	このオプションは`textile`入力の際に自動的に選択されます。
 
 `--base-header-level=`*NUMBER*
-:	ヘッダのベースレベルを指定します（デフォルトは1）。
-	（訳注：ヘッダのベースレベルは、HTMLにおける最上位ヘッダのレベルと対応します。
-	例えば`--base-header-level=3`の場合は、HTMLのヘッダが`<h3>`から始まります。）
+:	見出しのベースレベルを指定します（デフォルトは1）。
+	（訳注：見出しのベースレベルは、HTMLにおける最上位の見出しレベルと対応します。
+	例えば`--base-header-level=3`の場合は、HTMLの見出しが`<h3>`から始まります。）
 
 `--indented-code-classes=`*CLASSES*
 :	通常のインデントコードブロックに対して適用する構文強調表示用クラスを指定します。
@@ -291,26 +290,17 @@ Readerのオプション [reader-options]
 	カレントディレクトリにあるスクリプトをフィルタとして実行したい場合は、そのスクリプト名の前に `./` を付けて下さい。
 
 `-M` *KEY[=VAL]*, `--metadata=`*KEY[:VAL]*
-:   Set the metadata field *KEY* to the value *VAL*.  A value specified
-    on the command line overrides a value specified in the document.
-    Values will be parsed as YAML boolean or string values. If no value is
-    specified, the value will be treated as Boolean true.  Like
-    `--variable`, `--metadata` causes template variables to be set.
-    But unlike `--variable`, `--metadata` affects the metadata of the
-    underlying document (which is accessible from filters and may be
-    printed in some output formats).
 :	メタデータとしてフィールド *KEY* に対し値 *VAL* をセットします。コマンドラインで指定された値は文書中の値を上書きします。
-	値はYAMLのbooleanまたはstring値として解釈されます。値 *VAL* が指定されてない場合、その値はboolean値の`true`として見なします。
-	`--variable`や`--metadata`のようなオプションは、その文書に内在するメタデータへ影響を与えます（このメタデータはフィルタからアクセス可能であり、ある出力フォーマットでは表示されることがあります）。
+	値はYAMLのbooleanまたはstring値として解釈されます。値 *VAL* が指定されてない場合、その値はboolean値の`true`として見なされます。
+	`--variable`や`--metadata`のようなオプションにより、テンプレート変数がセットされます。
+	しかし、`--variable`とは違い、`--metadata`はその文書に内在するメタデータへ影響を与えます（このメタデータはフィルタからアクセス可能であり、ある出力フォーマットでは表示されることがあります）。
+
 
 `--normalize`
 :   入力処理の後に文書を簡素化します：例えば、隣接した`Str`や`Emph`要素をマージしたり、
 	複数繰り返される`Space`を取り除いたりします。
 
 `-p`, `--preserve-tabs`
-:   Preserve tabs instead of converting them to spaces (the default).
-    Note that this will only affect tabs in literal code spans and code
-    blocks; tabs in regular text will be treated as spaces.
 :	このオプションを指定すると、タブ文字がスペースに変換されなくなります（デフォルトではタブ文字はスペースに変換されます）。
 	注意：このオプションは文字通りのコード表示やコードブロックのみで有効です。通常のテキスト中のタブ文字はスペースとして扱われます。
 
@@ -321,266 +311,209 @@ Readerのオプション [reader-options]
 ----------------------
 
 `-s`, `--standalone`
-:   Produce output with an appropriate header and footer (e.g. a
-    standalone HTML, LaTeX, or RTF file, not a fragment).  This option
-    is set automatically for `pdf`, `epub`, `epub3`, `fb2`, `docx`, and `odt`
-    output.
+:	スタンドアローンモード。適切なヘッダおよびフッタのついた出力を生成します。（言い換えると、この出力は断片ではなく、1つの完全で独立したHTML, LaTeX, およびRTFファイルです。）
+	このオプションは出力フォーマットが`pdf`, `epub`, `epub3`, `fb2`, `docx`, `odt`の場合に自動的に付加されます。
+	訳注：このオプションは、Pandoc実行後にブラウザでHTMLファイルを表示させたり、LaTeXコマンドで直接ソースを処理したりする場合に必要となるでしょう。リッチテキストエディタでRTFファイルを扱う場合にはおそらく必須です。
+	逆に、例えばブログなどに使う用途で最低限のHTMLだけが必要な場合は、このオプションを付けない方が用途にふさわしいでしょう。
 
 `--template=`*FILE*
-:   Use *FILE* as a custom template for the generated document. Implies
-    `--standalone`. See [テンプレート](#templates) below for a description
-    of template syntax. If no extension is specified, an extension
-    corresponding to the writer will be added, so that `--template=special`
-    looks for `special.html` for HTML output.  If the template is not
-    found, pandoc will search for it in the user data directory
-    (see `--data-dir`). If this option is not used, a default
-    template appropriate for the output format will be used (see
-    `-D/--print-default-template`).
+:	テンプレートファイル*FILE*をカスタムテンプレートとして出力文書に適用します。
+	暗黙に`--standalone`オプションが指定されます。
+	テンプレートの文法についての説明は、下記の [テンプレート](#templates) の節をご覧ください。
+	拡張子が無い場合、Writerに対応する拡張子が *FILE* に追加されます。例えば、`--template=special`と指定すれば、PandocはHTML出力に対して`special.html`を探します。
+	テンプレートファイルが見つからない場合、Pandocはユーザデータディレクトリを検索します（`--data-dir`を参照）。
+	このオプションが使われない場合、出力に対してふさわしいデフォルトテンプレートが指定されます（`-D/--print-default-template`を参照）。
+
 
 `-V` *KEY[=VAL]*, `--variable=`*KEY[:VAL]*
-:   Set the template variable *KEY* to the value *VAL* when rendering the
-    document in standalone mode. This is generally only useful when the
-    `--template` option is used to specify a custom template, since
-    pandoc automatically sets the variables used in the default
-    templates.  If no *VAL* is specified, the key will be given the
-    value `true`.
+:	スタンドアローンモードで文書を出力する際に、テンプレート変数 *KEY* に対して値 *VAL* をセットします。
+	Pandocはデフォルトテンプレートの中で変数を自動的に設定するため、
+	このオプションはカスタムテンプレートを利用する際（`--template`オプションが指定されている場合）に有用です。
+	値 *VAL* が何も指定されてない場合、*KEY*に対応する値として`true`が指定されます。
 
 `-D` *FORMAT*, `--print-default-template=`*FORMAT*
-:   Print the default template for an output *FORMAT*. (See `-t`
-    for a list of possible *FORMAT*s.)
+:	出力フォーマット *FORMAT* で用いるデフォルトテンプレートを表示します。（指定できる *FORMAT* の一覧は `-t` の節を参照。）
 
 `--print-default-data-file=`*FILE*
-:   Print a default data file.
+:	デフォルトのデータファイルを表示します。
 
 `--no-wrap`
-:   Disable text wrapping in output. By default, text is wrapped
-    appropriately for the output format.
+:	出力におけるテキストの折り返しを無効にします。デフォルトでは、テキストは出力フォーマットに応じて適切に折り返しされます。
 
 `--columns`=*NUMBER*
-:   Specify length of lines in characters (for text wrapping).
+:	1行あたりの文字数を指定します（テキストの折り返しに影響します）。
 
 `--toc`, `--table-of-contents`
-:   Include an automatically generated table of contents (or, in
-    the case of `latex`, `context`, and `rst`, an instruction to create
-    one) in the output document. This option has no effect on `man`,
-    `docbook`, `slidy`, `slideous`, `s5`, `docx`, or `odt` output.
+:	自動的に生成された目次を出力文書に含めます（`latex`, `context`, `rst`の場合は、目次を作成する命令を挿入します）。このオプションは、`man`, `docbook`, `slidy`, `slideous`, `s5`, `docx`, `odt`の場合は何も影響を与えません。
 
 `--toc-depth=`*NUMBER*
-:   Specify the number of section levels to include in the table
-    of contents.  The default is 3 (which means that level 1, 2, and 3
-    headers will be listed in the contents).
+:	目次に含める節のレベル番号を指定します。デフォルトは3です（つまり、レベル1, 2, 3の見出しが目次にリストアップされます）。
 
 `--no-highlight`
-:   Disables syntax highlighting for code blocks and inlines, even when
-    a language attribute is given.
+:	コードブロックやインラインにおける構文強調表示を無効にします（構文強調表示用に言語が指定されている場合も同様です）。
 
 `--highlight-style`=*STYLE*
-:   Specifies the coloring style to be used in highlighted source code.
-    Options are `pygments` (the default), `kate`, `monochrome`,
-    `espresso`, `zenburn`, `haddock`, and `tango`.
+:	ソースコードの構文強調表示に用いる色のスタイルを指定します。オプションは`pygments` (デフォルト値), `kate`, `monochrome`, `espresso`, `zenburn`, `haddock`, `tango`の中から選べます。
+	訳注：これらのオプション値の名前の一部は実在の構文強調表示エンジンに由来しますが、そのエンジンを実際に使用するわけではなく、それに準じた色テーマを指定するだけです。
 
 `-H` *FILE*, `--include-in-header=`*FILE*
-:   Include contents of *FILE*, verbatim, at the end of the header.
-    This can be used, for example, to include special
-    CSS or javascript in HTML documents.  This option can be used
-    repeatedly to include multiple files in the header.  They will be
-    included in the order specified.  Implies `--standalone`.
+:   ヘッダの末尾に、*FILE*の内容をそのままつけ加えます。
+	使用例としては、HTMLヘッダに自前のCSSやJavaScriptのmetaタグをつけ加える用途に使えます。
+	複数のファイルをヘッダに含めるために、このオプションを複数回指定することができます。オプションを指定した順番通りに、出力ファイルのヘッダへも追加されます。
+	このオプションにより、`--standalone`も暗黙に指定されます。
 
 `-B` *FILE*, `--include-before-body=`*FILE*
-:   Include contents of *FILE*, verbatim, at the beginning of the
-    document body (e.g. after the `<body>` tag in HTML, or the
-    `\begin{document}` command in LaTeX). This can be used to include
-    navigation bars or banners in HTML documents. This option can be
-    used repeatedly to include multiple files. They will be included in
-    the order specified.  Implies `--standalone`.
+:	文書本文(body)の先頭に、*FILE*の内容をそのままつけ加えます（具体的には、HTMLの`<body>`タグの直後や、LaTeXの`\begin{document}`の直後です）。
+	使用例としては、HTML文書にナビゲーションバーやバナーをつけ加える用途に使えます。
+	複数のファイルを含めるために、このオプションを複数回指定することができます。オプションを指定した順番通りに、出力ファイルの文書本文先頭へも追加されます。
+	このオプションにより、`--standalone`も暗黙に指定されます。
 
 `-A` *FILE*, `--include-after-body=`*FILE*
-:   Include contents of *FILE*, verbatim, at the end of the document
-    body (before the `</body>` tag in HTML, or the
-    `\end{document}` command in LaTeX). This option can be be used
-    repeatedly to include multiple files. They will be included in the
-    order specified.  Implies `--standalone`.
+:	文書本文(body)の末尾に、*FILE*の内容をそのままつけ加えます（具体的には、HTMLの`</body>`タグの直前や、LaTeXの`\end{document}`の直前です）。
+	複数のファイルを含めるために、このオプションを複数回指定することができます。オプションを指定した順番通りに、出力ファイルの文書本文末尾へも追加されます。
+	このオプションにより、`--standalone`も暗黙に指定されます。
 
-Options affecting specific writers
-----------------------------------
+特定のWriterに影響を与えるオプション  [options-affecting-specific-writers]
+--------------------------------
 
 `--self-contained`
-:   Produce a standalone HTML file with no external dependencies, using
-    `data:` URIs to incorporate the contents of linked scripts, stylesheets,
-    images, and videos. The resulting file should be "self-contained,"
-    in the sense that it needs no external files and no net access to be
-    displayed properly by a browser. This option works only with HTML output
-    formats, including `html`, `html5`, `html+lhs`, `html5+lhs`, `s5`,
-    `slidy`, `slideous`, `dzslides`, and `revealjs`. Scripts, images, and
-    stylesheets at absolute URLs will be downloaded; those at relative URLs
-    will be sought first relative to the working directory, then relative to
-    the user data directory (see `--data-dir`), and finally relative to
-    pandoc's default data directory.  `--self-contained` does not
-    work with `--mathjax`.
+:	他のファイルに依存せず、単一ファイルで完結したHTMLを生成します。
+	リンクされたスクリプト、スタイルシート、画像および動画は、`data:` URIスキームを用いてHTMLファイル内に埋め込まれます。この出力ファイルは、一切の外部ファイルを必要とせず、ネットが繋がらない場所でも正しくブラウザで表示できるという意味では、自己完結した(self-contained)ファイルといえるでしょう。
+	このオプションはHTMLに関連した出力フォーマットに対して有効であり、具体的には`html`, `html5`, `html+lhs`, `html5+lhs`, `s5`, `slidy`, `slideous`, `dzslides`, `revealjs`で用いることができます。
+	絶対パスのURLで指定されたスクリプト、画像、スタイルシートはダウンロードされる一方で、相対パスのURLで指定されたそれらはまずカレントディレクトリから検索され、その後ユーザデータディレクトリから検索されます（`--data-dir`の節を参照）。最後に、Pandocのデフォルトデータディレクトリから検索されます。
+	なお、`--self-contained`は`--mathjax`オプションと併用することができません。
 
 `--offline`
-:   Deprecated synonym for `--self-contained`.
+:	*（非推奨）* `--self-contained`と等価。
 
 `-5`, `--html5`
-:   Produce HTML5 instead of HTML4.  This option has no effect for writers
-    other than `html`. (*Deprecated:*  Use the `html5` output format instead.)
+:	*（非推奨）* HTML4の代わりにHTML5で出力します。`html`以外の出力フォーマットでは無効です。
+	現在はこのオプションの代わりに `html5` 出力フォーマットを利用するようにしてください。
 
 `--html-q-tags`
-:   Use `<q>` tags for quotes in HTML.
+:	HTMLで引用の際に `<q>` タグを利用します。
 
 `--ascii`
-:   Use only ascii characters in output.  Currently supported only
-    for HTML output (which uses numerical entities instead of
-    UTF-8 when this option is selected).
+:	ASCII文字のみを出力に利用します。現在のところHTML出力のみに対してサポートしています。（このオプションが指定されると、UTF-8の代わりに数値文字参照を利用します。）
 
 `--reference-links`
-:   Use reference-style links, rather than inline links, in writing markdown
-    or reStructuredText.  By default inline links are used.
+:	MarkdownまたはreStructuredTextを出力する際に、インライン形式のリンクではなく参照形式のリンクを用いるようにします。デフォルトではインライン形式のリンクを出力します。
+	（訳注：Markdownにおける各形式の詳細は [リンク](#links) の節をご覧ください。）
 
 `--atx-headers`
-:   Use ATX style headers in markdown and asciidoc output. The default is
-    to use setext-style headers for levels 1-2, and then ATX headers.
+:	MarkdownまたはAsciiDocを出力する際に、ATX形式の見出しを用いるようにします。デフォルトでは、レベル1-2の見出しに対してはSetext形式を、それ以降のレベルに対してはATX形式を用います。
+	（訳注：Markdownにおける各形式の詳細は [ヘッダ](#headers) の節をご覧ください。）
 
 `--chapters`
-:   Treat top-level headers as chapters in LaTeX, ConTeXt, and DocBook
-    output.  When the LaTeX template uses the report, book, or
-    memoir class, this option is implied.  If `beamer` is the output
-    format, top-level headers will become `\part{..}`.
+:	最も上位の見出しを章(chapter)として扱います。LaTeX, ConTeXt, DocBookの出力にて有効です。
+	LaTeXのテンプレートがreport, book, memoirクラスファイルを用いる場合、このオプションが暗黙に指定されます。
+	出力フォーマットとして`beamer`が指定された場合、最上位の見出しは`\part{..}`になります。
 
 `-N`, `--number-sections`
-:   Number section headings in LaTeX, ConTeXt, HTML, or EPUB output.
-    By default, sections are not numbered.  Sections with class
-    `unnumbered` will never be numbered, even if `--number-sections`
-    is specified.
+:	番号付き節見出しを出力します。LaTeX, ConTeXt, HTML, EPUBの出力で有効です。
+	デフォルトでは、節に番号は付いていません。`unnumbered`クラスのある節では、`--number-section`が指定されていている場合でも、番号は付きません。
+	訳注1：例えば`\section{..}`に対して、`unnumbered`クラスとはLaTeXにおける`\section*{..}`、ConTeXtにおける`\subject{..}`だと思われます。
+	訳注2：Pandocのデフォルトでは、`-s/--standalone`オプション付きでLaTeX出力すると、見出しに番号を付けない設定付きのLaTeXソースが出力されます。これはLaTeXそのもののデフォルトと異なるので注意して下さい。
 
 `--number-offset`=*NUMBER[,NUMBER,...]*,
-:   Offset for section headings in HTML output (ignored in other
-    output formats).  The first number is added to the section number for
-    top-level headers, the second for second-level headers, and so on.
-    So, for example, if you want the first top-level header in your
-    document to be numbered "6", specify `--number-offset=5`.
-    If your document starts with a level-2 header which you want to
-    be numbered "1.5", specify `--number-offset=1,4`.
-    Offsets are 0 by default.  Implies `--number-sections`.
+:	HTML出力中の節見出し番号に対して、指定されたオフセット値を加えます（他の出力フォーマットでは無視されます）。
+	オフセット値はカンマ区切りで複数指定でき、最初の番号はトップレベルの見出しに対して、 2番目の番号は2番目のレベルの見出しに対して、というように指定できます。
+	例えば、トップレベルの見出しを"6"から始めたい場合は、`--number-offset=5`と指定します。
+	また、レベル2の見出しを"1.5"から始めたい場合は、`--number-offset=1,4`と指定します。
+	オフセット値のデフォルトは0です。`--number-sections`を暗黙に指定します。
 
 `--no-tex-ligatures`
-:   Do not convert quotation marks, apostrophes, and dashes to
-    the TeX ligatures when writing LaTeX or ConTeXt. Instead, just
-    use literal unicode characters. This is needed for using advanced
-    OpenType features with XeLaTeX and LuaLaTeX. Note: normally
-    `--smart` is selected automatically for LaTeX and ConTeXt
-    output, but it must be specified explicitly if `--no-tex-ligatures`
-    is selected. If you use literal curly quotes, dashes, and ellipses
-    in your source, then you may want to use `--no-tex-ligatures`
-    without `--smart`.
+:	LaTeXやConTeXtの出力において、引用符やアポストロフィ、ダッシュ記号をTeXの記号表記に変換しないようにします。
+	その代わりに、Unicodeにおける各々の記号を文字通りに出力します。
+	このオプションは、OpenTypeの高度な機能をXeLaTeXやLuaLaTeXで用いる際に必要となります。
+	注意：通常、LaTeXとConTeXtの出力において `--smart` オプションが自動的に指定されます。しかし、`--no-tex-ligatures`を指定する場合は、`--smart`を明示的に指定しなければなりません。ただし、丸まった引用符やダッシュ記号、3点リーダー記号をソースコード内で用いる場合は、`--smart`を指定せずに`--no-tex-ligatures`を使う必要があるかもしれません。
 
 `--listings`
-:   Use listings package for LaTeX code blocks
+:	LaTeXのコードブロックに対してlistingパッケージを適用します。
 
 `-i`, `--incremental`
-:   Make list items in slide shows display incrementally (one by one).
-    The default is for lists to be displayed all at once.
+:	スライドショー内のリスト項目を一気に表示するのではなく1つずつ表示するようにします。
+	デフォルトでは、リスト項目は全てが一気に表示されます。
 
 `--slide-level`=*NUMBER*
-:   Specifies that headers with the specified level create
-    slides (for `beamer`, `s5`, `slidy`, `slideous`, `dzslides`).  Headers
-    above this level in the hierarchy are used to divide the
-    slide show into sections; headers below this level create
-    subheads within a slide.  The default is to set the slide level
-    based on the contents of the document; see
-    [Structuring the slide show](#structuring-the-slide-show), below.
+:	指定したレベルの見出しごとに1枚ずつスライドを作るようにします（`beamer`, `s5`, `slidy`, `slideous`, `dzslides`で有効です）。
+	このレベルよりも上の見出しはスライドショーを節ごとに区切るために使われます。また、このレベルよりも下の見出しはスライド内の副見出しを作ります。
+	デフォルト値はドキュメントの内容によって変わります。詳しくは [スライドショーの構造を作る](#structuring-the-slide-show) をご覧ください。
 
 `--section-divs`
-:   Wrap sections in `<div>` tags (or `<section>` tags in HTML5),
-    and attach identifiers to the enclosing `<div>` (or `<section>`)
-    rather than the header itself.
-    See [Section identifiers](#header-identifiers-in-html-latex-and-context), below.
+:	HTMLでヘッダタグ（`<h1>`など）を使う代わりに、節を`<div>`タグ（HTML5では`<section>`タグ）で囲み、
+	識別子を`<div>`（または`<section>`）タグの中に含めるようにします。
+	詳しくは [ヘッダ識別子](#header-identifiers-in-html-latex-and-context) の項目をご覧ください。
 
 `--email-obfuscation=`*none|javascript|references*
-:   Specify a method for obfuscating `mailto:` links in HTML documents.
-    *none* leaves `mailto:` links as they are.  *javascript* obfuscates
-    them using javascript. *references* obfuscates them by printing their
-    letters as decimal or hexadecimal character references.
+:	HTML文書において`mailto:`リンクを難読化する方法を指定します。
+	*none*の場合は、リンクは難読化されません。*javascript*の場合はJavaScriptを用いて難読化します。
+	*references*の場合は、メールアドレスの文字を10進または16進の数値参照により難読化します。
 
 `--id-prefix`=*STRING*
-:   Specify a prefix to be added to all automatically generated identifiers
-    in HTML and DocBook output, and to footnote numbers in markdown output.
-    This is useful for preventing duplicate identifiers when generating
-    fragments to be included in other pages.
+:	HTMLとDocBookの出力において、自動的に生成される全ての識別子に対して付ける接頭辞(prefix)を指定します。
+	または、Markdown出力においては、脚注番号に対して付ける接頭辞を指定します。
+	このオプションは、文書の断片を生成し他の文書に埋め込む場合に、識別子が重複することを防ぐため便利です。
 
 `-T` *STRING*, `--title-prefix=`*STRING*
-:   Specify *STRING* as a prefix at the beginning of the title
-    that appears in the HTML header (but not in the title as it
-    appears at the beginning of the HTML body).  Implies
-    `--standalone`.
+:	HTMLヘッダの`<title>`タグの最初に現れる接頭辞(prefix)を指定します（ただしHTMLのbody部分の最初に現れるタイトルではありません）。`--standalone`を暗黙に指定します。
 
 `-c` *URL*, `--css=`*URL*
-:   Link to a CSS style sheet. This option can be be used repeatedly to
-    include multiple files. They will be included in the order specified.
+:	スタイルシート(CSS)へのリンクを指定します。複数のスタイルシートを指定したい場合は、このオプションを繰り返し使用することもできます。オプションを指定した順に、スタイルシートも追加されます。
 
 `--reference-odt=`*FILE*
-:   Use the specified file as a style reference in producing an ODT.
-    For best results, the reference ODT should be a modified version
-    of an ODT produced using pandoc.  The contents of the reference ODT
-    are ignored, but its stylesheets are used in the new ODT. If no
-    reference ODT is specified on the command line, pandoc will look
-    for a file `reference.odt` in the user data directory (see
-    `--data-dir`). If this is not found either, sensible defaults will be
-    used.
+:	OpenOffice/LibreOffice ODTファイルを出力する際に、スタイルの元となる参照用ODTファイルを使用します。ファイル名が指定されている場合は、そのファイルを参照用ODTファイルとして使用します。
+	最も良い出力を得るために、参照用ODTファイルはPandocを用いて生成されたものを変更して使用して下さい。参照用ODTファイルの内容（コンテンツ）は無視され、そのスタイルシートが新しく出力されるODTファイルに適用されます。
+	ODTファイルがコマンドラインに指定されていない場合、Pandocはユーザデータディレクトリから`reference.odt`という名前のファイルを検索します（`--data-dir`の節を参照）。もし見つからなければ、デフォルトの参照用ODTファイルを使います。
+	訳注：カスタマイズの元になる参照用ODTファイルを得るには、
+		`pandoc --print-default-data-file reference.odt > reference.odt`
+	を実行して下さい。
 
 `--reference-docx=`*FILE*
-:   Use the specified file as a style reference in producing a docx file.
-    For best results, the reference docx should be a modified version
-    of a docx file produced using pandoc.  The contents of the reference docx
-    are ignored, but its stylesheets are used in the new docx. If no
-    reference docx is specified on the command line, pandoc will look
-    for a file `reference.docx` in the user data directory (see
-    `--data-dir`). If this is not found either, sensible defaults will be
-    used. The following styles are used by pandoc: [paragraph]
-    Normal, Compact, Title, Authors, Date, Heading 1, Heading 2, Heading 3,
+:	Word docxファイルを出力する際に、スタイルの元となる参照用docxファイルを使用します。ファイル名が指定されている場合は、そのファイルを参照用docxファイルとして使用します。
+	最も良い出力を得るためには、参照用docxファイルはPandocを用いて生成されたものを変更して使用して下さい。参照用odocxファイルの内容（コンテンツ）は無視され、そのスタイルシートが新しく出力されるdocxファイルに適用されます。
+	docxファイルがコマンドラインに指定されていない場合、Pandocはユーザデータディレクトリから`reference.docx`という名前のファイルを検索します（`--data-dir`の節を参照）。もし見つからなければ、デフォルトの参照用docxファイルを使います。
+	Pandocでは以下のスタイルを使用します：[段落]
+    標準(Normal), Compact, 表題(Title), Authors, 日付(Date), Heading 1, Heading 2, Heading 3,
     Heading 4, Heading 5, Block Quote, Definition Term, Definition,
-    Body Text, Table Caption, Image Caption; [character] Default
+    本文(Body Text), Table Caption, Image Caption; [文字] Default
     Paragraph Font, Body Text Char, Verbatim Char, Footnote Ref,
     Link.
+	訳注：カスタマイズの元になる参照用docxファイルを得るには、
+		`pandoc --print-default-data-file reference.docx > reference.docx`
+	を実行して下さい。
 
 `--epub-stylesheet=`*FILE*
-:   Use the specified CSS file to style the EPUB.  If no stylesheet
-    is specified, pandoc will look for a file `epub.css` in the
-    user data directory (see `--data-dir`).  If it is not
-    found there, sensible defaults will be used.
+:	EPUBでスタイルを整えるためにスタイルシート(CSS)を使用します。ファイル名が指定された場合はそれを使用し、指定されていない場合は`epub.css`という名前のファイルをユーザデータディレクトリから検索します（`--data-dir`の項を参照）。それでも見つからない場合は、デフォルトのスタイルシートを使用します。
+	訳注：デフォルトのepub.cssを得るには、
+		`pandoc --print-default-data-file epub.css > epub.css`
+	を実行して下さい。
 
 `--epub-cover-image=`*FILE*
-:   Use the specified image as the EPUB cover.  It is recommended
-    that the image be less than 1000px in width and height. Note that
-    in a markdown source document you can also specify `cover-image`
-    in a YAML metadata block (see [EPUB Metadata], below).
+:	EPUBのカバー画像として指定された画像を用います。
+	画像は、縦と横が 1000px よりも小さいものを推奨します。
+	注意：Markdownのソースファイル中では、YAMLメタデータブロックの中で`cover-image`を指定することもできます（下記の[EPUBメタデータ](#epub-metadata)を参照）。
 
 `--epub-metadata=`*FILE*
-:   Look in the specified XML file for metadata for the EPUB.
-    The file should contain a series of Dublin Core elements,
-    as documented at <http://dublincore.org/documents/dces/>.
-    For example:
+:	EPUB出力の際に、指定されたEPUB用XMLメタデータを参照します。
+	このファイルには<http://dublincore.org/documents/dces/>に記載されているDublin Core要素が含まれている必要があります。
+	例：
 
          <dc:rights>Creative Commons</dc:rights>
          <dc:language>es-AR</dc:language>
 
-    By default, pandoc will include the following metadata elements:
-    `<dc:title>` (from the document title), `<dc:creator>` (from the
-    document authors), `<dc:date>` (from the document date, which should
-    be in [ISO 8601 format]), `<dc:language>` (from the `lang`
-    variable, or, if is not set, the locale), and `<dc:identifier
-    id="BookId">` (a randomly generated UUID). Any of these may be
-    overridden by elements in the metadata file.
+	デフォルトでは、Pandocは以下のメタデータ要素を含みます：
+	`<dc:title>` (文書のタイトルから取得),
+	`<dc:creator>` (文書の著者名から取得),
+	`<dc:date>` (文書の日付から取得, [ISO 8601 format]に従う必要があります),
+	`<dc:language>` (変数 `lang` から取得, 設定されていない場合はロケールから取得),
+	`<dc:identifier id="BookId">` (ランダムに生成されたUUID).
 
-    Note: if the source document is markdown, a YAML metadata block
-    in the document can be used instead.  See below under
-    [EPUB Metadata].
+	注意：入力文書がMarkdownの場合、文書中のYAMLメタデータブロックが代わりに使用されます。詳しくは下記の[EPUBメタデータ](#epub-metadata)を参照してください。
+
 
 `--epub-embed-font=`*FILE*
-:   Embed the specified font in the EPUB. This option can be repeated
-    to embed multiple fonts.  To use embedded fonts, you
-    will need to add declarations like the following to your CSS (see
-    `--epub-stylesheet`):
+:	EPUBに指定したフォントを埋め込みます。複数のフォントを埋め込みたい場合は、このオプションを複数回使用することもできます。埋め込みフォントを利用するには、CSSファイルに以下のような宣言を追加する必要があります（`--epub-stylesheet`の項を参照）。
 
         @font-face {
         font-family: DejaVuSans;
@@ -609,110 +542,89 @@ Options affecting specific writers
         body { font-family: "DejaVuSans"; }
 
 `--epub-chapter-level=`*NUMBER*
-:   Specify the header level at which to split the EPUB into separate
-    "chapter" files. The default is to split into chapters at level 1
-    headers. This option only affects the internal composition of the
-    EPUB, not the way chapters and sections are displayed to users. Some
-    readers may be slow if the chapter files are too large, so for large
-    documents with few level 1 headers, one might want to use a chapter
-    level of 2 or 3.
+:	EPUBファイルをいくつかの"chapter"（章）ファイルに分割するために、章に相当する見出しレベルを設定します。
+	デフォルトでは、レベル1の見出しを使って複数の章に分割します。
+	このオプションはEPUBファイルの内部構成に影響を与えるだけであり、ユーザに見せる章や節を制御するものではありません。
+	いくつかのEPUBリーダーでは、chapterファイルのサイズが大きすぎる場合、動作が遅くなることがあります。少数のレベル1見出しを持つ大きな文書を変換する場合には、このオプションを使って章の見出しレベルを2または3に設定したくなるかもしれません。
 
 `--latex-engine=`*pdflatex|lualatex|xelatex*
-:   Use the specified LaTeX engine when producing PDF output.
-    The default is `pdflatex`.  If the engine is not in your PATH,
-    the full path of the engine may be specified here.
+:	PDFを出力する際に、指定したLaTeXエンジンを利用します。デフォルトは`pdflatex`です。指定したエンジンがPATHの中に存在しない場合は、そのエンジンのフルパスを指定することもできます。
+	訳注：日本語文書を処理する場合、特に理由が無ければ`lualatex`を利用するようにして下さい。
 
-Citation rendering
-------------------
+引用文献の表示   [citation-rendering]
+-------------
 
 `--bibliography=`*FILE*
-:   Set the `bibliography` field in the document's metadata to *FILE*,
-    overriding any value set in the metadata, and process citations
-    using `pandoc-citeproc`. (This is equivalent to
-    `--metadata bibliography=FILE --filter pandoc-citeproc`.)
+:	文書中のメタデータにおいて`bibliography`フィールドを*FILE*で上書きし、
+	`pandoc-citeproc`を用いて引用を処理します。（これは`--metadata bibliography=file --filter pandoc-citeproc`と等価です。）
+	訳注：`bibliography`フィールドはBibTeXファイル(.bib)などの引用文献ファイルを指定するために利用します。詳細は下記の[文献の引用](#citations)をご覧ください。
 
 `--csl=`*FILE*
-:   Set the `csl` field in the document's metadata to *FILE*,
-    overriding any value set in the metadata.  (This is equivalent to
-    `--metadata csl=FILE`.)
+:	文書中のメタデータにおいて`csl`フィールドを*FILE*で上書きします。（これは`--metadata csl=FILE`と等価です。）
+	訳注：`csl`フィールドは引用の書式を指定するために利用します。詳細は下記の[文献の引用](#citations)をご覧ください。
 
 `--citation-abbreviations=`*FILE*
-:   Set the `citation-abbreviations` field in the document's metadata to
-    *FILE*, overriding any value set in the metadata.  (This is equivalent to
-    `--metadata citation-abbreviations=FILE`.)
+:	文書中のメタデータにおいて`citation-abbreviations`フィールドを*FILE*で上書きします。（これは`--metadata citation-abbreviations=FILE`と等価です。）
 
 `--natbib`
-:   Use natbib for citations in LaTeX output.
+:	latex出力において、natbibパッケージを引用に利用します。
 
 `--biblatex`
-:   Use biblatex for citations in LaTeX output.
+:	latex出力において、BibLaTeXを引用に利用します。
 
-Math rendering in HTML
-----------------------
+HTMLにおける数式の表示  [math-rendering-in-html]
+--------------------
 
 `-m` [*URL*], `--latexmathml`[=*URL*]
-:   Use the [LaTeXMathML] script to display embedded TeX math in HTML output.
-    To insert a link to a local copy of the `LaTeXMathML.js` script,
-    provide a *URL*. If no *URL* is provided, the contents of the
-    script will be inserted directly into the HTML header, preserving
-    portability at the price of efficiency. If you plan to use math on
-    several pages, it is much better to link to a copy of the script,
-    so it can be cached.
+:	HTML出力において、[LaTeXMathML]スクリプトを用いて埋め込まれたTeX数式を表示します。
+	ローカルの`LaTeXMathML.js`をリンクとして挿入したい場合は、*URL*を指定して下さい。
+	*URL*が指定されていない場合は、効率を犠牲にして可搬性を向上させるために、スクリプトの内容をHTMLヘッダに直接挿入します。
+	もし数式をいくつかのページに使うつもりであれば、スクリプトをリンクする方が良いでしょう（スクリプトがキャッシュされるため）。
 
 `--mathml`[=*URL*]
-:   Convert TeX math to MathML (in `docbook` as well as `html` and `html5`).
-    In standalone `html` output, a small javascript (or a link to such a
-    script if a *URL* is supplied) will be inserted that allows the MathML to
-    be viewed on some browsers.
+:	`docbook`や`html`, `html5`において、TeX数式をMathMLに変換します。
+	スタンドアローンの`html`出力では、MathMLをいくつかのブラウザで見られるようにするために、ヘッダに小さいJavaScriptを挿入します（*URL*が指定されている場合は、リンクを挿入します）。
 
 `--jsmath`[=*URL*]
-:   Use [jsMath] to display embedded TeX math in HTML output.
-    The *URL* should point to the jsMath load script (e.g.
-    `jsMath/easy/load.js`); if provided, it will be linked to in
-    the header of standalone HTML documents. If a *URL* is not provided,
-    no link to the jsMath load script will be inserted; it is then
-    up to the author to provide such a link in the HTML template.
+:	HTML出力において、埋め込まれたTeX数式を[jsMath]を用いて表示します。
+	*URL*はjsMathのloadスクリプトである必要があり（例：`jsmath/easy/load.js`）、
+	これを指定するとスタンドアローンなHTML文書のヘッダにリンクが埋め込まれます。
+	*URL*が指定されていない場合は、jsMathのloadスクリプトへのリンクは挿入されないため、HTMLテンプレートなど別の手段を用いて適宜リンクを指定する必要があります。
 
 `--mathjax`[=*URL*]
-:   Use [MathJax] to display embedded TeX math in HTML output.
-    The *URL* should point to the `MathJax.js` load script.
-    If a *URL* is not provided, a link to the MathJax CDN will
-    be inserted.
+:	HTML出力において、埋め込まれたTeX数式を[MathJax]を用いて表示します。
+	*URL*はMathJaxのloadスクリプト`MathJax.js`である必要があります。
+	*URL*が指定されていない場合は、MathJax CDNへのリンクが挿入されます。
 
 `--gladtex`
-:   Enclose TeX math in `<eq>` tags in HTML output.  These can then
-    be processed by [gladTeX] to produce links to images of the typeset
-    formulas.
+:	HTML出力において、TeX数式を`<eq>`タグで囲みます。
+	これらの数式は[gladTeX]によって処理され、タイプセットされた画像へのリンクが生成されます。
 
 `--mimetex`[=*URL*]
-:   Render TeX math using the [mimeTeX] CGI script.  If *URL* is not
-    specified, it is assumed that the script is at `/cgi-bin/mimetex.cgi`.
+:	TeX数式を[mimeTeX]CGIスクリプトによって生成します。
+	*URL*が指定されていない場合は、スクリプトが`/cgi-bin/mimetex.cgi`にあると仮定します。
 
 `--webtex`[=*URL*]
-:   Render TeX formulas using an external script that converts TeX
-    formulas to images. The formula will be concatenated with the URL
-    provided. If *URL* is not specified, the Google Chart API will be used.
+:	TeX数式を外部スクリプトを用いて生成します。スクリプトはTeX数式を画像に変換するものに限ります。数式は指定されたURLで連結されます。*URL*が指定されていない場合は、Google Chart APIが使用されます。
 
-Options for wrapper scripts
----------------------------
+ラッパースクリプトのためのオプション [options-for-wrapper-scripts]
+------------------------------
 
 `--dump-args`
-:   Print information about command-line arguments to *stdout*, then exit.
-    This option is intended primarily for use in wrapper scripts.
-    The first line of output contains the name of the output file specified
-    with the `-o` option, or `-` (for *stdout*) if no output file was
-    specified.  The remaining lines contain the command-line arguments,
-    one per line, in the order they appear.  These do not include regular
-    Pandoc options and their arguments, but do include any options appearing
-    after a `--` separator at the end of the line.
+:	コマンドライン引数に関する情報を標準出力*stdout*に出力し、終了します。
+	このオプションは主にラッパースクリプトで使用するためのものです。
+	出力の1行目は`-o`オプションで指定された出力ファイル名（出力ファイルを指定していない場合は標準出力の`-`）が表示されます。
+	残りの行は引数で指定した順番に、引数1つにつき1行ずつ出力します。
+	通常、標準のPandocオプションおよびその引数はこれらには含まれませんが、
+	セパレータ`--`の後ろに付け足したオプションおよび引数に関しては出力されます。
 
 `--ignore-args`
-:   Ignore command-line arguments (for use in wrapper scripts).
-    Regular Pandoc options are not ignored.  Thus, for example,
+:	コマンドライン引数を無視します（ラッパースクリプトで使用するためのオプションです）。
+	標準のPandocオプションは無視されません。例えば、
 
         pandoc --ignore-args -o foo.html -s foo.txt -- -e latin1
 
-    is equivalent to
+	は以下と等価です：
 
         pandoc -o foo.html -s
 
@@ -729,6 +641,8 @@ Options for wrapper scripts
 When the `-s/--standalone` option is used, pandoc uses a template to
 add header and footer material that is needed for a self-standing
 document.  To see the default template that is used, just type
+
+`-s/--standalone`オプションを使用している場合、Pandocは完全で独立した文書を生成するために、
 
     pandoc -D FORMAT
 
@@ -758,63 +672,89 @@ as `title`, `author`, and `date`) as well as the following:
 `header-includes`
 :   contents specified by `-H/--include-in-header` (may have multiple
     values)
+
 `toc`
 :   non-null value if `--toc/--table-of-contents` was specified
+
 `include-before`
 :   contents specified by `-B/--include-before-body` (may have
     multiple values)
+
 `include-after`
 :   contents specified by `-A/--include-after-body` (may have
     multiple values)
+
 `body`
 :   body of document
+
 `lang`
 :   language code for HTML or LaTeX documents
+
 `slidy-url`
 :   base URL for Slidy documents (defaults to
     `http://www.w3.org/Talks/Tools/Slidy2`)
+
 `slideous-url`
 :   base URL for Slideous documents (defaults to `default`)
+
 `s5-url`
 :   base URL for S5 documents (defaults to `ui/default`)
+
 `revealjs-url`
 :   base URL for reveal.js documents (defaults to `reveal.js`)
+
 `theme`
 :   reveal.js or LaTeX beamer theme
+
 `transition`
 :   reveal.js transition
+
 `fontsize`
 :   font size (10pt, 11pt, 12pt) for LaTeX documents
+
 `documentclass`
 :   document class for LaTeX documents
+
 `classoption`
 :   option for LaTeX documentclass, e.g. `oneside`; may be repeated
     for multiple options
+
 `geometry`
 :   options for LaTeX `geometry` class, e.g. `margin=1in`;
     may be repeated for multiple options
+
 `mainfont`, `sansfont`, `monofont`, `mathfont`
 :   fonts for LaTeX documents (works only with xelatex
     and lualatex)
+
 `colortheme`
 :   colortheme for LaTeX beamer documents
+
 `fonttheme`
 :   fonttheme for LaTeX beamer documents
+
 `linkcolor`
 :   color for internal links in LaTeX documents (`red`, `green`,
     `magenta`, `cyan`, `blue`, `black`)
+
 `urlcolor`
 :   color for external links in LaTeX documents
+
 `citecolor`
 :   color for citation links in LaTeX documents
+
 `links-as-notes`
 :   causes links to be printed as footnotes in LaTeX documents
+
 `biblio-style`
 :   bibliography style in LaTeX, when used with `--natbib`
+
 `section`
 :   section number in man pages
+
 `header`
 :   header in man pages
+
 `footer`
 :   footer in man pages
 
@@ -905,7 +845,7 @@ If you need a hard line break, put two or more spaces at the end of a line.
 
 A backslash followed by a newline is also a hard line break.
 
-Headers
+ヘッダ  [headers]
 -------
 
 There are two kinds of headers, Setext and atx.
@@ -1192,11 +1132,10 @@ This is equivalent to:
 To prevent all highlighting, use the `--no-highlight` flag.
 To set the highlighting style, use `--highlight-style`.
 
-
 ### 訳注：構文強調表示が可能なプログラミング言語について [code-highlighting]
 
 このドキュメントの原文では明示されていませんが、 構文強調表示可能なプログラミング言語の種類は、
-Pandoc作者のJohn MacFarlaneが同じく作成した[highlighting-kate]に依存します。
+pandoc作者のjohn macfarlaneが同じく作成した[highlighting-kate]に依存します。
 
 highlighting-kateで利用可能な言語は以下の通りです：
 actionscript, ada, apache, asn1, asp, awk, bash, bibtex, boo,
@@ -1211,7 +1150,6 @@ sci, sed, sgml, sql, sqlmysql, sqlpostgresql, tcl, texinfo, verilog, vhdl,
 xml, xorg, xslt, xul, yacc, yaml.
 
 [highlighting-kate]: http://johnmacfarlane.net/highlighting-kate/
-
 
 
 Line blocks
@@ -1491,6 +1429,7 @@ document:
 
 The label can be any string of alphanumeric characters, underscores,
 or hyphens.
+
 
 
 ### Compact and loose lists ###
@@ -2231,7 +2170,7 @@ In LaTeX output, the `\newcommand` definition will simply be passed
 unchanged to the output.
 
 
-Links
+リンク [links]
 -----
 
 Markdown allows links to be specified in several ways.
@@ -2407,8 +2346,8 @@ they cannot contain multiple paragraphs).  The syntax is as follows:
 Inline and regular footnotes may be mixed freely.
 
 
-Citations
----------
+文献の引用 [citations]
+--------
 
 **Extension: `citations`**
 
@@ -2696,8 +2635,8 @@ To produce a PDF slide show using beamer, type
 Note that a reveal.js slide show can also be converted to a PDF
 by printing it to a file from the browser.
 
-Structuring the slide show
---------------------------
+スライドショーの構造を作る    [structuring-the-slide-show]
+-----------------------
 
 By default, the *slide level* is the highest header level in
 the hierarchy that is followed immediately by content, and not another
@@ -2818,7 +2757,7 @@ To show the notes window, press `s` while viewing the presentation.
 Notes are not yet supported for other slide formats, but the notes
 will not appear on the slides themselves.
 
-EPUB Metadata
+EPUBメタデータ [epub-metadata]
 =============
 
 EPUB metadata may be specified using the `--epub-metadata` option, but
