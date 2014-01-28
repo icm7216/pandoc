@@ -1,6 +1,5 @@
 % Pandocユーザーズガイド 日本語版
-% John MacFarlane
-% Japanese Translation: Yuki Fujiwara
+% John MacFarlane; Yuki Fujiwara
 % January 19, 2013
 
 書式
@@ -97,7 +96,7 @@ UTF-8以外の文字コードを利用したい場合は、`iconv`などの文�
 
     iconv -t utf-8 input.txt | pandoc | iconv -f utf-8
 
-PDFを作成する [creating-a-pdf]
+PDFを作成する {#creating-a-pdf}
 ------------
 
 初期のPandocは、PDF生成のためにPandocとpdfLaTeXを用いる `markdown2pdf` というプログラムとともに発展しました。
@@ -142,38 +141,38 @@ Pandocはオプション `-f markdown_strict --email-obfuscation=references` が
 オプション
 ========
 
-一般的なオプション [general-options]
+一般的なオプション {#general-options}
 ----------------
 
 `-f` *FORMAT*, `-r` *FORMAT*, `--from=`*FORMAT*, `--read=`*FORMAT*
-:	入力フォーマットを指定します。*FORMAT* として指定できるのは以下のフォーマットです：
-	`native` (Native Haskell; Haskellで読み込める形式のデータ構造),
-	`json` (ネイティブASTのJSONバージョン),
-	`markdown` (Pandocによる拡張Markdown), `markdown_strict` (オリジナルの拡張されていないMarkdown),
+:   入力フォーマットを指定します。*FORMAT* として指定できるのは以下のフォーマットです：
+    `native` (Native Haskell; Haskellで読み込める形式のデータ構造),
+    `json` (ネイティブASTのJSONバージョン),
+    `markdown` (Pandocによる拡張Markdown), `markdown_strict` (オリジナルの拡張されていないMarkdown),
     `markdown_phpextra` (PHP Markdown Extraによる拡張Markdown),
     `markdown_github` (GitHubによる拡張Markdown),
     `textile` (Textile), `rst` (reStructuredText), `html` (HTML),
     `docbook` (DocBook), `opml` (OPML), `mediawiki` (MediaWikiマークアップ),
     `haddock` (Haddockマークアップ), `latex` (LaTeX)。
-	`+lhs` をフォーマット `markdown`, `rst`, `latex`, `html` の後ろにつけ加えた場合、
-	その入力はLiterate Haskellのソースコードとして扱われます
-	（詳細は下記の[Literate Haskellのサポート](#literate-haskell-support)を参照）。
-	Markdownの拡張文法は、フォーマットの末尾に`+EXTENSION`または`-EXTENSION`をつけ加えることで
-	それぞれ有効・無効を切り替えられます。
-	例えば、`markdown_strict+footnotes+definition_lists`は、
-	`markdown_strict`をベースにして脚注と定義リストを有効にしたもの、という意味になります。
-	同様に、`markdown-pipe_tables+hard_line_breaks`は、
-	PandocのMarkdownからパイプテーブルを無効にし強制改行を有効にしたもの、という意味です。
-	拡張とその名前の詳細については、下記の[Pandocによる拡張Markdown](#pandocs-markdown)をご覧ください。
+    `+lhs` をフォーマット `markdown`, `rst`, `latex`, `html` の後ろにつけ加えた場合、
+    その入力はLiterate Haskellのソースコードとして扱われます
+    （詳細は下記の[Literate Haskellのサポート](#literate-haskell-support)を参照）。
+    Markdownの拡張文法は、フォーマットの末尾に`+EXTENSION`または`-EXTENSION`をつけ加えることで
+    それぞれ有効・無効を切り替えられます。
+    例えば、`markdown_strict+footnotes+definition_lists`は、
+    `markdown_strict`をベースにして脚注と定義リストを有効にしたもの、という意味になります。
+    同様に、`markdown-pipe_tables+hard_line_breaks`は、
+    PandocのMarkdownからパイプテーブルを無効にし強制改行を有効にしたもの、という意味です。
+    拡張とその名前の詳細については、下記の[Pandocによる拡張Markdown](#pandocs-markdown)をご覧ください。
 
 
 `-t` *FORMAT*, `-w` *FORMAT*, `--to=`*FORMAT*, `--write=`*FORMAT*
-:	出力フォーマットを指定します。*FORMAT*として指定できるのは以下のフォーマットです：
-	`native` (Native Haskell), `json` (ネイティブASTのJSONバージョン),
-	`plain` (プレーンテキスト), `markdown` (Pandocによる拡張Markdown),
-	`markdown_strict` (オリジナルの拡張されていないMarkdown),
-	`markdown_phpextra` (PHP Markdown Extraによる拡張Markdown),
-	`markdown_github` (GitHubによる拡張Markdown),
+:   出力フォーマットを指定します。*FORMAT*として指定できるのは以下のフォーマットです：
+    `native` (Native Haskell), `json` (ネイティブASTのJSONバージョン),
+    `plain` (プレーンテキスト), `markdown` (Pandocによる拡張Markdown),
+    `markdown_strict` (オリジナルの拡張されていないMarkdown),
+    `markdown_phpextra` (PHP Markdown Extraによる拡張Markdown),
+    `markdown_github` (GitHubによる拡張Markdown),
     `rst` (reStructuredText), `html` (XHTML 1), `html5` (HTML 5),
     `latex` (LaTeX), `beamer` (LaTeX beamer スライドショー),
     `context` (ConTeXt), `man` (groff man), `mediawiki` (MediaWiki マークアップ),
@@ -184,27 +183,27 @@ Pandocはオプション `-f markdown_strict --email-obfuscation=references` が
     (EPUB v3), `fb2` (FictionBook2 e-book), `asciidoc` (AsciiDoc), `slidy`
     (Slidy HTML and javascript スライドショー), `slideous` (Slideous HTML and
     javascript スライドショー), `dzslides` (DZSlides HTML5 + javascript スライドショー),
-	`revealjs` (reveal.js HTML5 + javascript スライドショー),
-	`s5` (S5 HTML and javascript スライドショー),
-	または カスタム Lua Writer へのパス(詳細は下記の [カスタムWriter](#custom-writers) を参照)。
-	注意：`odt`, `epub`, `epub3`の出力は 標準出力 *stdout* に出力されないため、
-	出力ファイル名を `-o/--output`オプションにより必ず指定する必要があります。
-	`+lhs`を`markdown`, `rst`, `latex`, `beamer`, `html`, `html5`のいずれかの後ろにつけ加えた場合、
-	出力はLiterate Haskellソースコードとして出力されます （詳細は下記の[Literate Haskellのサポート](#literate-haskell-support)を参照）。
-	Markdownの拡張文法は、`+EXTENSION` または `-EXTENSION` をフォーマット名の後ろにつけ加えることにより、
-	それぞれ有効または無効を切り替えることができます（上記の `-f` セクションでの説明と同様）。
+    `revealjs` (reveal.js HTML5 + javascript スライドショー),
+    `s5` (S5 HTML and javascript スライドショー),
+    または カスタム Lua Writer へのパス(詳細は下記の [カスタムWriter](#custom-writers) を参照)。
+    注意：`odt`, `epub`, `epub3`の出力は 標準出力 *stdout* に出力されないため、
+    出力ファイル名を `-o/--output`オプションにより必ず指定する必要があります。
+    `+lhs`を`markdown`, `rst`, `latex`, `beamer`, `html`, `html5`のいずれかの後ろにつけ加えた場合、
+    出力はLiterate Haskellソースコードとして出力されます （詳細は下記の[Literate Haskellのサポート](#literate-haskell-support)を参照）。
+    Markdownの拡張文法は、`+EXTENSION` または `-EXTENSION` をフォーマット名の後ろにつけ加えることにより、
+    それぞれ有効または無効を切り替えることができます（上記の `-f` セクションでの説明と同様）。
 
 
 `-o` *FILE*, `--output=`*FILE*
-:	標準出力 *stdout* に出力するのではなく、ファイル *FILE* へ出力するようにします。
-	*FILE* として `-`を指定した場合、標準出力 *stdout*へ出力するようにします。
-	（例外：出力フォーマットが`odt`, `docx`, `epub`, `epub3`のいずれかの場合、標準出力への出力は無効になります。）
+:   標準出力 *stdout* に出力するのではなく、ファイル *FILE* へ出力するようにします。
+    *FILE* として `-`を指定した場合、標準出力 *stdout*へ出力するようにします。
+    （例外：出力フォーマットが`odt`, `docx`, `epub`, `epub3`のいずれかの場合、標準出力への出力は無効になります。）
 
 `--data-dir=`*DIRECTORY*
-:	Pandocデータファイルを検索するために、ユーザデータディレクトリを指定します。
-	このオプションが指定されていない場合、デフォルトとして下記のユーザデータディレクトリが使用されます。
+:   Pandocデータファイルを検索するために、ユーザデータディレクトリを指定します。
+    このオプションが指定されていない場合、デフォルトとして下記のユーザデータディレクトリが使用されます。
 
-	デフォルトのユーザデータディレクトリは、Unixの場合は
+    デフォルトのユーザデータディレクトリは、Unixの場合は
 
         $HOME/.pandoc
 
@@ -216,11 +215,11 @@ Pandocはオプション `-f markdown_strict --email-obfuscation=references` が
 
         C:\Users\USERNAME\AppData\Roaming\pandoc
 
-	です。（デフォルトのユーザデータディレクトリが分からない場合は、
-	`pandoc --version`コマンドの出力の中から見つけることができます。）
-	ユーザデータディレクトリに`reference.odt`, `reference.docx`, `default.csl`,
+    です。（デフォルトのユーザデータディレクトリが分からない場合は、
+    `pandoc --version`コマンドの出力の中から見つけることができます。）
+    ユーザデータディレクトリに`reference.odt`, `reference.docx`, `default.csl`,
     `epub.css`ファイル、`templates`, `slidy`, `slideous`, `s5`ディレクトリを置いた場合、
-	それらはPandocで通常使用されるのデフォルトのファイル・フォルダと置き換えられます。
+    それらはPandocで通常使用されるのデフォルトのファイル・フォルダと置き換えられます。
 
 
 `-v`, `--version`
@@ -229,291 +228,291 @@ Pandocはオプション `-f markdown_strict --email-obfuscation=references` が
 `-h`, `--help`
 :   使用方法を表示します。
 
-Readerのオプション [reader-options]
+Readerのオプション {#reader-options}
 ----------------
 
 `-R`, `--parse-raw`
-:	解釈できないHTMLコードまたはLaTeX環境を無視する代わりに、
-	生(raw)のHTMLまたはLaTeXソースとしてそのまま出力します。
-	このオプションはHTMLまたはLaTeXソースの入力時のみに影響します。
-	生のHTMLは出力がMarkdown, reStructuredText, HTML, Slidy, Slideous, DZSlides,
-	reveal.js, S5の場合に表示され、
-	生のLaTeXは出力がMarkdown, reStructuredText, LaTeX, ConTeXtの場合に表示されます。
-	デフォルト動作では、Readerは解釈できないHTMLコードまたはLaTeX環境を無視します。
-	（LaTeX Readerは、たとえ`-R`が指定されていない場合でも、LaTeX *コマンド* をそのまま出力します。）
+:   解釈できないHTMLコードまたはLaTeX環境を無視する代わりに、
+    生(raw)のHTMLまたはLaTeXソースとしてそのまま出力します。
+    このオプションはHTMLまたはLaTeXソースの入力時のみに影響します。
+    生のHTMLは出力がMarkdown, reStructuredText, HTML, Slidy, Slideous, DZSlides,
+    reveal.js, S5の場合に表示され、
+    生のLaTeXは出力がMarkdown, reStructuredText, LaTeX, ConTeXtの場合に表示されます。
+    デフォルト動作では、Readerは解釈できないHTMLコードまたはLaTeX環境を無視します。
+    （LaTeX Readerは、たとえ`-R`が指定されていない場合でも、LaTeX *コマンド* をそのまま出力します。）
 
 `-S`, `--smart`
-:	タイポグラフィ的に正しく出力します。
-	具体的には、直線状の引用符を曲がった引用符に、`---`をemダッシュ「`—`」に、`--`をenダッシュ「`–`」に、 `...`を3点リーダーに変換します。
-	また、"Mr."のようなある種の略記・略称に対しては、自動的な改行のないスペース(Nonbreaking Space)がその後に挿入されます。
-	（注意：入力フォーマットが`markdown`, `markdown_strict`, `textile`の場合にこのオプションは重要です。
-	また、入力フォーマットが`textile`の場合や出力ファイルが`latex`, `context`の場合は、
-	`--no-tex-ligatures`を有効にしない限り、このオプションが有効になります。）
+:   タイポグラフィ的に正しく出力します。
+    具体的には、直線状の引用符を曲がった引用符に、`---`をemダッシュ「`—`」に、`--`をenダッシュ「`–`」に、 `...`を3点リーダーに変換します。
+    また、"Mr."のようなある種の略記・略称に対しては、自動的な改行のないスペース(Nonbreaking Space)がその後に挿入されます。
+    （注意：入力フォーマットが`markdown`, `markdown_strict`, `textile`の場合にこのオプションは重要です。
+    また、入力フォーマットが`textile`の場合や出力ファイルが`latex`, `context`の場合は、
+    `--no-tex-ligatures`を有効にしない限り、このオプションが有効になります。）
 
 `--old-dashes`
-:	ダッシュ記号の解釈をPandoc バージョン <= 1.8.2.1 の振る舞いと同等にします：
-	数字の前の`-`をenダッシュに、`--`をemダッシュに変換します。
-	このオプションは`textile`入力の際に自動的に選択されます。
+:   ダッシュ記号の解釈をPandoc バージョン <= 1.8.2.1 の振る舞いと同等にします：
+    数字の前の`-`をenダッシュに、`--`をemダッシュに変換します。
+    このオプションは`textile`入力の際に自動的に選択されます。
 
 `--base-header-level=`*NUMBER*
-:	見出しのベースレベルを指定します（デフォルトは1）。
-	（訳注：見出しのベースレベルは、HTMLにおける最上位の見出しレベルと対応します。
-	例えば`--base-header-level=3`の場合は、HTMLの見出しが`<h3>`から始まります。）
+:   見出しのベースレベルを指定します（デフォルトは1）。
+    （訳注：見出しのベースレベルは、HTMLにおける最上位の見出しレベルと対応します。
+    例えば`--base-header-level=3`の場合は、HTMLの見出しが`<h3>`から始まります。）
 
 `--indented-code-classes=`*CLASSES*
-:	通常のインデントコードブロックに対して適用する構文強調表示用クラスを指定します。
-	例えば、`perl,numberLines`や`haskell`のように指定します。複数のクラスを指定する場合は、スペースかコンマで区切ります。
-	訳注：構文強調表示が可能な言語については下記の [訳注：構文強調表示が可能なプログラミング言語について](#code-highlighting) を参照して下さい。
+:   通常のインデントコードブロックに対して適用する構文強調表示用クラスを指定します。
+    例えば、`perl,numberLines`や`haskell`のように指定します。複数のクラスを指定する場合は、スペースかコンマで区切ります。
+    訳注：構文強調表示が可能な言語については下記の [訳注：構文強調表示が可能なプログラミング言語について](#code-highlighting) を参照して下さい。
 
 `--default-image-extension=`*EXTENSION*
-:	画像パス・URLの拡張子が無い場合のデフォルト拡張子を指定します。
-	このコマンドにより、異なる種類の画像を必要とするフォーマットに対し、同一のソースを利用できるようになります。
-	現在のところ、このオプションはMarkdownとLaTeXのReaderのみに影響を与えます。
+:   画像パス・URLの拡張子が無い場合のデフォルト拡張子を指定します。
+    このコマンドにより、異なる種類の画像を必要とするフォーマットに対し、同一のソースを利用できるようになります。
+    現在のところ、このオプションはMarkdownとLaTeXのReaderのみに影響を与えます。
 
 `--filter=`*EXECUTABLE*
-:	Pandocの入力処理と出力処理の間に挟んでPandoc ASTの変換処理を行うフィルタの実行ファイルを指定します。
-	この実行ファイルは標準入力からJSONを読み、JSONを標準出力へ出力する必要があります。
-	このJSONはPandoc自身の入力および出力のようなフォーマットでなければなりません。
-	出力フォーマット名はフィルタへ第1引数として渡されます。したがって、
+:   Pandocの入力処理と出力処理の間に挟んでPandoc ASTの変換処理を行うフィルタの実行ファイルを指定します。
+    この実行ファイルは標準入力からJSONを読み、JSONを標準出力へ出力する必要があります。
+    このJSONはPandoc自身の入力および出力のようなフォーマットでなければなりません。
+    出力フォーマット名はフィルタへ第1引数として渡されます。したがって、
 
         pandoc --filter ./caps.py -t latex
 
-	は以下と等価です：
+    は以下と等価です：
 
         pandoc -t json | ./caps.py latex | pandoc -f json -t latex
 
-	後者のコマンド形式はフィルタをデバッグする際に有用です。
+    後者のコマンド形式はフィルタをデバッグする際に有用です。
 
-	フィルタは任意の言語で書くことができます。Haskellでは`Text.Pandoc.JSON`は`toJSONFilter`をエクスポートし、Haskellでフィルタを書くことを容易にします。
-	Pythonでフィルタを書きたい方は、モジュール`pandocfilters`をPyPIからインストールできます。このモジュールといくつかの例については、<http://github.com/jgm/pandocfilters>をご覧ください。
-	注意：Pandocは実行ファイル*EXECUTABLE*をユーザの環境変数`PATH`から見つけますが、ディレクトリ名を明示していない場合、カレントディレクトリにある実行ファイルは無視されます。
-	カレントディレクトリにあるスクリプトをフィルタとして実行したい場合は、そのスクリプト名の前に `./` を付けて下さい。
+    フィルタは任意の言語で書くことができます。Haskellでは`Text.Pandoc.JSON`は`toJSONFilter`をエクスポートし、Haskellでフィルタを書くことを容易にします。
+    Pythonでフィルタを書きたい方は、モジュール`pandocfilters`をPyPIからインストールできます。このモジュールといくつかの例については、<http://github.com/jgm/pandocfilters>をご覧ください。
+    注意：Pandocは実行ファイル*EXECUTABLE*をユーザの環境変数`PATH`から見つけますが、ディレクトリ名を明示していない場合、カレントディレクトリにある実行ファイルは無視されます。
+    カレントディレクトリにあるスクリプトをフィルタとして実行したい場合は、そのスクリプト名の前に `./` を付けて下さい。
 
 `-M` *KEY[=VAL]*, `--metadata=`*KEY[:VAL]*
-:	メタデータとしてフィールド *KEY* に対し値 *VAL* をセットします。コマンドラインで指定された値は文書中の値を上書きします。
-	値はYAMLのbooleanまたはstring値として解釈されます。値 *VAL* が指定されてない場合、その値はboolean値の`true`として見なされます。
-	`--variable`や`--metadata`のようなオプションにより、テンプレート変数がセットされます。
-	しかし、`--variable`とは違い、`--metadata`はその文書に内在するメタデータへ影響を与えます（このメタデータはフィルタからアクセス可能であり、ある出力フォーマットでは表示されることがあります）。
+:   メタデータとしてフィールド *KEY* に対し値 *VAL* をセットします。コマンドラインで指定された値は文書中の値を上書きします。
+    値はYAMLのbooleanまたはstring値として解釈されます。値 *VAL* が指定されてない場合、その値はboolean値の`true`として見なされます。
+    `--variable`や`--metadata`のようなオプションにより、テンプレート変数がセットされます。
+    しかし、`--variable`とは違い、`--metadata`はその文書に内在するメタデータへ影響を与えます（このメタデータはフィルタからアクセス可能であり、ある出力フォーマットでは表示されることがあります）。
 
 
 `--normalize`
 :   入力処理の後に文書を簡素化します：例えば、隣接した`Str`や`Emph`要素をマージしたり、
-	複数繰り返される`Space`を取り除いたりします。
+    複数繰り返される`Space`を取り除いたりします。
 
 `-p`, `--preserve-tabs`
-:	このオプションを指定すると、タブ文字がスペースに変換されなくなります（デフォルトではタブ文字はスペースに変換されます）。
-	注意：このオプションは文字通りのコード表示やコードブロックのみで有効です。通常のテキスト中のタブ文字はスペースとして扱われます。
+:   このオプションを指定すると、タブ文字がスペースに変換されなくなります（デフォルトではタブ文字はスペースに変換されます）。
+    注意：このオプションは文字通りのコード表示やコードブロックのみで有効です。通常のテキスト中のタブ文字はスペースとして扱われます。
 
 `--tab-stop=`*NUMBER*
-:	タブ文字をスペースに変換する際に、1つのタブ文字を何個のスペースで置換するかを指定します（デフォルト値は4）。
+:   タブ文字をスペースに変換する際に、1つのタブ文字を何個のスペースで置換するかを指定します（デフォルト値は4）。
 
 一般的なWriterオプション [general-writer-options]
 ----------------------
 
 `-s`, `--standalone`
-:	スタンドアローンモード。適切なヘッダおよびフッタのついた出力を生成します。（言い換えると、この出力は断片ではなく、1つの完全で独立したHTML, LaTeX, およびRTFファイルです。）
-	このオプションは出力フォーマットが`pdf`, `epub`, `epub3`, `fb2`, `docx`, `odt`の場合に自動的に付加されます。
-	訳注：このオプションは、Pandoc実行後にブラウザでHTMLファイルを表示させたり、LaTeXコマンドで直接ソースを処理したりする場合に必要となるでしょう。リッチテキストエディタでRTFファイルを扱う場合にはおそらく必須です。
-	逆に、例えばブログなどに使う用途で最低限のHTMLだけが必要な場合は、このオプションを付けない方が用途にふさわしいでしょう。
+:   スタンドアローンモード。適切なヘッダおよびフッタのついた出力を生成します。（言い換えると、この出力は断片ではなく、1つの完全で独立したHTML, LaTeX, およびRTFファイルです。）
+    このオプションは出力フォーマットが`pdf`, `epub`, `epub3`, `fb2`, `docx`, `odt`の場合に自動的に付加されます。
+    訳注：このオプションは、Pandoc実行後にブラウザでHTMLファイルを表示させたり、LaTeXコマンドで直接ソースを処理したりする場合に必要となるでしょう。リッチテキストエディタでRTFファイルを扱う場合にはおそらく必須です。
+    逆に、例えばブログなどに使う用途で最低限のHTMLだけが必要な場合は、このオプションを付けない方が用途にふさわしいでしょう。
 
 `--template=`*FILE*
-:	テンプレートファイル*FILE*をカスタムテンプレートとして出力文書に適用します。
-	暗黙に`--standalone`オプションが指定されます。
-	テンプレートの文法についての説明は、下記の [テンプレート](#templates) の節をご覧ください。
-	拡張子が無い場合、Writerに対応する拡張子が *FILE* に追加されます。例えば、`--template=special`と指定すれば、PandocはHTML出力に対して`special.html`を探します。
-	テンプレートファイルが見つからない場合、Pandocはユーザデータディレクトリを検索します（`--data-dir`を参照）。
-	このオプションが使われない場合、出力に対してふさわしいデフォルトテンプレートが指定されます（`-D/--print-default-template`を参照）。
+:   テンプレートファイル*FILE*をカスタムテンプレートとして出力文書に適用します。
+    暗黙に`--standalone`オプションが指定されます。
+    テンプレートの文法についての説明は、下記の [テンプレート](#templates) の節をご覧ください。
+    拡張子が無い場合、Writerに対応する拡張子が *FILE* に追加されます。例えば、`--template=special`と指定すれば、PandocはHTML出力に対して`special.html`を探します。
+    テンプレートファイルが見つからない場合、Pandocはユーザデータディレクトリを検索します（`--data-dir`を参照）。
+    このオプションが使われない場合、出力に対してふさわしいデフォルトテンプレートが指定されます（`-D/--print-default-template`を参照）。
 
 
 `-V` *KEY[=VAL]*, `--variable=`*KEY[:VAL]*
-:	スタンドアローンモードで文書を出力する際に、テンプレート変数 *KEY* に対して値 *VAL* をセットします。
-	Pandocはデフォルトテンプレートの中で変数を自動的に設定するため、
-	このオプションはカスタムテンプレートを利用する際（`--template`オプションが指定されている場合）に有用です。
-	値 *VAL* が何も指定されてない場合、*KEY*に対応する値として`true`が指定されます。
+:   スタンドアローンモードで文書を出力する際に、テンプレート変数 *KEY* に対して値 *VAL* をセットします。
+    Pandocはデフォルトテンプレートの中で変数を自動的に設定するため、
+    このオプションはカスタムテンプレートを利用する際（`--template`オプションが指定されている場合）に有用です。
+    値 *VAL* が何も指定されてない場合、*KEY*に対応する値として`true`が指定されます。
 
 `-D` *FORMAT*, `--print-default-template=`*FORMAT*
-:	出力フォーマット *FORMAT* で用いるデフォルトテンプレートを表示します。（指定できる *FORMAT* の一覧は `-t` の節を参照。）
+:   出力フォーマット *FORMAT* で用いるデフォルトテンプレートを表示します。（指定できる *FORMAT* の一覧は `-t` の節を参照。）
 
 `--print-default-data-file=`*FILE*
-:	デフォルトのデータファイルを表示します。
+:   デフォルトのデータファイルを表示します。
 
 `--no-wrap`
-:	出力におけるテキストの折り返しを無効にします。デフォルトでは、テキストは出力フォーマットに応じて適切に折り返しされます。
+:   出力におけるテキストの折り返しを無効にします。デフォルトでは、テキストは出力フォーマットに応じて適切に折り返しされます。
 
 `--columns`=*NUMBER*
-:	1行あたりの文字数を指定します（テキストの折り返しに影響します）。
+:   1行あたりの文字数を指定します（テキストの折り返しに影響します）。
 
 `--toc`, `--table-of-contents`
-:	自動的に生成された目次を出力文書に含めます（`latex`, `context`, `rst`の場合は、目次を作成する命令を挿入します）。このオプションは、`man`, `docbook`, `slidy`, `slideous`, `s5`, `docx`, `odt`の場合は何も影響を与えません。
+:   自動的に生成された目次を出力文書に含めます（`latex`, `context`, `rst`の場合は、目次を作成する命令を挿入します）。このオプションは、`man`, `docbook`, `slidy`, `slideous`, `s5`, `docx`, `odt`の場合は何も影響を与えません。
 
 `--toc-depth=`*NUMBER*
-:	目次に含める節のレベル番号を指定します。デフォルトは3です（つまり、レベル1, 2, 3の見出しが目次にリストアップされます）。
+:   目次に含める節のレベル番号を指定します。デフォルトは3です（つまり、レベル1, 2, 3の見出しが目次にリストアップされます）。
 
 `--no-highlight`
-:	コードブロックやインラインにおける構文強調表示を無効にします（構文強調表示用に言語が指定されている場合も同様です）。
+:   コードブロックやインラインにおける構文強調表示を無効にします（構文強調表示用に言語が指定されている場合も同様です）。
 
 `--highlight-style`=*STYLE*
-:	ソースコードの構文強調表示に用いる色のスタイルを指定します。オプションは`pygments` (デフォルト値), `kate`, `monochrome`, `espresso`, `zenburn`, `haddock`, `tango`の中から選べます。
-	訳注：これらのオプション値の名前の一部は実在の構文強調表示エンジンに由来しますが、そのエンジンを実際に使用するわけではなく、それに準じた色テーマを指定するだけです。
+:   ソースコードの構文強調表示に用いる色のスタイルを指定します。オプションは`pygments` (デフォルト値), `kate`, `monochrome`, `espresso`, `zenburn`, `haddock`, `tango`の中から選べます。
+    訳注：これらのオプション値の名前の一部は実在の構文強調表示エンジンに由来しますが、そのエンジンを実際に使用するわけではなく、それに準じた色テーマを指定するだけです。
 
 `-H` *FILE*, `--include-in-header=`*FILE*
 :   ヘッダの末尾に、*FILE*の内容をそのままつけ加えます。
-	使用例としては、HTMLヘッダに自前のCSSやJavaScriptのmetaタグをつけ加える用途に使えます。
-	複数のファイルをヘッダに含めるために、このオプションを複数回指定することができます。オプションを指定した順番通りに、出力ファイルのヘッダへも追加されます。
-	このオプションにより、`--standalone`も暗黙に指定されます。
+    使用例としては、HTMLヘッダに自前のCSSやJavaScriptのmetaタグをつけ加える用途に使えます。
+    複数のファイルをヘッダに含めるために、このオプションを複数回指定することができます。オプションを指定した順番通りに、出力ファイルのヘッダへも追加されます。
+    このオプションにより、`--standalone`も暗黙に指定されます。
 
 `-B` *FILE*, `--include-before-body=`*FILE*
-:	文書本文(body)の先頭に、*FILE*の内容をそのままつけ加えます（具体的には、HTMLの`<body>`タグの直後や、LaTeXの`\begin{document}`の直後です）。
-	使用例としては、HTML文書にナビゲーションバーやバナーをつけ加える用途に使えます。
-	複数のファイルを含めるために、このオプションを複数回指定することができます。オプションを指定した順番通りに、出力ファイルの文書本文先頭へも追加されます。
-	このオプションにより、`--standalone`も暗黙に指定されます。
+:   文書本文(body)の先頭に、*FILE*の内容をそのままつけ加えます（具体的には、HTMLの`<body>`タグの直後や、LaTeXの`\begin{document}`の直後です）。
+    使用例としては、HTML文書にナビゲーションバーやバナーをつけ加える用途に使えます。
+    複数のファイルを含めるために、このオプションを複数回指定することができます。オプションを指定した順番通りに、出力ファイルの文書本文先頭へも追加されます。
+    このオプションにより、`--standalone`も暗黙に指定されます。
 
 `-A` *FILE*, `--include-after-body=`*FILE*
-:	文書本文(body)の末尾に、*FILE*の内容をそのままつけ加えます（具体的には、HTMLの`</body>`タグの直前や、LaTeXの`\end{document}`の直前です）。
-	複数のファイルを含めるために、このオプションを複数回指定することができます。オプションを指定した順番通りに、出力ファイルの文書本文末尾へも追加されます。
-	このオプションにより、`--standalone`も暗黙に指定されます。
+:   文書本文(body)の末尾に、*FILE*の内容をそのままつけ加えます（具体的には、HTMLの`</body>`タグの直前や、LaTeXの`\end{document}`の直前です）。
+    複数のファイルを含めるために、このオプションを複数回指定することができます。オプションを指定した順番通りに、出力ファイルの文書本文末尾へも追加されます。
+    このオプションにより、`--standalone`も暗黙に指定されます。
 
 特定のWriterに影響を与えるオプション  [options-affecting-specific-writers]
 --------------------------------
 
 `--self-contained`
-:	他のファイルに依存せず、単一ファイルで完結したHTMLを生成します。
-	リンクされたスクリプト、スタイルシート、画像および動画は、`data:` URIスキームを用いてHTMLファイル内に埋め込まれます。この出力ファイルは、一切の外部ファイルを必要とせず、ネットが繋がらない場所でも正しくブラウザで表示できるという意味では、自己完結した(self-contained)ファイルといえるでしょう。
-	このオプションはHTMLに関連した出力フォーマットに対して有効であり、具体的には`html`, `html5`, `html+lhs`, `html5+lhs`, `s5`, `slidy`, `slideous`, `dzslides`, `revealjs`で用いることができます。
-	絶対パスのURLで指定されたスクリプト、画像、スタイルシートはダウンロードされる一方で、相対パスのURLで指定されたそれらはまずカレントディレクトリから検索され、その後ユーザデータディレクトリから検索されます（`--data-dir`の節を参照）。最後に、Pandocのデフォルトデータディレクトリから検索されます。
-	なお、`--self-contained`は`--mathjax`オプションと併用することができません。
+:   他のファイルに依存せず、単一ファイルで完結したHTMLを生成します。
+    リンクされたスクリプト、スタイルシート、画像および動画は、`data:` URIスキームを用いてHTMLファイル内に埋め込まれます。この出力ファイルは、一切の外部ファイルを必要とせず、ネットが繋がらない場所でも正しくブラウザで表示できるという意味では、自己完結した(self-contained)ファイルといえるでしょう。
+    このオプションはHTMLに関連した出力フォーマットに対して有効であり、具体的には`html`, `html5`, `html+lhs`, `html5+lhs`, `s5`, `slidy`, `slideous`, `dzslides`, `revealjs`で用いることができます。
+    絶対パスのURLで指定されたスクリプト、画像、スタイルシートはダウンロードされる一方で、相対パスのURLで指定されたそれらはまずカレントディレクトリから検索され、その後ユーザデータディレクトリから検索されます（`--data-dir`の節を参照）。最後に、Pandocのデフォルトデータディレクトリから検索されます。
+    なお、`--self-contained`は`--mathjax`オプションと併用することができません。
 
 `--offline`
-:	*（非推奨）* `--self-contained`と等価。
+:   *（非推奨）* `--self-contained`と等価。
 
 `-5`, `--html5`
-:	*（非推奨）* HTML4の代わりにHTML5で出力します。`html`以外の出力フォーマットでは無効です。
-	現在はこのオプションの代わりに `html5` 出力フォーマットを利用するようにしてください。
+:   *（非推奨）* HTML4の代わりにHTML5で出力します。`html`以外の出力フォーマットでは無効です。
+    現在はこのオプションの代わりに `html5` 出力フォーマットを利用するようにしてください。
 
 `--html-q-tags`
-:	HTMLで引用の際に `<q>` タグを利用します。
+:   HTMLで引用の際に `<q>` タグを利用します。
 
 `--ascii`
-:	ASCII文字のみを出力に利用します。現在のところHTML出力のみに対してサポートしています。（このオプションが指定されると、UTF-8の代わりに数値文字参照を利用します。）
+:   ASCII文字のみを出力に利用します。現在のところHTML出力のみに対してサポートしています。（このオプションが指定されると、UTF-8の代わりに数値文字参照を利用します。）
 
 `--reference-links`
-:	MarkdownまたはreStructuredTextを出力する際に、インライン形式のリンクではなく参照形式のリンクを用いるようにします。デフォルトではインライン形式のリンクを出力します。
-	（訳注：Markdownにおける各形式の詳細は [リンク](#links) の節をご覧ください。）
+:   MarkdownまたはreStructuredTextを出力する際に、インライン形式のリンクではなく参照形式のリンクを用いるようにします。デフォルトではインライン形式のリンクを出力します。
+    （訳注：Markdownにおける各形式の詳細は [リンク](#links) の節をご覧ください。）
 
 `--atx-headers`
-:	MarkdownまたはAsciiDocを出力する際に、ATX形式の見出しを用いるようにします。デフォルトでは、レベル1-2の見出しに対してはSetext形式を、それ以降のレベルに対してはATX形式を用います。
-	（訳注：Markdownにおける各形式の詳細は [ヘッダ](#headers) の節をご覧ください。）
+:   MarkdownまたはAsciiDocを出力する際に、ATX形式の見出しを用いるようにします。デフォルトでは、レベル1-2の見出しに対してはSetext形式を、それ以降のレベルに対してはATX形式を用います。
+    （訳注：Markdownにおける各形式の詳細は [ヘッダ](#headers) の節をご覧ください。）
 
 `--chapters`
-:	最も上位の見出しを章(chapter)として扱います。LaTeX, ConTeXt, DocBookの出力にて有効です。
-	LaTeXのテンプレートがreport, book, memoirクラスファイルを用いる場合、このオプションが暗黙に指定されます。
-	出力フォーマットとして`beamer`が指定された場合、最上位の見出しは`\part{..}`になります。
+:   最も上位の見出しを章(chapter)として扱います。LaTeX, ConTeXt, DocBookの出力にて有効です。
+    LaTeXのテンプレートがreport, book, memoirクラスファイルを用いる場合、このオプションが暗黙に指定されます。
+    出力フォーマットとして`beamer`が指定された場合、最上位の見出しは`\part{..}`になります。
 
 `-N`, `--number-sections`
-:	番号付き節見出しを出力します。LaTeX, ConTeXt, HTML, EPUBの出力で有効です。
-	デフォルトでは、節に番号は付いていません。`unnumbered`クラスのある節では、`--number-section`が指定されていている場合でも、番号は付きません。
-	訳注1：例えば`\section{..}`に対して、`unnumbered`クラスとはLaTeXにおける`\section*{..}`、ConTeXtにおける`\subject{..}`だと思われます。
-	訳注2：Pandocのデフォルトでは、`-s/--standalone`オプション付きでLaTeX出力すると、見出しに番号を付けない設定付きのLaTeXソースが出力されます。これはLaTeXそのもののデフォルトと異なるので注意して下さい。
+:   番号付き節見出しを出力します。LaTeX, ConTeXt, HTML, EPUBの出力で有効です。
+    デフォルトでは、節に番号は付いていません。`unnumbered`クラスのある節では、`--number-section`が指定されていている場合でも、番号は付きません。
+    訳注1：例えば`\section{..}`に対して、`unnumbered`クラスとはLaTeXにおける`\section*{..}`、ConTeXtにおける`\subject{..}`だと思われます。
+    訳注2：Pandocのデフォルトでは、`-s/--standalone`オプション付きでLaTeX出力すると、見出しに番号を付けない設定付きのLaTeXソースが出力されます。これはLaTeXそのもののデフォルトと異なるので注意して下さい。
 
 `--number-offset`=*NUMBER[,NUMBER,...]*,
-:	HTML出力中の節見出し番号に対して、指定されたオフセット値を加えます（他の出力フォーマットでは無視されます）。
-	オフセット値はカンマ区切りで複数指定でき、最初の番号はトップレベルの見出しに対して、 2番目の番号は2番目のレベルの見出しに対して、というように指定できます。
-	例えば、トップレベルの見出しを"6"から始めたい場合は、`--number-offset=5`と指定します。
-	また、レベル2の見出しを"1.5"から始めたい場合は、`--number-offset=1,4`と指定します。
-	オフセット値のデフォルトは0です。`--number-sections`を暗黙に指定します。
+:   HTML出力中の節見出し番号に対して、指定されたオフセット値を加えます（他の出力フォーマットでは無視されます）。
+    オフセット値はカンマ区切りで複数指定でき、最初の番号はトップレベルの見出しに対して、 2番目の番号は2番目のレベルの見出しに対して、というように指定できます。
+    例えば、トップレベルの見出しを"6"から始めたい場合は、`--number-offset=5`と指定します。
+    また、レベル2の見出しを"1.5"から始めたい場合は、`--number-offset=1,4`と指定します。
+    オフセット値のデフォルトは0です。`--number-sections`を暗黙に指定します。
 
 `--no-tex-ligatures`
-:	LaTeXやConTeXtの出力において、引用符やアポストロフィ、ダッシュ記号をTeXの記号表記に変換しないようにします。
-	その代わりに、Unicodeにおける各々の記号を文字通りに出力します。
-	このオプションは、OpenTypeの高度な機能をXeLaTeXやLuaLaTeXで用いる際に必要となります。
-	注意：通常、LaTeXとConTeXtの出力において `--smart` オプションが自動的に指定されます。しかし、`--no-tex-ligatures`を指定する場合は、`--smart`を明示的に指定しなければなりません。ただし、丸まった引用符やダッシュ記号、3点リーダー記号をソースコード内で用いる場合は、`--smart`を指定せずに`--no-tex-ligatures`を使う必要があるかもしれません。
+:   LaTeXやConTeXtの出力において、引用符やアポストロフィ、ダッシュ記号をTeXの記号表記に変換しないようにします。
+    その代わりに、Unicodeにおける各々の記号を文字通りに出力します。
+    このオプションは、OpenTypeの高度な機能をXeLaTeXやLuaLaTeXで用いる際に必要となります。
+    注意：通常、LaTeXとConTeXtの出力において `--smart` オプションが自動的に指定されます。しかし、`--no-tex-ligatures`を指定する場合は、`--smart`を明示的に指定しなければなりません。ただし、丸まった引用符やダッシュ記号、3点リーダー記号をソースコード内で用いる場合は、`--smart`を指定せずに`--no-tex-ligatures`を使う必要があるかもしれません。
 
 `--listings`
-:	LaTeXのコードブロックに対してlistingパッケージを適用します。
+:   LaTeXのコードブロックに対してlistingパッケージを適用します。
 
 `-i`, `--incremental`
-:	スライドショー内のリスト項目を一気に表示するのではなく1つずつ表示するようにします。
-	デフォルトでは、リスト項目は全てが一気に表示されます。
+:   スライドショー内のリスト項目を一気に表示するのではなく1つずつ表示するようにします。
+    デフォルトでは、リスト項目は全てが一気に表示されます。
 
 `--slide-level`=*NUMBER*
-:	指定したレベルの見出しごとに1枚ずつスライドを作るようにします（`beamer`, `s5`, `slidy`, `slideous`, `dzslides`で有効です）。
-	このレベルよりも上の見出しはスライドショーを節ごとに区切るために使われます。また、このレベルよりも下の見出しはスライド内の副見出しを作ります。
-	デフォルト値はドキュメントの内容によって変わります。詳しくは [スライドショーの構造を作る](#structuring-the-slide-show) をご覧ください。
+:   指定したレベルの見出しごとに1枚ずつスライドを作るようにします（`beamer`, `s5`, `slidy`, `slideous`, `dzslides`で有効です）。
+    このレベルよりも上の見出しはスライドショーを節ごとに区切るために使われます。また、このレベルよりも下の見出しはスライド内の副見出しを作ります。
+    デフォルト値はドキュメントの内容によって変わります。詳しくは [スライドショーの構造を作る](#structuring-the-slide-show) をご覧ください。
 
 `--section-divs`
-:	HTMLでヘッダタグ（`<h1>`など）を使う代わりに、節を`<div>`タグ（HTML5では`<section>`タグ）で囲み、
-	識別子を`<div>`（または`<section>`）タグの中に含めるようにします。
-	詳しくは [ヘッダ識別子](#header-identifiers-in-html-latex-and-context) の項目をご覧ください。
+:   HTMLでヘッダタグ（`<h1>`など）を使う代わりに、節を`<div>`タグ（HTML5では`<section>`タグ）で囲み、
+    識別子を`<div>`（または`<section>`）タグの中に含めるようにします。
+    詳しくは [ヘッダ識別子](#header-identifiers-in-html-latex-and-context) の項目をご覧ください。
 
 `--email-obfuscation=`*none|javascript|references*
-:	HTML文書において`mailto:`リンクを難読化する方法を指定します。
-	*none*の場合は、リンクは難読化されません。*javascript*の場合はJavaScriptを用いて難読化します。
-	*references*の場合は、メールアドレスの文字を10進または16進の数値参照により難読化します。
+:   HTML文書において`mailto:`リンクを難読化する方法を指定します。
+    *none*の場合は、リンクは難読化されません。*javascript*の場合はJavaScriptを用いて難読化します。
+    *references*の場合は、メールアドレスの文字を10進または16進の数値参照により難読化します。
 
 `--id-prefix`=*STRING*
-:	HTMLとDocBookの出力において、自動的に生成される全ての識別子に対して付ける接頭辞(prefix)を指定します。
-	または、Markdown出力においては、脚注番号に対して付ける接頭辞を指定します。
-	このオプションは、文書の断片を生成し他の文書に埋め込む場合に、識別子が重複することを防ぐため便利です。
+:   HTMLとDocBookの出力において、自動的に生成される全ての識別子に対して付ける接頭辞(prefix)を指定します。
+    または、Markdown出力においては、脚注番号に対して付ける接頭辞を指定します。
+    このオプションは、文書の断片を生成し他の文書に埋め込む場合に、識別子が重複することを防ぐため便利です。
 
 `-T` *STRING*, `--title-prefix=`*STRING*
-:	HTMLヘッダの`<title>`タグの最初に現れる接頭辞(prefix)を指定します（ただしHTMLのbody部分の最初に現れるタイトルではありません）。`--standalone`を暗黙に指定します。
+:   HTMLヘッダの`<title>`タグの最初に現れる接頭辞(prefix)を指定します（ただしHTMLのbody部分の最初に現れるタイトルではありません）。`--standalone`を暗黙に指定します。
 
 `-c` *URL*, `--css=`*URL*
-:	スタイルシート(CSS)へのリンクを指定します。複数のスタイルシートを指定したい場合は、このオプションを繰り返し使用することもできます。オプションを指定した順に、スタイルシートも追加されます。
+:   スタイルシート(CSS)へのリンクを指定します。複数のスタイルシートを指定したい場合は、このオプションを繰り返し使用することもできます。オプションを指定した順に、スタイルシートも追加されます。
 
 `--reference-odt=`*FILE*
-:	OpenOffice/LibreOffice ODTファイルを出力する際に、スタイルの元となる参照用ODTファイルを使用します。ファイル名が指定されている場合は、そのファイルを参照用ODTファイルとして使用します。
-	最も良い出力を得るために、参照用ODTファイルはPandocを用いて生成されたものを変更して使用して下さい。参照用ODTファイルの内容（コンテンツ）は無視され、そのスタイルシートが新しく出力されるODTファイルに適用されます。
-	ODTファイルがコマンドラインに指定されていない場合、Pandocはユーザデータディレクトリから`reference.odt`という名前のファイルを検索します（`--data-dir`の節を参照）。もし見つからなければ、デフォルトの参照用ODTファイルを使います。
-	訳注：カスタマイズの元になる参照用ODTファイルを得るには、
-		`pandoc --print-default-data-file reference.odt > reference.odt`
-	を実行して下さい。
+:   OpenOffice/LibreOffice ODTファイルを出力する際に、スタイルの元となる参照用ODTファイルを使用します。ファイル名が指定されている場合は、そのファイルを参照用ODTファイルとして使用します。
+    最も良い出力を得るために、参照用ODTファイルはPandocを用いて生成されたものを変更して使用して下さい。参照用ODTファイルの内容（コンテンツ）は無視され、そのスタイルシートが新しく出力されるODTファイルに適用されます。
+    ODTファイルがコマンドラインに指定されていない場合、Pandocはユーザデータディレクトリから`reference.odt`という名前のファイルを検索します（`--data-dir`の節を参照）。もし見つからなければ、デフォルトの参照用ODTファイルを使います。
+    訳注：カスタマイズの元になる参照用ODTファイルを得るには、
+        `pandoc --print-default-data-file reference.odt > reference.odt`
+    を実行して下さい。
 
 `--reference-docx=`*FILE*
-:	Word docxファイルを出力する際に、スタイルの元となる参照用docxファイルを使用します。ファイル名が指定されている場合は、そのファイルを参照用docxファイルとして使用します。
-	最も良い出力を得るためには、参照用docxファイルはPandocを用いて生成されたものを変更して使用して下さい。参照用odocxファイルの内容（コンテンツ）は無視され、そのスタイルシートが新しく出力されるdocxファイルに適用されます。
-	docxファイルがコマンドラインに指定されていない場合、Pandocはユーザデータディレクトリから`reference.docx`という名前のファイルを検索します（`--data-dir`の節を参照）。もし見つからなければ、デフォルトの参照用docxファイルを使います。
-	Pandocでは以下のスタイルを使用します：[段落]
+:   Word docxファイルを出力する際に、スタイルの元となる参照用docxファイルを使用します。ファイル名が指定されている場合は、そのファイルを参照用docxファイルとして使用します。
+    最も良い出力を得るためには、参照用docxファイルはPandocを用いて生成されたものを変更して使用して下さい。参照用odocxファイルの内容（コンテンツ）は無視され、そのスタイルシートが新しく出力されるdocxファイルに適用されます。
+    docxファイルがコマンドラインに指定されていない場合、Pandocはユーザデータディレクトリから`reference.docx`という名前のファイルを検索します（`--data-dir`の節を参照）。もし見つからなければ、デフォルトの参照用docxファイルを使います。
+    Pandocでは以下のスタイルを使用します：[段落]
     標準(Normal), Compact, 表題(Title), Authors, 日付(Date), Heading 1, Heading 2, Heading 3,
     Heading 4, Heading 5, Block Quote, Definition Term, Definition,
     本文(Body Text), Table Caption, Image Caption; [文字] Default
     Paragraph Font, Body Text Char, Verbatim Char, Footnote Ref,
     Link.
-	訳注：カスタマイズの元になる参照用docxファイルを得るには、
-		`pandoc --print-default-data-file reference.docx > reference.docx`
-	を実行して下さい。
+    訳注：カスタマイズの元になる参照用docxファイルを得るには、
+        `pandoc --print-default-data-file reference.docx > reference.docx`
+    を実行して下さい。
 
 `--epub-stylesheet=`*FILE*
-:	EPUBでスタイルを整えるためにスタイルシート(CSS)を使用します。ファイル名が指定された場合はそれを使用し、指定されていない場合は`epub.css`という名前のファイルをユーザデータディレクトリから検索します（`--data-dir`の項を参照）。それでも見つからない場合は、デフォルトのスタイルシートを使用します。
-	訳注：デフォルトのepub.cssを得るには、
-		`pandoc --print-default-data-file epub.css > epub.css`
-	を実行して下さい。
+:   EPUBでスタイルを整えるためにスタイルシート(CSS)を使用します。ファイル名が指定された場合はそれを使用し、指定されていない場合は`epub.css`という名前のファイルをユーザデータディレクトリから検索します（`--data-dir`の項を参照）。それでも見つからない場合は、デフォルトのスタイルシートを使用します。
+    訳注：デフォルトのepub.cssを得るには、
+        `pandoc --print-default-data-file epub.css > epub.css`
+    を実行して下さい。
 
 `--epub-cover-image=`*FILE*
-:	EPUBのカバー画像として指定された画像を用います。
-	画像は、縦と横が 1000px よりも小さいものを推奨します。
-	注意：Markdownのソースファイル中では、YAMLメタデータブロックの中で`cover-image`を指定することもできます（下記の[EPUBメタデータ](#epub-metadata)を参照）。
+:   EPUBのカバー画像として指定された画像を用います。
+    画像は、縦と横が 1000px よりも小さいものを推奨します。
+    注意：Markdownのソースファイル中では、YAMLメタデータブロックの中で`cover-image`を指定することもできます（下記の[EPUBメタデータ](#epub-metadata)を参照）。
 
 `--epub-metadata=`*FILE*
-:	EPUB出力の際に、指定されたEPUB用XMLメタデータを参照します。
-	このファイルには<http://dublincore.org/documents/dces/>に記載されているDublin Core要素が含まれている必要があります。
-	例：
+:   EPUB出力の際に、指定されたEPUB用XMLメタデータを参照します。
+    このファイルには<http://dublincore.org/documents/dces/>に記載されているDublin Core要素が含まれている必要があります。
+    例：
 
          <dc:rights>Creative Commons</dc:rights>
          <dc:language>es-AR</dc:language>
 
-	デフォルトでは、Pandocは以下のメタデータ要素を含みます：
-	`<dc:title>` (文書のタイトルから取得),
-	`<dc:creator>` (文書の著者名から取得),
-	`<dc:date>` (文書の日付から取得, [ISO 8601 format]に従う必要があります),
-	`<dc:language>` (変数 `lang` から取得, 設定されていない場合はロケールから取得),
-	`<dc:identifier id="BookId">` (ランダムに生成されたUUID).
+    デフォルトでは、Pandocは以下のメタデータ要素を含みます：
+    `<dc:title>` (文書のタイトルから取得),
+    `<dc:creator>` (文書の著者名から取得),
+    `<dc:date>` (文書の日付から取得, [ISO 8601 format]に従う必要があります),
+    `<dc:language>` (変数 `lang` から取得, 設定されていない場合はロケールから取得),
+    `<dc:identifier id="BookId">` (ランダムに生成されたUUID).
 
-	注意：入力文書がMarkdownの場合、文書中のYAMLメタデータブロックが代わりに使用されます。詳しくは下記の[EPUBメタデータ](#epub-metadata)を参照してください。
+    注意：入力文書がMarkdownの場合、文書中のYAMLメタデータブロックが代わりに使用されます。詳しくは下記の[EPUBメタデータ](#epub-metadata)を参照してください。
 
 
 `--epub-embed-font=`*FILE*
-:	EPUBに指定したフォントを埋め込みます。複数のフォントを埋め込みたい場合は、このオプションを複数回使用することもできます。埋め込みフォントを利用するには、CSSファイルに以下のような宣言を追加する必要があります（`--epub-stylesheet`の項を参照）。
+:   EPUBに指定したフォントを埋め込みます。複数のフォントを埋め込みたい場合は、このオプションを複数回使用することもできます。埋め込みフォントを利用するには、CSSファイルに以下のような宣言を追加する必要があります（`--epub-stylesheet`の項を参照）。
 
         @font-face {
         font-family: DejaVuSans;
@@ -542,89 +541,89 @@ Readerのオプション [reader-options]
         body { font-family: "DejaVuSans"; }
 
 `--epub-chapter-level=`*NUMBER*
-:	EPUBファイルをいくつかの"chapter"（章）ファイルに分割するために、章に相当する見出しレベルを設定します。
-	デフォルトでは、レベル1の見出しを使って複数の章に分割します。
-	このオプションはEPUBファイルの内部構成に影響を与えるだけであり、ユーザに見せる章や節を制御するものではありません。
-	いくつかのEPUBリーダーでは、chapterファイルのサイズが大きすぎる場合、動作が遅くなることがあります。少数のレベル1見出しを持つ大きな文書を変換する場合には、このオプションを使って章の見出しレベルを2または3に設定したくなるかもしれません。
+:   EPUBファイルをいくつかの"chapter"（章）ファイルに分割するために、章に相当する見出しレベルを設定します。
+    デフォルトでは、レベル1の見出しを使って複数の章に分割します。
+    このオプションはEPUBファイルの内部構成に影響を与えるだけであり、ユーザに見せる章や節を制御するものではありません。
+    いくつかのEPUBリーダーでは、chapterファイルのサイズが大きすぎる場合、動作が遅くなることがあります。少数のレベル1見出しを持つ大きな文書を変換する場合には、このオプションを使って章の見出しレベルを2または3に設定したくなるかもしれません。
 
 `--latex-engine=`*pdflatex|lualatex|xelatex*
-:	PDFを出力する際に、指定したLaTeXエンジンを利用します。デフォルトは`pdflatex`です。指定したエンジンがPATHの中に存在しない場合は、そのエンジンのフルパスを指定することもできます。
-	訳注：日本語文書を処理する場合、特に理由が無ければ`lualatex`を利用するようにして下さい。
+:   PDFを出力する際に、指定したLaTeXエンジンを利用します。デフォルトは`pdflatex`です。指定したエンジンがPATHの中に存在しない場合は、そのエンジンのフルパスを指定することもできます。
+    訳注：日本語文書を処理する場合、特に理由が無ければ`lualatex`を利用するようにして下さい。
 
-引用文献の表示   [citation-rendering]
+引用文献の表示   {#citation-rendering}
 -------------
 
 `--bibliography=`*FILE*
-:	文書中のメタデータにおいて`bibliography`フィールドを*FILE*で上書きし、
-	`pandoc-citeproc`を用いて引用を処理します。（これは`--metadata bibliography=file --filter pandoc-citeproc`と等価です。）
-	訳注：`bibliography`フィールドはBibTeXファイル(.bib)などの引用文献ファイルを指定するために利用します。詳細は下記の[文献の引用](#citations)をご覧ください。
+:   文書中のメタデータにおいて`bibliography`フィールドを*FILE*で上書きし、
+    `pandoc-citeproc`を用いて引用を処理します。（これは`--metadata bibliography=file --filter pandoc-citeproc`と等価です。）
+    訳注：`bibliography`フィールドはBibTeXファイル(.bib)などの引用文献ファイルを指定するために利用します。詳細は下記の[文献の引用](#citations)をご覧ください。
 
 `--csl=`*FILE*
-:	文書中のメタデータにおいて`csl`フィールドを*FILE*で上書きします。（これは`--metadata csl=FILE`と等価です。）
-	訳注：`csl`フィールドは引用の書式を指定するために利用します。詳細は下記の[文献の引用](#citations)をご覧ください。
+:   文書中のメタデータにおいて`csl`フィールドを*FILE*で上書きします。（これは`--metadata csl=FILE`と等価です。）
+    訳注：`csl`フィールドは引用の書式を指定するために利用します。詳細は下記の[文献の引用](#citations)をご覧ください。
 
 `--citation-abbreviations=`*FILE*
-:	文書中のメタデータにおいて`citation-abbreviations`フィールドを*FILE*で上書きします。（これは`--metadata citation-abbreviations=FILE`と等価です。）
+:   文書中のメタデータにおいて`citation-abbreviations`フィールドを*FILE*で上書きします。（これは`--metadata citation-abbreviations=FILE`と等価です。）
 
 `--natbib`
-:	latex出力において、natbibパッケージを引用に利用します。
+:   latex出力において、natbibパッケージを引用に利用します。
 
 `--biblatex`
-:	latex出力において、BibLaTeXを引用に利用します。
+:   latex出力において、BibLaTeXを引用に利用します。
 
-HTMLにおける数式の表示  [math-rendering-in-html]
+HTMLにおける数式の表示  {#math-rendering-in-html}
 --------------------
 
 `-m` [*URL*], `--latexmathml`[=*URL*]
-:	HTML出力において、[LaTeXMathML]スクリプトを用いて埋め込まれたTeX数式を表示します。
-	ローカルの`LaTeXMathML.js`をリンクとして挿入したい場合は、*URL*を指定して下さい。
-	*URL*が指定されていない場合は、効率を犠牲にして可搬性を向上させるために、スクリプトの内容をHTMLヘッダに直接挿入します。
-	もし数式をいくつかのページに使うつもりであれば、スクリプトをリンクする方が良いでしょう（スクリプトがキャッシュされるため）。
+:   HTML出力において、[LaTeXMathML]スクリプトを用いて埋め込まれたTeX数式を表示します。
+    ローカルの`LaTeXMathML.js`をリンクとして挿入したい場合は、*URL*を指定して下さい。
+    *URL*が指定されていない場合は、効率を犠牲にして可搬性を向上させるために、スクリプトの内容をHTMLヘッダに直接挿入します。
+    もし数式をいくつかのページに使うつもりであれば、スクリプトをリンクする方が良いでしょう（スクリプトがキャッシュされるため）。
 
 `--mathml`[=*URL*]
-:	`docbook`や`html`, `html5`において、TeX数式をMathMLに変換します。
-	スタンドアローンの`html`出力では、MathMLをいくつかのブラウザで見られるようにするために、ヘッダに小さいJavaScriptを挿入します（*URL*が指定されている場合は、リンクを挿入します）。
+:   `docbook`や`html`, `html5`において、TeX数式をMathMLに変換します。
+    スタンドアローンの`html`出力では、MathMLをいくつかのブラウザで見られるようにするために、ヘッダに小さいJavaScriptを挿入します（*URL*が指定されている場合は、リンクを挿入します）。
 
 `--jsmath`[=*URL*]
-:	HTML出力において、埋め込まれたTeX数式を[jsMath]を用いて表示します。
-	*URL*はjsMathのloadスクリプトである必要があり（例：`jsmath/easy/load.js`）、
-	これを指定するとスタンドアローンなHTML文書のヘッダにリンクが埋め込まれます。
-	*URL*が指定されていない場合は、jsMathのloadスクリプトへのリンクは挿入されないため、HTMLテンプレートなど別の手段を用いて適宜リンクを指定する必要があります。
+:   HTML出力において、埋め込まれたTeX数式を[jsMath]を用いて表示します。
+    *URL*はjsMathのloadスクリプトである必要があり（例：`jsmath/easy/load.js`）、
+    これを指定するとスタンドアローンなHTML文書のヘッダにリンクが埋め込まれます。
+    *URL*が指定されていない場合は、jsMathのloadスクリプトへのリンクは挿入されないため、HTMLテンプレートなど別の手段を用いて適宜リンクを指定する必要があります。
 
 `--mathjax`[=*URL*]
-:	HTML出力において、埋め込まれたTeX数式を[MathJax]を用いて表示します。
-	*URL*はMathJaxのloadスクリプト`MathJax.js`である必要があります。
-	*URL*が指定されていない場合は、MathJax CDNへのリンクが挿入されます。
+:   HTML出力において、埋め込まれたTeX数式を[MathJax]を用いて表示します。
+    *URL*はMathJaxのloadスクリプト`MathJax.js`である必要があります。
+    *URL*が指定されていない場合は、MathJax CDNへのリンクが挿入されます。
 
 `--gladtex`
-:	HTML出力において、TeX数式を`<eq>`タグで囲みます。
-	これらの数式は[gladTeX]によって処理され、タイプセットされた画像へのリンクが生成されます。
+:   HTML出力において、TeX数式を`<eq>`タグで囲みます。
+    これらの数式は[gladTeX]によって処理され、タイプセットされた画像へのリンクが生成されます。
 
 `--mimetex`[=*URL*]
-:	TeX数式を[mimeTeX]CGIスクリプトによって生成します。
-	*URL*が指定されていない場合は、スクリプトが`/cgi-bin/mimetex.cgi`にあると仮定します。
+:   TeX数式を[mimeTeX]CGIスクリプトによって生成します。
+    *URL*が指定されていない場合は、スクリプトが`/cgi-bin/mimetex.cgi`にあると仮定します。
 
 `--webtex`[=*URL*]
-:	TeX数式を外部スクリプトを用いて生成します。スクリプトはTeX数式を画像に変換するものに限ります。数式は指定されたURLで連結されます。*URL*が指定されていない場合は、Google Chart APIが使用されます。
+:   TeX数式を外部スクリプトを用いて生成します。スクリプトはTeX数式を画像に変換するものに限ります。数式は指定されたURLで連結されます。*URL*が指定されていない場合は、Google Chart APIが使用されます。
 
-ラッパースクリプトのためのオプション [options-for-wrapper-scripts]
+ラッパースクリプトのためのオプション {#options-for-wrapper-scripts}
 ------------------------------
 
 `--dump-args`
-:	コマンドライン引数に関する情報を標準出力*stdout*に出力し、終了します。
-	このオプションは主にラッパースクリプトで使用するためのものです。
-	出力の1行目は`-o`オプションで指定された出力ファイル名（出力ファイルを指定していない場合は標準出力の`-`）が表示されます。
-	残りの行は引数で指定した順番に、引数1つにつき1行ずつ出力します。
-	通常、標準のPandocオプションおよびその引数はこれらには含まれませんが、
-	セパレータ`--`の後ろに付け足したオプションおよび引数に関しては出力されます。
+:   コマンドライン引数に関する情報を標準出力*stdout*に出力し、終了します。
+    このオプションは主にラッパースクリプトで使用するためのものです。
+    出力の1行目は`-o`オプションで指定された出力ファイル名（出力ファイルを指定していない場合は標準出力の`-`）が表示されます。
+    残りの行は引数で指定した順番に、引数1つにつき1行ずつ出力します。
+    通常、標準のPandocオプションおよびその引数はこれらには含まれませんが、
+    セパレータ`--`の後ろに付け足したオプションおよび引数に関しては出力されます。
 
 `--ignore-args`
-:	コマンドライン引数を無視します（ラッパースクリプトで使用するためのオプションです）。
-	標準のPandocオプションは無視されません。例えば、
+:   コマンドライン引数を無視します（ラッパースクリプトで使用するためのオプションです）。
+    標準のPandocオプションは無視されません。例えば、
 
         pandoc --ignore-args -o foo.html -s foo.txt -- -e latin1
 
-	は以下と等価です：
+    は以下と等価です：
 
         pandoc -o foo.html -s
 
@@ -635,7 +634,7 @@ HTMLにおける数式の表示  [math-rendering-in-html]
 [mimeTeX]: http://www.forkosh.com/mimetex.html
 [CSL]: http://CitationStyles.org
 
-テンプレート [templates]
+テンプレート {#templates}
 ==========
 
 `-s/--standalone`オプションを使用している場合、Pandocは完全で独立した文書を生成するために、ヘッダとフッタをつけ加えるためのテンプレートを使用します。
@@ -656,23 +655,19 @@ HTMLにおける数式の表示  [math-rendering-in-html]
 
 テンプレート内で`$`を文字通りに入力したい場合は、`$$`を使用して下さい。
 
-Some variables are set automatically by pandoc.  These vary somewhat
-depending on the output format, but include metadata fields (such
-as `title`, `author`, and `date`) as well as the following:
-
 いくつかの変数はPandocによって自動的に設定されます。これらは出力フォーマットによって変化しますが、メタデータフィールド（`title`や`author`、`date`など）と同様に以下も含みます：
 
 `header-includes`
-:   `-H/--include-in-header`によって指定される内容（複数の値を取ることができます）
+:   `-H/--include-in-header`によって指定されるコンテンツ（複数の値を取ることができます）
 
 `toc`
 :   `--toc/--table-of-contents`が指定されたときの非null値
 
 `include-before`
-:	`-B/--include-before-body`によって指定される内容（複数の値を取ることができます）
+:   `-B/--include-before-body`によって指定されるコンテンツ（複数の値を取ることができます）
 
 `include-after`
-:	`-A/--include-after-body`によって指定される内容（複数の値を取ることができます）
+:   `-A/--include-after-body`によって指定されるコンテンツ（複数の値を取ることができます）
 
 `body`
 :   文書の本体(body)
@@ -776,108 +771,87 @@ as `title`, `author`, and `date`) as well as the following:
 Pandocによる拡張Markdown [pandocs-markdown]
 =======================
 
-Pandoc understands an extended and slightly revised version of
-John Gruber's [markdown] syntax.  This document explains the syntax,
-noting differences from standard markdown. Except where noted, these
-differences can be suppressed by using the `markdown_strict` format instead
-of `markdown`.  An extensions can be enabled by adding `+EXTENSION`
-to the format name and disabled by adding `-EXTENSION`. For example,
-`markdown_strict+footnotes` is strict markdown with footnotes
-enabled, while `markdown-footnotes-pipe_tables` is pandoc's
-markdown without footnotes or pipe tables.
+Pandocは、拡張されわずかに改訂されたバージョンの、John Gruberによる[markdown]の文法を解釈することができます。この文書ではその文法とともに、標準的なMarkdownとの差分を説明します。
+注意として示したものを除いて、`markdown`フォーマットの代わりに`markdown_strict`を用いることでこれらの差分を無くした標準的なMarkdownを使用することができます。拡張部分は、`+EXTENSION`をフォーマット名につけ加えることで追加でき、`-EXTENSION`をつけ加えることで無効にすることができます。例えば、`markdown_strict+footnotes`は、厳密なMarkdownに加えて脚注機能を有効にします。一方で、`markdown-footnotes-pipe_tables`はPandoc拡張Markdownから脚注とパイプテーブル形式の表を無効にします。
 
-Philosophy
-----------
+哲学  {#philosophy}
+----
 
-Markdown is designed to be easy to write, and, even more importantly,
-easy to read:
+Markdownは文書を書きやすいように設計され、さらに重要なこととして、文書を読みやすいように設計されています。
 
 > A Markdown-formatted document should be publishable as-is, as plain
 > text, without looking like it's been marked up with tags or formatting
 > instructions.
+>
+> Markdownで書かれた文書はプレーンテキストとして、そのままの形で発行されるべきである。
+> しかし、タグや整形のための指示によってマークアップされているように見えてはならない。
 > -- [John Gruber](http://daringfireball.net/projects/markdown/syntax#philosophy)
 
-This principle has guided pandoc's decisions in finding syntax for
-tables, footnotes, and other extensions.
+この原則は、Pandocにおいて表、脚注やその他の拡張文法を設計する際の指針となっています。
 
-There is, however, one respect in which pandoc's aims are different
-from the original aims of markdown.  Whereas markdown was originally
-designed with HTML generation in mind, pandoc is designed for multiple
-output formats.  Thus, while pandoc allows the embedding of raw HTML,
-it discourages it, and provides other, non-HTMLish ways of representing
-important document elements like definition lists, tables, mathematics, and
-footnotes.
+しかしながら、ある1つの点においてPandocの目指すものはオリジナル版のそれとは異なります。
+Markdownは本来、HTMLを生成することを目的として設計されたのに対し、Pandocは複数の出力フォーマットに対応するように設計されています。つまり、Pandocは生の(raw)HTMLを埋め込むことを許可する一方でそれを推奨せず、その代わりに定義リストや表、数式、脚注のように、重要な文書要素をHTMLらしくない表現によって提供しています。
 
-Paragraphs
-----------
+段落 {#paragraphs}
+----
 
-A paragraph is one or more lines of text followed by one or more blank line.
-Newlines are treated as spaces, so you can reflow your paragraphs as you like.
-If you need a hard line break, put two or more spaces at the end of a line.
+段落は1行以上のテキストと、それに続く1行以上の空行から成ります。
+単なる改行はスペースとして扱われるので、段落を好きなように再構成するために使用できます。
+強制改行が必要な場合は、行末に2個以上のスペースを置いてください。
 
-**Extension: `escaped_line_breaks`**
+**拡張: `escaped_line_breaks`**
 
-A backslash followed by a newline is also a hard line break.
+改行のあとのバックスラッシュも強制改行になります。
 
-ヘッダ  [headers]
+ヘッダ  {#headers}
 -------
 
-There are two kinds of headers, Setext and atx.
+Setext形式とATX形式の2種類のヘッダ形式が使用できます。
 
-### Setext-style headers ###
+### Setext形式のヘッダ ###
 
-A setext-style header is a line of text "underlined" with a row of `=` signs
-(for a level one header) or `-` signs (for a level two header):
+Setext形式のヘッダは「下線を引いた」テキストです。ヘッダのテキスト部分の下に、`=`記号（レベル1ヘッダ）または`-`記号（レベル2ヘッダ）を並べた行を置きます：
 
-    A level-one header
-    ==================
+    レベル1ヘッダ
+    ============
 
-    A level-two header
-    ------------------
+    レベル2ヘッダ
+    ------------
 
-The header text can contain inline formatting, such as emphasis (see
-[Inline formatting](#inline-formatting), below).
+ヘッダのテキストは強調のようなインライン形式の修飾を含むことができます（下記の[インライン形式の修飾](#inline-formatting)を参照）。
 
+### ATX形式のヘッダ ###
 
-### Atx-style headers ###
+ATX形式のヘッダは1〜6個の`#`記号および1行のテキストから成り、オプションで任意の数の`#`記号をその末尾につけることができます。先頭の`#`記号の数はヘッダレベルを表します：
 
-An Atx-style header consists of one to six `#` signs and a line of
-text, optionally followed by any number of `#` signs.  The number of
-`#` signs at the beginning of the line is the header level:
+    ## レベル2ヘッダ
 
-    ## A level-two header
+    ### レベル3ヘッダ ###
 
-    ### A level-three header ###
+    ### ヘッダの後ろにはいくらでも`#`を付けてもよい ######
 
-As with setext-style headers, the header text can contain formatting:
+Setext形式のヘッダと同様に、ヘッダにはテキスト修飾を含むことができます。
 
-    # A level-one header with a [link](/url) and *emphasis*
+    # レベル1ヘッダと [リンク](/url) そして *強調*
 
-**Extension: `blank_before_header`**
+**拡張: `blank_before_header`**
 
-Standard markdown syntax does not require a blank line before a header.
-Pandoc does require this (except, of course, at the beginning of the
-document). The reason for the requirement is that it is all too easy for a
-`#` to end up at the beginning of a line by accident (perhaps through line
-wrapping). Consider, for example:
+標準的なMarkdown文法では「ヘッダの前に空行を入れる」という制約がありません。
+Pandocではこの制約を付けています（もちろん、文書の先頭を除きます）。
+なぜなら、`#`記号は行頭にうっかり付けてしまうことが多いからです（もしかすればエディタによる行の折り返しでもそうなるかもしれません）。以下の例を考えてみてください：
 
     I like several of their flavors of ice cream:
     #22, for example, and #5.
 
+### HTML, LaTeX, そしてConTeXtにおけるヘッダ識別子 ### {#header-identifiers-in-html-latex-and-context}
 
-### Header identifiers in HTML, LaTeX, and ConTeXt ###
+**拡張: `header_attributes`**
 
-**Extension: `header_attributes`**
-
-Headers can be assigned attributes using this syntax at the end
-of the line containing the header text:
+ヘッダテキストを含む行の最後にこの文法を用いることで、ヘッダに属性(attribute)を付けることができます：
 
     {#identifier .class .class key=value key=value}
 
-Although this syntax allows assignment of classes and key/value attributes,
-only identifiers currently have any affect in the writers (and only in some
-writers: HTML, LaTeX, ConTeXt, Textile, AsciiDoc).  Thus, for example,
-the following headers will all be assigned the identifier `foo`:
+この文法によりクラスとキー/値の属性を付けることができますが、識別子のみが現在のところWriterに影響を与えます（そしてそれは一部のWriterのみです：HTML, LaTeX, ConTeXt, Textile, AsciiDoc）。つまり、例えば、以下のようなヘッダには`foo`という識別子が割り当てられます：
 
     # My header {#foo}
 
@@ -886,37 +860,32 @@ the following headers will all be assigned the identifier `foo`:
     My other header   {#foo}
     ---------------
 
-(This syntax is compatible with [PHP Markdown Extra].)
+（この文法は[PHP Markdown Extra]と互換性があります。）
 
-Headers with the class `unnumbered` will not be numbered, even if
-`--number-sections` is specified.  A single hyphen (`-`) in an attribute
-context is equivalent to `.unnumbered`, and preferable in non-English
-documents.  So,
+`unnumbered`クラスを付けたヘッダには、たとえ`--number-sections`オプションが指定されていても番号が付きません。単一のハイフン(`-`)を属性として使うと`.unnumbered`と等価な意味になります（非英語圏の文書に適しています）。よって、
 
     # My header {-}
 
-is just the same as
+は以下と同じ意味になります：
 
     # My header {.unnumbered}
 
-**Extension: `auto_identifiers`**
+**拡張: `auto_identifiers`**
 
-A header without an explicitly specified identifier will be
-automatically assigned a unique identifier based on the header text.
-To derive the identifier from the header text,
+識別子を明示的に指定していないヘッダは、ヘッダのテキストを元にして自動的に識別子が割り当てられます。
+ヘッダテキストから識別子を生成するために以下の処理を行います：
 
-  - Remove all formatting, links, etc.
-  - Remove all footnotes.
-  - Remove all punctuation, except underscores, hyphens, and periods.
-  - Replace all spaces and newlines with hyphens.
-  - Convert all alphabetic characters to lowercase.
-  - Remove everything up to the first letter (identifiers may
-    not begin with a number or punctuation mark).
-  - If nothing is left after this, use the identifier `section`.
+  - 全ての修飾やリンクなどを取り除く
+  - 全ての脚注を取り除く
+  - アンダースコアやハイフン、ピリオド以外の全ての記号を取り除く
+  - 全てのスペースと改行をハイフンに置換する
+  - 全ての英字を小文字に置換する
+  - 最初の英字より前にある文字を全て取り除く（識別子は数字や記号から始まってはならない）
+  - その結果何も残らなければ、識別子を`section`とする
 
-Thus, for example,
+よって、例えば以下のようになります：
 
-  Header                            Identifier
+  ヘッダ                             識別子
   -------------------------------   ----------------------------
   Header identifiers in HTML        `header-identifiers-in-html`
   *Dogs*?--in *my* house?           `dogs--in-my-house`
@@ -924,130 +893,104 @@ Thus, for example,
   3. Applications                   `applications`
   33                                `section`
 
-These rules should, in most cases, allow one to determine the identifier
-from the header text. The exception is when several headers have the
-same text; in this case, the first will get an identifier as described
-above; the second will get the same identifier with `-1` appended; the
-third with `-2`; and so on.
+訳注：ヘッダテキストが日本語の場合は、多くの場合、識別子も日本語テキストがそのまま割り当てられます。識別子が日本語の場合、HTMLやLaTeXなどで識別子が正しく動くかどうかは処理系に依存するため、ヘッダには英数字による識別子を明示的に与えることを推奨します。
 
-These identifiers are used to provide link targets in the table of
-contents generated by the `--toc|--table-of-contents` option. They
-also make it easy to provide links from one section of a document to
-another. A link to this section, for example, might look like this:
+これらのルールはほとんどの場合、1つのヘッダテキストから1つの識別子を決定できます。
+例外としてはいくつかのヘッダが同じテキストである場合があり、この場合、最初のヘッダについては上記の通りに識別子が決まります。2番目のヘッダからは末尾に`-1`がついた識別子が得られ、3番目は`-2`がつき、以下同様です。
 
-    See the section on
-    [header identifiers](#header-identifiers-in-html-latex-and-context).
+これらの識別子は`--toc|--table-of-contents`オプションによって生成される目次におけるリンクターゲットを生成するのに使われます。これらはまた、文書中の1つの節から他へのリンクをより簡単にします。例えば、この節へのリンクは以下の通りになるでしょう（訳注：この節の原題は "Header identifiers in HTML, LaTeX, and ConTeXt" です）：
 
-Note, however, that this method of providing links to sections works
-only in HTML, LaTeX, and ConTeXt formats.
+    以下の節をご覧ください：
+    [HTML, LaTeX, そしてConTeXtにおけるヘッダ識別子](#header-identifiers-in-html-latex-and-context).
 
-If the `--section-divs` option is specified, then each section will
-be wrapped in a `div` (or a `section`, if `--html5` was specified),
-and the identifier will be attached to the enclosing `<div>`
-(or `<section>`) tag rather than the header itself. This allows entire
-sections to be manipulated using javascript or treated differently in
-CSS.
+注意：節へのリンクを提供するこの方法は、HTML, LaTeX, ConTeXtフォーマットのみで有効です。
 
-**Extension: `implicit_header_references`**
+HTMLフォーマットにおいて`--section-divs`オプションが指定されている場合は、各節が`div`（`--html5`が指定されている場合は`section`）で囲まれます。そしてその識別子はヘッダそのものとしてでなく、`<div>`タグ（または`<section>`タグ）の内部に埋め込まれます。これは節全体をJavaScriptで操作したり、CSSで扱ったりする際に使うことができます。
 
-Pandoc behaves as if reference links have been defined for each header.
-So, instead of
+**拡張: `implicit_header_references`**
+
+Pandocはそれぞれのヘッダに対し参照リンクが定義されているかのように振る舞います。よって、
 
     [header identifiers](#header-identifiers-in-html)
 
-you can simply write
+の代わりに、下記のように
 
     [header identifiers]
 
-or
+や
 
     [header identifiers][]
 
-or
+や
 
     [the section on header identifiers][header identifiers]
 
-If there are multiple headers with identical text, the corresponding
-reference will link to the first one only, and you will need to use explicit
-links to link to the others, as described above.
+のように書くことができます。
 
-Unlike regular reference links, these references are case-sensitive.
+同一のテキストに対して複数のヘッダが存在する場合は、それらのうち最初のヘッダに対してリンクされます。
+その他へのリンクについては、上記で説明したように、明示的なリンクとして書く必要があります。
 
-Note:  if you have defined an explicit identifier for a header,
-then implicit references to it will not work.
+標準的な参照リンクとは違い、これらの参照は大文字・小文字を区別します。
 
-Block quotations
-----------------
+注意：あるヘッダに対して明示的に識別子を指定した場合は、暗黙の参照は無効になります。
 
-Markdown uses email conventions for quoting blocks of text.
-A block quotation is one or more paragraphs or other block elements
-(such as lists or headers), with each line preceded by a `>` character
-and a space. (The `>` need not start at the left margin, but it should
-not be indented more than three spaces.)
+引用  {#block-quotations}
+----
 
-    > This is a block quote. This
-    > paragraph has two lines.
+Markdownはテキストの引用についてEメールの慣習を踏襲しています。
+引用は各行が`>`と1つのスペースから始まる、1つ以上の段落またはブロック要素（リストやヘッダなど）から成ります。
+（`>`は左端から始まる必要はありませんが、4つ以上のスペースでインデントされてはなりません。）
+
+    > これは引用です。この
+    > 段落は2行で構成されています。
     >
-    > 1. This is a list inside a block quote.
-    > 2. Second item.
+    > 1. これは引用内部にあるリストです。
+    > 2. 2つ目のアイテムです。
 
 A "lazy" form, which requires the `>` character only on the first
 line of each block, is also allowed:
 
-    > This is a block quote. This
-    paragraph has two lines.
+怠惰(lazy)な形、つまり`>`が各ブロックの最初の行だけにある形も有効です：
 
-    > 1. This is a list inside a block quote.
-    2. Second item.
+    > これは引用です。この
+    段落は2行で構成されています。
 
-Among the block elements that can be contained in a block quote are
-other block quotes. That is, block quotes can be nested:
+    > 1. これは引用内部にあるリストです。
+    2. 2つ目のアイテムです。
 
-    > This is a block quote.
+引用に含むことができるブロック要素として、他のブロック要素があります。すなわち、引用は入れ子（ネスト）にすることができます：
+
+    > これは引用です。
     >
-    > > A block quote within a block quote.
+    > > 引用の中の引用です。
 
-**Extension: `blank_before_blockquote`**
+**拡張: `blank_before_blockquote`**
 
-Standard markdown syntax does not require a blank line before a block
-quote.  Pandoc does require this (except, of course, at the beginning of the
-document). The reason for the requirement is that it is all too easy for a
-`>` to end up at the beginning of a line by accident (perhaps through line
-wrapping). So, unless the `markdown_strict` format is used, the following does
-not produce a nested block quote in pandoc:
+標準的なMarkdown文法では「引用の前に空行を入れなければならない」という制約がありません。Pandocではこの制約を付けています（もちろん、文書の先頭は除きます）。なぜなら、`>`記号は行頭にうっかり付けてしまうことが多いからです（もしかすればエディタによる行の折り返しでもそうなるかもしれません）。そのためPandocでは、`markdown_strict`フォーマットを使わない限りは、以下の例において入れ子の引用を生成しません：
 
-    > This is a block quote.
-    >> Nested.
+    > これは引用です。
+    >> 入れ子です。
 
-
-Verbatim (code) blocks
+コードブロック  {#verbatim-code-blocks}
 ----------------------
 
-### Indented code blocks ###
+### インデントによるコードブロック ###
 
-A block of text indented four spaces (or one tab) is treated as verbatim
-text: that is, special characters do not trigger special formatting,
-and all spaces and line breaks are preserved.  For example,
+4つのスペース（または1つのタブ）でインデントされたテキストブロックは入力通りの出力(verbatim)、つまりコードブロックとして扱われます。具体的には、特別な文字が特別な整形や修飾を意味せず、全てのスペースや改行が保持されます。例えばこのような記法です：
 
         if (a > 3) {
           moveShip(5 * gravity, DOWN);
         }
 
-The initial (four space or one tab) indentation is not considered part
-of the verbatim text, and is removed in the output.
+最初のインデント（4つのスペースまたは1つのタブ）はコードブロックとして扱われず、出力の際には削除されます。
 
-Note: blank lines in the verbatim text need not begin with four spaces.
+注意：コードブロックの空行は4つのスペースで始まる必要はありません。
 
+### 囲まれた(fenced)コードブロック ###
 
-### Fenced code blocks ###
+**拡張: `fenced_code_blocks`**
 
-**Extension: `fenced_code_blocks`**
-
-In addition to standard indented code blocks, Pandoc supports
-*fenced* code blocks.  These begin with a row of three or more
-tildes (`~`) or backticks (`` ` ``) and end with a row of tildes or
-backticks that must be at least as long as the starting row. Everything
-between these lines is treated as code. No indentation is necessary:
+標準的なインデントコードブロックに加え、Pandocは*囲まれた(fenced)*コードブロックもサポートしています。これは3つ以上のチルダ(`~`)またはバックスラッシュ(`` ` ``)の行で始まり、同じものの行で終わります。チルダやバックスラッシュの数は、始まりの行と終わりの行で同じでなければなりません。その2行の間に挟まる行はコードとして解釈されます。インデントは必要ありません：
 
     ~~~~~~~
     if (a > 3) {
@@ -1055,20 +998,17 @@ between these lines is treated as code. No indentation is necessary:
     }
     ~~~~~~~
 
-Like regular code blocks, fenced code blocks must be separated
-from surrounding text by blank lines.
+標準的なコードブロックと同様に、囲まれたコードブロックも空行で囲まれている必要があります。
 
-If the code itself contains a row of tildes or backticks, just use a longer
-row of tildes or backticks at the start and end:
+コード自身にチルダまたはバックスラッシュが含まれている場合は、より長いチルダまたはバックスラッシュの行で囲んでください：
 
     ~~~~~~~~~~~~~~~~
     ~~~~~~~~~~
-    code including tildes
+    チルダの入ったコード
     ~~~~~~~~~~
     ~~~~~~~~~~~~~~~~
 
-Optionally, you may attach attributes to the code block using
-this syntax:
+オプションとして、コードブロックに対して以下のような文法を用いて属性を付けることができます：
 
     ~~~~ {#mycode .haskell .numberLines startFrom="100"}
     qsort []     = []
@@ -1076,13 +1016,7 @@ this syntax:
                    qsort (filter (>= x) xs)
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Here `mycode` is an identifier, `haskell` and `numberLines` are classes, and
-`startFrom` is an attribute with value `100`. Some output formats can use this
-information to do syntax highlighting. Currently, the only output formats
-that uses this information are HTML and LaTeX. If highlighting is supported
-for your output format and language, then the code block above will appear
-highlighted, with numbered lines. (To see which languages are supported, do
-`pandoc --version`.) Otherwise, the code block above will appear as follows:
+ここで`mycode`は識別子、`haskell`と`numberLines`はクラス、`startFrom`は値`100`の属性です。いくつかの出力フォーマットではこの情報をシンタックスハイライトに使います。現在のところ、HTMLおよびLaTeX出力フォーマットのみがこの情報を使います。シンタックスハイライトがサポートされている出力フォーマットおよび言語では、上記のコードブロックは色つきになり、行番号が付きます（どの言語がサポートされているかを知るには、`pandoc --version`を実行してください）。その他の表記として、上記のコードブロックは以下のようになります：
 
     <pre id="mycode" class="haskell numberLines" startFrom="100">
       <code>
@@ -1090,51 +1024,45 @@ highlighted, with numbered lines. (To see which languages are supported, do
       </code>
     </pre>
 
-A shortcut form can also be used for specifying the language of
-the code block:
+短縮形として、言語を指定するタイプのコードブロックも使用できます：
 
     ```haskell
     qsort [] = []
     ```
 
-This is equivalent to:
+これは下記と等価です：
 
     ``` {.haskell}
     qsort [] = []
     ```
 
-To prevent all highlighting, use the `--no-highlight` flag.
-To set the highlighting style, use `--highlight-style`.
+シンタックスハイライトを無効にするには`--no-highlight`オプションを使用してください。
+シンタックスハイライトのスタイルを指定するには、`--highlight-style`オプションを使用してください。
 
-### 訳注：構文強調表示が可能なプログラミング言語について [code-highlighting]
+### 訳注：シンタックスハイライトが可能なプログラミング言語について [code-highlighting]
 
-このドキュメントの原文では明示されていませんが、 構文強調表示可能なプログラミング言語の種類は、
-pandoc作者のjohn macfarlaneが同じく作成した[highlighting-kate]に依存します。
+Pandoc 1.12.2.1 においてシンタックスハイライトが可能なプログラミング言語は以下の通りです：
 
-highlighting-kateで利用可能な言語は以下の通りです：
-actionscript, ada, apache, asn1, asp, awk, bash, bibtex, boo,
-c, changelog, clojure, cmake, coffee, coldfusion, commonlisp, cpp, cs, css, curry,
-d, diff, djangotemplate, doxygen, doxygenlua, dtd, eiffel, email, erlang,
-fortran, fsharp, gnuassembler, go, haskell, haxe, html, ini, java, javadoc,
-javascript, json, jsp, julia, latex, lex, literatecurry, literatehaskell, lua,
-makefile, mandoc, matlab, maxima, metafont, mips, modula2, modula3, monobasic,
-nasm, noweb, objectivec, objectivecpp, ocaml, octave, pascal, perl, php, pike,
-postscript, prolog, python, r, relaxngcompact, rhtml, ruby, rust, scala, scheme,
-sci, sed, sgml, sql, sqlmysql, sqlpostgresql, tcl, texinfo, verilog, vhdl,
-xml, xorg, xslt, xul, yacc, yaml.
+    actionscript, ada, apache, asn1, asp, awk, bash, bibtex, boo, c, changelog,
+    clojure, cmake, coffee, coldfusion, commonlisp, cpp, cs, css, curry, d,
+    diff, djangotemplate, doxygen, doxygenlua, dtd, eiffel, email, erlang,
+    fortran, fsharp, gnuassembler, go, haskell, haxe, html, ini, java, javadoc,
+    javascript, json, jsp, julia, latex, lex, literatecurry, literatehaskell,
+    lua, makefile, mandoc, markdown, matlab, maxima, metafont, mips, modelines,
+    modula2, modula3, monobasic, nasm, noweb, objectivec, objectivecpp, ocaml,
+    octave, pascal, perl, php, pike, postscript, prolog, python, r,
+    relaxngcompact, rhtml, roff, ruby, rust, scala, scheme, sci, sed, sgml, sql,
+    sqlmysql, sqlpostgresql, tcl, texinfo, verilog, vhdl, xml, xorg, xslt, xul,
+    yacc, yaml
 
-[highlighting-kate]: http://johnmacfarlane.net/highlighting-kate/
+ラインブロック  {#line-blocks}
+------------
 
+**拡張: `line_blocks`**
 
-Line blocks
------------
-
-**Extension: `line_blocks`**
-
-A line block is a sequence of lines beginning with a vertical bar (`|`)
-followed by a space.  The division into lines will be preserved in
-the output, as will any leading spaces; otherwise, the lines will
-be formatted as markdown.  This is useful for verse and addresses:
+ラインブロックは縦線(`|`)と1つのスペースで始まる行を続けて並べたものです。
+行の分割は出力にそのまま反映され、先頭のスペースもそのまま保持されます。各行はMarkdown記法で修飾されます。
+この記法は詩（韻文）や住所を書く際に便利です。
 
     | The limerick packs laughs anatomical
     | In space that is quite economical.
@@ -1145,170 +1073,135 @@ be formatted as markdown.  This is useful for verse and addresses:
     | 200 Main St.
     | Berkeley, CA 94718
 
-The lines can be hard-wrapped if needed, but the continuation
-line must begin with a space.
+行は必要であれば強制改行できますが、続きの行はスペースで始まる必要があります：
 
     | The Right Honorable Most Venerable and Righteous Samuel L.
       Constable, Jr.
     | 200 Main St.
     | Berkeley, CA 94718
 
-This syntax is borrowed from [reStructuredText].
+この文法は[reStructuredText]から借りたものです。
 
-Lists
+リスト {#lists}
 -----
 
-### Bullet lists ###
+### 記号付きリスト ###
 
-A bullet list is a list of bulleted list items.  A bulleted list
-item begins with a bullet (`*`, `+`, or `-`).  Here is a simple
-example:
+記号付きリストは行頭に記号の付いたアイテムのリストです。記号付きリストのアイテムの行頭には記号(`*`, `+`, `-`のいずれか)を付けます。以下に例を示します：
 
-    * one
-    * two
-    * three
+    * ひとつめ
+    * ふたつめ
+    * みっつめ
 
-This will produce a "compact" list. If you want a "loose" list, in which
-each item is formatted as a paragraph, put spaces between the items:
+このリストは「コンパクト」なリストを生成します。もっと「緩い(loose)」リストが欲しい場合、つまり各アイテムが段落として整形されてほしい場合は、アイテムとアイテムの間に空行を置きましょう：
 
-    * one
+    * ひとつめ
 
-    * two
+    * ふたつめ
 
-    * three
+    * みっつめ
 
-The bullets need not be flush with the left margin; they may be
-indented one, two, or three spaces. The bullet must be followed
-by whitespace.
+行頭の記号は行頭に揃っている必要はなく、1〜3個のスペースによるインデントがあっても構いません。記号の後ろには必ずスペースを置く必要があります。
 
-List items look best if subsequent lines are flush with the first
-line (after the bullet):
+リストのアイテムは後続の行が先頭の行（記号を除いたテキスト）に揃っていればベストです：
 
-    * here is my first
-      list item.
-    * and my second.
+    * これは最初の
+      リストアイテムです。
+    * そしてこれは二番目です。
 
-But markdown also allows a "lazy" format:
+しかしMarkdownでは下記のような緩い("lazy")な形式でもOKです：
 
-    * here is my first
-    list item.
-    * and my second.
+    * これは最初の
+    リストアイテムです。
+    * そしてこれは二番目です。
 
-### The four-space rule ###
+### フォー・スペース・ルール {#the-four-space-rule}
 
-A list item may contain multiple paragraphs and other block-level
-content. However, subsequent paragraphs must be preceded by a blank line
-and indented four spaces or a tab. The list will look better if the first
-paragraph is aligned with the rest:
+リストアイテムは複数の段落や他のブロックレベルのコンテンツを含むことができます。しかし、後続の段落の前には空行を置き、次に4つのスペース（または1つのタブ）を置く必要があります。このリストは最初の段落に残りの要素を揃えていればベストでしょう：
 
-      * First paragraph.
+      * 最初の段落です。
 
-        Continued.
+        続きです。
 
-      * Second paragraph. With a code block, which must be indented
-        eight spaces:
+      * 二番目の段落です。コードブロックは8つのスペースで
+        インデントされている必要があります：
 
             { code }
 
-List items may include other lists.  In this case the preceding blank
-line is optional.  The nested list must be indented four spaces or
-one tab:
+リストのアイテムは他のリストを含むことができます。この場合、続く空行があってもなくても構いません。入れ子になったリストは4つのスペースまたは1つのタブでインデントされている必要があります：
 
-    * fruits
-        + apples
-            - macintosh
-            - red delicious
-        + pears
-        + peaches
-    * vegetables
-        + brocolli
-        + chard
+    * フルーツ
+        + りんご
+            - サンふじ
+            - 紅玉
+        + なし
+        + もも
+    * 野菜
+        + ブロッコリー
+        + セロリ
 
-As noted above, markdown allows you to write list items "lazily," instead of
-indenting continuation lines. However, if there are multiple paragraphs or
-other blocks in a list item, the first line of each must be indented.
+上記で言及したように、Markdownではリストアイテムをちゃんとインデントする代わりに「緩く」書くことができます。
+しかし、複数の段落やリストアイテム中の他のブロックがある場合は、そのアイテムの1行目はインデントされている必要があります。
 
-    + A lazy, lazy, list
-    item.
+    + ゆるいゆるいリスト
+    アイテム。
 
-    + Another one; this looks
-    bad but is legal.
+    + もうひとつ。お行儀はよくないけど
+    正しい文です。
 
-        Second paragraph of second
-    list item.
+        二番目のリストアイテムの、二番目の段落
+    です。
 
-**Note:**  Although the four-space rule for continuation paragraphs
-comes from the official [markdown syntax guide], the reference implementation,
-`Markdown.pl`, does not follow it. So pandoc will give different results than
-`Markdown.pl` when authors have indented continuation paragraphs fewer than
-four spaces.
+**注意**: 連続する段落に対するフォー・スペース・ルールはオフィシャルの[markdown syntax guide]に由来しますが、その実装である`Markdown.pl`はそのガイドに従っていません。よって文書の作者が4つ未満のスペースでインデントされた、連続する段落を書いた場合、Pandocにおけるその振る舞いは`Markdown.pl`とは異なります。
 
-The [markdown syntax guide] is not explicit whether the four-space
-rule applies to *all* block-level content in a list item; it only
-mentions paragraphs and code blocks.  But it implies that the rule
-applies to all block-level content (including nested lists), and
-pandoc interprets it that way.
+この[markdown syntax guide]ではフォー・スペース・ルールがリストアイテム内で*全ての*ブロックレベルのコンテンツに対して適用されるかどうかについては明示していません。ただ段落とコードブロックに対して言及しているのみです。しかしこのルールが全てのブロックレベルのコンテンツ（入れ子のリストを含む）に対して適用されることは暗に示されており、Pandocではそのように解釈しています。
 
   [markdown syntax guide]:
     http://daringfireball.net/projects/markdown/syntax#list
 
-### Ordered lists ###
+### 順序付きリスト  {#ordered-lists}
 
-Ordered lists work just like bulleted lists, except that the items
-begin with enumerators rather than bullets.
+順序付きリストは記号付きリストのように働きますが、アイテムの先頭に記号ではなく番号が振られます。
 
-In standard markdown, enumerators are decimal numbers followed
-by a period and a space.  The numbers themselves are ignored, so
-there is no difference between this list:
+標準的なMarkdownでは、番号は10進の数字で、その後ろにピリオドと1つのスペースを付けます。
+この番号自体は無視されるので、以下のリストと
 
-    1.  one
-    2.  two
-    3.  three
+    1.  ひとつめ
+    2.  ふたつめ
+    3.  みっつめ
 
-and this one:
+以下のリストの出力は全く同じです：
 
-    5.  one
-    7.  two
-    1.  three
+    5.  ひとつめ
+    7.  ふたつめ
+    1.  みっつめ
 
-**Extension: `fancy_lists`**
+**拡張: `fancy_lists`**
 
-Unlike standard markdown, Pandoc allows ordered list items to be marked
-with uppercase and lowercase letters and roman numerals, in addition to
-arabic numerals. List markers may be enclosed in parentheses or followed by a
-single right-parentheses or period. They must be separated from the
-text that follows by at least one space, and, if the list marker is a
-capital letter with a period, by at least two spaces.[^2]
+標準的なMarkdownとは違い、Pandocでは数字に加えて、大文字または小文字の英字、あるいはローマ数字を番号（リストマーカ）として使った順序付きリストを作ることができます。リストマーカは括弧で囲むか、その後ろに閉じ括弧またはピリオドを置くことができます。この部分とテキストは1つ以上のスペースで区切られている必要があり、リストマーカが大文字とピリオドで構成されている場合は、2つ以上のスペースで区切られる必要があります。[^2]
 
-[^2]:  The point of this rule is to ensure that normal paragraphs
-    starting with people's initials, like
+[^2]: このルールは、通常の段落において下記のような人物のイニシャルが
 
         B. Russell was an English philosopher.
 
-    do not get treated as list items.
+    リストアイテムとして認識されないようにするためです。
 
-    This rule will not prevent
+    ただし、このルールは下記の文を
 
         (C) 2007 Joe Smith
 
-    from being interpreted as a list item.  In this case, a backslash
-    escape can be used:
+    リストアイテムとして解釈されることまでは防ぎません。この場合、バックスラッシュをエスケープに使用することができます：
 
         (C\) 2007 Joe Smith
 
-The `fancy_lists` extension also allows '`#`' to be used as an
-ordered list marker in place of a numeral:
+`fancy_lists`拡張はまた、`#`を順序付きリストのマーカーとして数字の代わりに使用することができます：
 
-    #. one
-    #. two
+    #. ひとつめ
+    #. ふたつめ
 
-**Extension: `startnum`**
+**拡張: `startnum`**
 
-Pandoc also pays attention to the type of list marker used, and to the
-starting number, and both of these are preserved where possible in the
-output format. Thus, the following yields a list with numbers followed
-by a single parenthesis, starting with 9, and a sublist with lowercase
-roman numerals:
+Pandocはリストマーカの型とその始まりの番号を認識し、出力の際には可能な限り保持します。つまり、下記の例では、番号が9から始まる閉じ括弧付き番号付きリストと、そのサブリストとして小文字のローマ数字付きリストを与えます：
 
      9)  Ninth
     10)  Tenth
@@ -1317,180 +1210,142 @@ roman numerals:
           ii. subtwo
          iii. subthree
 
-Pandoc will start a new list each time a different type of list
-marker is used.  So, the following will create three lists:
+Pandocは異なる型のリストマーカが使用される度に、新しいリストを開始します。よって、下記の例では3つのリストが生成されます：
 
     (2) Two
     (5) Three
     1.  Four
     *   Five
 
-If default list markers are desired, use `#.`:
+デフォルトのリストマーカがお望みであれば、`#.`を使えます。
 
     #.  one
     #.  two
     #.  three
 
 
-### Definition lists ###
+### 定義リスト  {#definition-lists}
 
-**Extension: `definition_lists`**
+**拡張: `definition_lists`**
 
-Pandoc supports definition lists, using a syntax inspired by
-[PHP Markdown Extra] and [reStructuredText]:[^3]
+Pandocは定義リストをサポートします。この文法は[PHP Markdown Extra]と[reStructuredText]から着想を得たものです：[^3]
 
-    Term 1
+    用語1
 
-    :   Definition 1
+    :   定義1
 
-    Term 2 with *inline markup*
+    *インラインマークアップ*の入った用語2
 
-    :   Definition 2
+    :   定義2
 
-            { some code, part of Definition 2 }
+            { コード、定義2の一部 }
 
-        Third paragraph of definition 2.
+        定義2の3つ目の段落。
 
-Each term must fit on one line, which may optionally be followed by
-a blank line, and must be followed by one or more definitions.
-A definition begins with a colon or tilde, which may be indented one
-or two spaces. The body of the definition (including the first line,
-aside from the colon or tilde) should be indented four spaces. A term may have
-multiple definitions, and each definition may consist of one or more block
-elements (paragraph, code block, list, etc.), each indented four spaces or one
-tab stop.
 
-If you leave space after the definition (as in the example above),
-the blocks of the definitions will be considered paragraphs. In some
-output formats, this will mean greater spacing between term/definition
-pairs. For a compact definition list, do not leave space between the
-definition and the next term:
+各用語は1行に収まっている必要がありますが、空行をその後ろに続けることができます。その用語の後ろには、必ず1つ以上の定義を続ける必要があります。定義は1つのコロンまたはチルダで始めますが、1〜2個のスペースでインデントしても構いません。定義の本体（最初の行のうちコロン又はチルダの右側も含む）は4つのスペースでインデントするべきです。1つの用語は複数の定義を持つことができ、各定義は4つのスペース（または1つのタブ）によるインデントとともに、1つ以上のブロック要素（段落、コードブロック、リストなど）で構成できます。
 
-    Term 1
-      ~ Definition 1
-    Term 2
-      ~ Definition 2a
-      ~ Definition 2b
+（上記の例で示したように）定義の後ろに空行を入れた場合、そのブロックは段落として解釈されます。いくつかの出力フォーマットでは、この空行は用語/定義のペアの間の空白よりも大きな意味を持つ場合があります。コンパクトな定義リストの場合、前の定義と次の用語の間に空行を作らないでください：
 
-[^3]:  I have also been influenced by the suggestions of [David Wheeler](http://www.justatheory.com/computers/markup/modest-markdown-proposal.html).
+    用語1
+      ~ 定義1
+    用語2
+      ~ 定義2a
+      ~ 定義2b
+
+[^3]:  私（訳注：John MacFarlane）は[David Wheeler](http://www.justatheory.com/computers/markup/modest-markdown-proposal.html)による提案の影響も受けています。
 
 [PHP Markdown Extra]: http://www.michelf.com/projects/php-markdown/extra/
 
 
-### Numbered example lists ###
+### 順序付き例示リスト  {#numbered-example-lists}
 
-**Extension: `example_lists`**
+**拡張: `example_lists`**
 
-The special list marker `@` can be used for sequentially numbered
-examples. The first list item with a `@` marker will be numbered '1',
-the next '2', and so on, throughout the document. The numbered examples
-need not occur in a single list; each new list using `@` will take up
-where the last stopped. So, for example:
+特別なリストマーカ`@`は順序付きの例を順に列挙する場合に使用できます。1番目の`@`マーカ付きリストアイテムは番号'1'が振られ、2番目のアイテムは'2'となり、文書の最後まで以下同様になります。順序付き例示リストは1つのリストに収まっている必要はありません。`@`を使った新しいリストは最後に使ったリストの番号を引き継ぎます。例えば：
 
-    (@)  My first example will be numbered (1).
-    (@)  My second example will be numbered (2).
+    (@)  最初の例には番号(1)が付きます。
+    (@)  2番目の例には番号(2)が付きます。
 
-    Explanation of examples.
+    ここで例を説明。
 
-    (@)  My third example will be numbered (3).
+    (@)  3番目の例には番号(3)が付きます。
 
-Numbered examples can be labeled and referred to elsewhere in the
-document:
+順序付き例示リストはラベルを付けることができ、文書中で参照することができます：
 
     (@good)  This is a good example.
 
     As (@good) illustrates, ...
 
-The label can be any string of alphanumeric characters, underscores,
-or hyphens.
+このラベルは英数字およびアンダースコア、ハイフンから成る文字列です。
 
 
+### コンパクトなリスト、ルーズなリスト  {#compact-and-loose-lists}
 
-### Compact and loose lists ###
+Pandocは`Markdown.pl`とは違い、リストに関して「微妙な場合」で振るまいが異なります。以下の例を考えてみましょう：
 
-Pandoc behaves differently from `Markdown.pl` on some "edge
-cases" involving lists.  Consider this source:
+    +   ひとつめ
+    +   ふたつめ：
+        -   ほげ
+        -   ふが
+        -   ぴよ
 
-    +   First
-    +   Second:
-    	-   Fee
-    	-   Fie
-    	-   Foe
+    +   みっつめ
 
-    +   Third
+Pandocはこれを「コンパクトなリスト」（「ひとつめ」「ふたつめ」「みっつめ」に対して`<p>`タグで囲まない）に変換します。一方、`Markdown.pl`では、「みっつめ」の周りに空行があるので、（「ひとつめ」を飛ばして）`<p>`タグを「ふたつめ」と「みっつめ」に付けます。Pandocは「もしテキストの下に空行があれば、そのテキストを1つの段落として扱う」という単純なルールに従います。「ふたつめ」の下には空行ではなくリストがあるため、「ふたつめ」は段落として扱いません。入れ子になっているリストの下に空行があるという事実は重要ではありません。（注意：Pandocは`markdown_strict`フォーマットが指定されているときでも、このように動作します。この振る舞いはオフィシャルのMarkdown文法の解説と矛盾しませんが、`Markdown.pl`の振る舞いとは異なります。）
 
-Pandoc transforms this into a "compact list" (with no `<p>` tags around
-"First", "Second", or "Third"), while markdown puts `<p>` tags around
-"Second" and "Third" (but not "First"), because of the blank space
-around "Third". Pandoc follows a simple rule: if the text is followed by
-a blank line, it is treated as a paragraph. Since "Second" is followed
-by a list, and not a blank line, it isn't treated as a paragraph. The
-fact that the list is followed by a blank line is irrelevant. (Note:
-Pandoc works this way even when the `markdown_strict` format is specified. This
-behavior is consistent with the official markdown syntax description,
-even though it is different from that of `Markdown.pl`.)
+### リストの終わり  {#ending-a-list}
 
+では、インデントコードブロックをリストの後に置きたい場合はどうでしょうか？
 
-### Ending a list ###
+    -   ひとつめ
+    -   ふたつめ
 
-What if you want to put an indented code block after a list?
+        { コードブロック }
 
-    -   item one
-    -   item two
+困りました！ここでPandocでは（他のMarkdown実装のように）`{ コードブロック }`を、「ふたつめ」の2つ目の段落として解釈するため、コードブロックとして解釈されません。
 
-        { my code block }
+「ふたつめ」の後ろのコードブロックをそのリストから「切り離す」ために、インデントされていないコンテンツを挿入することができます。HTMLコメントのような、どのフォーマットでも目に見える出力がされないようなものがよいでしょう。
 
-Trouble! Here pandoc (like other markdown implementations) will treat
-`{ my code block }` as the second paragraph of item two, and not as
-a code block.
+    -   ひとつめ
+    -   ふたつめ
 
-To "cut off" the list after item two, you can insert some non-indented
-content, like an HTML comment, which won't produce visible output in
-any format:
+    <!-- リストの終わり -->
 
-    -   item one
-    -   item two
+        { コードブロック }
 
-    <!-- end of list -->
+同様に、下記のように1つの大きなリストにするのではなく2つのリストに分けたいときも、同じ裏技が使用できます。
 
-        { my code block }
-
-You can use the same trick if you want two consecutive lists instead
-of one big list:
-
-    1.  one
-    2.  two
-    3.  three
+    1.  ワン
+    2.  ツー
+    3.  スリー
 
     <!-- -->
 
-    1.  uno
-    2.  dos
-    3.  tres
+    1.  アン
+    2.  ドゥ
+    3.  トロワ
 
-Horizontal rules
-----------------
+水平線  {#horizontal-rules}
+------
 
-A line containing a row of three or more `*`, `-`, or `_` characters
-(optionally separated by spaces) produces a horizontal rule:
+3つ以上の `*`, `-`, `_` から成る行は水平線になります（オプションでスペースを入れても構いません）。
 
     *  *  *  *
 
     ---------------
 
 
-Tables
-------
+表   {#tables}
+----
 
-Four kinds of tables may be used. The first three kinds presuppose the use of
-a fixed-width font, such as Courier. The fourth kind can be used with
-proportionally spaced fonts, as it does not require lining up columns.
+4種類の表（テーブル）が使用できます。最初の3種類はCourierのような等幅フォントの使用を前提とします。4種類目はプロポーショナルフォントの使用が可能で、列を左右・中央に寄せるために列のテキストを左右に移動する必要もありません。
 
-### Simple tables
+### シンプルテーブル
 
-**Extension: `simple_tables`, `table_captions`**
+**拡張: `simple_tables`, `table_captions`**
 
-Simple tables look like this:
+シンプルテーブルはこのように書けます：
 
       Right     Left     Center     Default
     -------     ------ ----------   -------
@@ -1498,32 +1353,20 @@ Simple tables look like this:
         123     123       123          123
           1     1          1             1
 
-    Table:  Demonstration of simple table syntax.
+    Table:  シンプルテーブルのデモ
 
-The headers and table rows must each fit on one line.  Column
-alignments are determined by the position of the header text relative
-to the dashed line below it:[^4]
+表のヘッダと行はそれぞれ1行に収まっている必要があります。列を左右・中央のどちらに寄せるかは、ヘッダの下にある'`-`'の線（以下、ヘッダ下線）に対するヘッダテキストの位置で決まります：[^4]
 
-  - If the dashed line is flush with the header text on the right side
-    but extends beyond it on the left, the column is right-aligned.
-  - If the dashed line is flush with the header text on the left side
-    but extends beyond it on the right, the column is left-aligned.
-  - If the dashed line extends beyond the header text on both sides,
-    the column is centered.
-  - If the dashed line is flush with the header text on both sides,
-    the default alignment is used (in most cases, this will be left).
+  - ヘッダ下線とヘッダテキストが右側で揃っており、ヘッダ下線が左側にはみ出している場合は、列は右寄せとなります。
+  - ヘッダ下線とヘッダテキストが左側で揃っており、ヘッダ下線が右側にはみ出している場合は、列は左寄せとなります。
+  - ヘッダ下線がヘッダテキストに対して両側にはみ出している場合は、列は中央寄せとなります。
+  - ヘッダ下線とヘッダテキストの幅が等しい場合は、デフォルトの方法で列を寄せます（たいていの場合は左寄せとなります）。
 
-[^4]:  This scheme is due to Michel Fortin, who proposed it on the
-       [Markdown discussion list](http://six.pairlist.net/pipermail/markdown-discuss/2005-March/001097.html).
+[^4]:  この仕組みはMichel Fortinに由来します。彼はこれを [Markdown discussion list](http://six.pairlist.net/pipermail/markdown-discuss/2005-March/001097.html) にて提案しました。
 
-The table must end with a blank line, or a line of dashes followed by
-a blank line.  A caption may optionally be provided (as illustrated in
-the example above). A caption is a paragraph beginning with the string
-`Table:` (or just `:`), which will be stripped off. It may appear either
-before or after the table.
+表は空行で終わっている必要があります。あるいは、'`-`'を並べた線の行の後に空行をつけ加えたもので終わることもできます。表題(caption)は上記の例で示したとおり、オプションで付けることができます。表題は`Table:`（または単に`:`）で始まる段落で、この`Table:`の部分は出力の際に取り除かれます。表題は表の前か後に付けることができます。
 
-The column headers may be omitted, provided a dashed line is used
-to end the table. For example:
+列のヘッダは省略可能ですが、その場合は'`-`'の線を表の最後に付けてください。例を示します：
 
     -------     ------ ----------   -------
          12     12        12             12
@@ -1531,17 +1374,13 @@ to end the table. For example:
           1     1          1              1
     -------     ------ ----------   -------
 
-When headers are omitted, column alignments are determined on the basis
-of the first line of the table body. So, in the tables above, the columns
-would be right, left, center, and right aligned, respectively.
+ヘッダが省略された場合は、列の寄せ方は表本体(body)の1行目がどう寄せられているかで決まります。つまり、上記の例では、列はそれぞれ右寄せ、左寄せ、中央寄せ、右寄せの順になります。
 
-### Multiline tables
+### マルチラインテーブル
 
-**Extension: `multiline_tables`, `table_captions`**
+**拡張: `multiline_tables`, `table_captions`**
 
-Multiline tables allow headers and table rows to span multiple lines
-of text (but cells that span multiple columns or rows of the table are
-not supported).  Here is an example:
+マルチラインテーブルでは、表のヘッダと行のセル内部に複数の行を入れることができます（ただしセルの結合はサポートしていません）。例を示します：
 
     -------------------------------------------------------------
      Centered   Default           Right Left
@@ -1555,22 +1394,18 @@ not supported).  Here is an example:
                                         rows.
     -------------------------------------------------------------
 
-    Table: Here's the caption. It, too, may span
-    multiple lines.
+    Table: 表題がここに入ります。
+    複数の行です。
 
-These work like simple tables, but with the following differences:
+この表はシンプルテーブルと同様に働きますが、下記のような違いがあります：
 
-  - They must begin with a row of dashes, before the header text
-    (unless the headers are omitted).
-  - They must end with a row of dashes, then a blank line.
-  - The rows must be separated by blank lines.
+  - ヘッダテキストの前の行（1行目）は'`-`'を並べた線の行でなければならない（ただしヘッダが無い場合は除く）。
+  - 最終行には'`-`'を並べた線の行と、それに続く空行を置かなければならない。
+  - それぞれの行は空行で区切られなければならない。
 
-In multiline tables, the table parser pays attention to the widths of
-the columns, and the writers try to reproduce these relative widths in
-the output. So, if you find that one of the columns is too narrow in the
-output, try widening it in the markdown source.
+マルチラインテーブルにおいて、PandocのReaderは列の幅をチェックしており、Writerはそれに応じて相対的に幅を調節して出力しようとします。よって、ある列が必要以上に狭く出力されてしまった場合は、Markdownのソースにてその列を広げてみてください。
 
-Headers may be omitted in multiline tables as well as simple tables:
+マルチラインテーブルでも、シンプルテーブルと同様にヘッダを省略することができます。
 
     ----------- ------- --------------- -------------------------
        First    row                12.0 Example of a row that
@@ -1581,218 +1416,158 @@ Headers may be omitted in multiline tables as well as simple tables:
                                         rows.
     ----------- ------- --------------- -------------------------
 
-    : Here's a multiline table without headers.
+    : ヘッダのないマルチラインテーブルです。
 
-It is possible for a multiline table to have just one row, but the row
-should be followed by a blank line (and then the row of dashes that ends
-the table), or the table may be interpreted as a simple table.
+マルチラインテーブルでは1行だけを保持することができますが、その行の下には空行を入れるべきです（そして表の最後には'`-`'を並べた行を入れます）。そうしなければ、表がシンプルテーブルと解釈されてしまう場合があります。
 
-### Grid tables
+### グリッドテーブル
 
-**Extension: `grid_tables`, `table_captions`**
+**拡張: `grid_tables`, `table_captions`**
 
-Grid tables look like this:
+グリッドテーブルはこのような表です：
 
-    : Sample grid table.
+    : グリッドテーブルのサンプル。
 
     +---------------+---------------+--------------------+
-    | Fruit         | Price         | Advantages         |
+    | 果物           | 値段          | 利点                |
     +===============+===============+====================+
-    | Bananas       | $1.34         | - built-in wrapper |
-    |               |               | - bright color     |
+    | バナナ         | $1.34         | - むきやすい        |
+    |               |               | - 明るい色          |
     +---------------+---------------+--------------------+
-    | Oranges       | $2.10         | - cures scurvy     |
-    |               |               | - tasty            |
+    | オレンジ       | $2.10         | - ビタミンCが豊富    |
+    |               |               | - おいしい          |
     +---------------+---------------+--------------------+
 
-The row of `=`s separates the header from the table body, and can be
-omitted for a headerless table. The cells of grid tables may contain
-arbitrary block elements (multiple paragraphs, code blocks, lists,
-etc.). Alignments are not supported, nor are cells that span multiple
-columns or rows. Grid tables can be created easily using [Emacs table mode].
+'`=`'を並べた行はヘッダと表本体を分割しますが、ヘッダを省略したい場合には無くても構いません。グリッドテーブルのセルには任意のブロック要素（複数の段落、コードブロック、リストなど）を含めることができます。列の右寄せ・中央寄せやセルの結合はサポートされていません。グリッドテーブルは[Emacs table mode]を用いることで簡単に作成することができます。
 
   [Emacs table mode]: http://table.sourceforge.net/
 
-### Pipe tables
+### パイプテーブル
 
-**Extension: `pipe_tables`, `table_captions`**
+**拡張: `pipe_tables`, `table_captions`**
 
-Pipe tables look like this:
+パイプテーブルは下記のような表です：
 
-    | Right | Left | Default | Center |
+    |右寄せ | 左寄せ|デフォルト|中央寄せ|
     |------:|:-----|---------|:------:|
     |   12  |  12  |    12   |    12  |
     |  123  |  123 |   123   |   123  |
     |    1  |    1 |     1   |     1  |
 
-      : Demonstration of simple table syntax.
+      : パイプテーブルのデモ
 
-The syntax is [the same as in PHP markdown extra].  The beginning and
-ending pipe characters are optional, but pipes are required between all
-columns.  The colons indicate column alignment as shown.  The header
-can be omitted, but the horizontal line must still be included, as
-it defines column alignments.
+文法は[PHP markdown extra]と同じです。始まりと終わりのパイプ文字(`|`)は無くても構いませんが、パイプは全ての列と列の間に挟む必要があります。コロンは列のテキストを寄せる方向を示します。ヘッダは省略可能ですが、列を寄せる方向を決めるために水平線の行は含めなければなりません。
 
-Since the pipes indicate column boundaries, columns need not be vertically
-aligned, as they are in the above example.  So, this is a perfectly
-legal (though ugly) pipe table:
+パイプは列の境界を示すため、上記の例で示したとおり、列自体はテキストを左右に寄せたりして整形する必要がありません。つまり、下記は全く正しい（が、汚い）パイプテーブルの例です：
 
-    fruit| price
+    果物| 値段
     -----|-----:
-    apple|2.05
-    pear|1.37
-    orange|3.09
+    りんご|2.05
+    なし|1.37
+    オレンジ|3.09
 
-The cells of pipe tables cannot contain block elements like paragraphs
-and lists, and cannot span multiple lines.
+パイプテーブルのセルには段落やリストのようなブロック要素を含めることができず、セルに複数行を入れることもできません。
 
-  [the same as in PHP markdown extra]:
+  [PHP markdown extra]:
     http://michelf.ca/projects/php-markdown/extra/#table
 
-Note:  Pandoc also recognizes pipe tables of the following
-form, as can produced by Emacs' orgtbl-mode:
+メモ：Pandocは下記のような形式のパイプテーブルも認識できます。これはEmacsのorgtbl-modeで用いられるものです：
 
-    | One | Two   |
-    |-----+-------|
-    | my  | table |
-    | is  | nice  |
+    | 1つ目   | 2つ目 |
+    |---------+------|
+    | この    | 表は  |
+    | なかなか| よい  |
 
-The difference is that `+` is used instead of `|`. Other orgtbl features
-are not supported. In particular, to get non-default column alignment,
-you'll need to add colons as above.
+違いは'`|`'の代わりに'`+`'を使っている点です。他のorgtblの機能はサポートされていません。特に、デフォルトでない列テキストの寄せ方をする場合は、上記のようにコロンを付ける必要があります。
 
-Title block
------------
+タイトルブロック  {#title-block}
+--------------
 
-**Extension: `pandoc_title_block`**
+**拡張: `pandoc_title_block`**
 
-If the file begins with a title block
+ファイルがこのようなタイトルブロックで始まっている場合は、
 
-    % title
-    % author(s) (separated by semicolons)
-    % date
+    % タイトル
+    % 著者 (複数の場合はセミコロンで区切る)
+    % 日付
 
-it will be parsed as bibliographic information, not regular text.  (It
-will be used, for example, in the title of standalone LaTeX or HTML
-output.)  The block may contain just a title, a title and an author,
-or all three elements. If you want to include an author but no
-title, or a title and a date but no author, you need a blank line:
+これらは通常のテキストではなく文書の情報として認識されます。（例えば、スタンドアローンなLaTeXまたはHTMLのタイトルに使われます。）このブロックには「タイトルのみ」「タイトル、著者」「タイトル、著者、日付」のいずれかの組み合わせを含めることができます。もし「著者のみ」（タイトルなし）をブロックに含めたい倍は、空行を入れる必要があります：
 
     %
-    % Author
+    % 著者
 
-    % My title
+    % タイトル
     %
-    % June 15, 2006
+    % 2006年6月15日
 
-The title may occupy multiple lines, but continuation lines must
-begin with leading space, thus:
+タイトルには複数行を入れることができますが、2行目以降には次のようにテキストの前にスペースを入れる必要があります：
 
-    % My title
-      on multiple lines
+    % 複数行の
+      タイトル
 
-If a document has multiple authors, the authors may be put on
-separate lines with leading space, or separated by semicolons, or
-both.  So, all of the following are equivalent:
+ドキュメントに複数の著者を含めたい場合は、複数行で書く（2行目以降の前にはスペースを入れる）か、セミコロンで区切るか、その両方で書くことができます。よって、下記の3つは全て等価です：
 
-    % Author One
-      Author Two
+    % 著者1
+      著者2
 
-    % Author One; Author Two
+    % 著者1; 著者2
 
-    % Author One;
-      Author Two
+    % 著者1;
+      著者2
 
-The date must fit on one line.
+日付は1行で書く必要があります。
 
-All three metadata fields may contain standard inline formatting
-(italics, links, footnotes, etc.).
+上記3つのメタデータフィールドには標準的なインライン形式の修飾（斜体、リンク、脚注など）を入れることができます。
 
-Title blocks will always be parsed, but they will affect the output only
-when the `--standalone` (`-s`) option is chosen. In HTML output, titles
-will appear twice: once in the document head -- this is the title that
-will appear at the top of the window in a browser -- and once at the
-beginning of the document body. The title in the document head can have
-an optional prefix attached (`--title-prefix` or `-T` option). The title
-in the body appears as an H1 element with class "title", so it can be
-suppressed or reformatted with CSS. If a title prefix is specified with
-`-T` and no title block appears in the document, the title prefix will
-be used by itself as the HTML title.
+タイトルブロックは読み込み時において常に解釈されますが、`--standalone` (`-s`) オプションが選択されたときに限り、出力に影響を与えます。HTML出力においては、タイトルは2箇所に影響を与えます。1つ目は`<head>`タグ内部で、これはブラウザウィンドウの上部に表れるタイトルです。2つ目は`<body>`タグに入って最初の部分です。`<head>`タグ内部のタイトルについては、接頭辞を与えることができます（`--title-prefix`または`-T`オプション）。`<body>`タグに入ってすぐのタイトルは、class="title"のH1要素として表れるので、CSSを用いて消去したり書式を変えたりすることができます。タイトルの接頭辞が`-T`によって指定され、タイトルブロックが文書中に無い場合は、タイトルの接頭辞そのものがHTMLのタイトルとして使用されます。
 
-The man page writer extracts a title, man page section number, and
-other header and footer information from the title line. The title
-is assumed to be the first word on the title line, which may optionally
-end with a (single-digit) section number in parentheses. (There should
-be no space between the title and the parentheses.)  Anything after
-this is assumed to be additional footer and header text. A single pipe
-character (`|`) should be used to separate the footer text from the header
-text.  Thus,
+manページのWriterはタイトル行からタイトル、manページのセクション番号、その他のヘッダ又はフッタ情報を取得します。このWriterはタイトル行の最初の単語(word)をタイトルとして解釈します。このタイトルは括弧に囲まれたセクション番号（1桁の数字）で終わることもできます。（タイトルと括弧の間にはスペースを入れてはなりません。）この後に足される全てのテキストは、追加のフッタ又はヘッダテキストと解釈されます。パイプ記号(`|`)はフッタとヘッダを区切るセパレータとなります。つまり、
 
     % PANDOC(1)
 
-will yield a man page with the title `PANDOC` and section 1.
+は、タイトルが`PANDOC`でセクション1のmanページをもたらします。
 
     % PANDOC(1) Pandoc User Manuals
 
-will also have "Pandoc User Manuals" in the footer.
+は、上記に加え、"Pandoc User Manuals"をフッタに加えます。
 
     % PANDOC(1) Pandoc User Manuals | Version 4.0
 
-will also have "Version 4.0" in the header.
+は、上記に加え、"Version 4.0"をヘッダに加えます。
 
-YAML metadata block
+YAMLメタデータブロック  {#yaml-metadata-block}
 -------------------
 
-**Extension: `yaml_metadata_block`**
+**拡張: `yaml_metadata_block`**
 
-A YAML metadata block is a valid YAML object, delimited by a line of three
-hyphens (`---`) at the top and a line of three hyphens (`---`) or three dots
-(`...`) at the bottom.  A YAML metadata block may occur anywhere in the
-document, but if it is not at the beginning, it must be preceded by a blank
-line.
+YAMLメタデータブロックは正当なYAMLオブジェクトであり、最初の行が3つのハイフン(`---`)の行、最後の行が3つのハイフン(`---`)または3つのドット(`...`)であるブロックです。YAMLメタデータブロックは文書中の任意の場所に置くことができますが、先頭に置く場合を除いて、必ず空行の後にこのブロックを置く必要があります。
 
-Metadata will be taken from the fields of the YAML object and added to any
-existing document metadata.  Metadata can contain lists and objects (nested
-arbitrarily), but all string scalars will be interpreted as markdown.  Fields
-with names ending in an underscore will be ignored by pandoc.  (They may be
-given a role by external processors.)
+メタデータはYAMLオブジェクトのフィールドから取得され、文書中の既存のメタデータに対して追加されます。メタデータにはリストやオブジェクトを含むことができます（適宜、入れ子にもできます）。しかし全ての文字列スカラ値はMarkdownとして解釈されます。アンダースコアで終わっている名前付きフィールドはPandocでは無視されます。（これらは外部の処理系によって与えられる場合があります。）
 
-A document may contain multiple metadata blocks.  The metadata fields will
-be combined through a *left-biased union*:  if two metadata blocks attempt
-to set the same field, the value from the first block will be taken.
+1つの文書には複数のメタデータブロックを含むことができます。複数のメタデータフィールドは*left-biased union*ルールにより統合されます。つまり、2つのメタデータブロックが同じフィールドを定義しようとする場合、最初のブロックの値が採用されます。
 
-Note that YAML escaping rules must be followed. Thus, for example,
-if a title contains a colon, it must be quoted.  The pipe character
-(`|`) can be used to begin an indented block that will be interpreted
-literally, without need for escaping.  This form is necessary
-when the field contains blank lines:
+注意：YAMLのエスケープルールは以下の通りです。例えば、タイトルにコロンが含まれる場合は、引用符(`'`)で囲む必要があります。パイプ文字(`|`)はインデントブロックの始めに使うことができ、このブロックは（エスケープする必要がなく）文字通りに表示されます。この形式は空行をフィールドに含める際に必要となります：
 
     ---
-    title:  'This is the title: it contains a colon'
+    title:  'これはタイトルです: コロンを含んでいます'
     author:
-    - name: Author One
-      affiliation: University of Somewhere
-    - name: Author Two
-      affiliation: University of Nowhere
+    - name: 著者1
+      affiliation: どこかの大学
+    - name: 著者2
+      affiliation: どこにもない大学
     tags: [nothing, nothingness]
     abstract: |
-      This is the abstract.
+      これは概要です。
 
-      It consists of two paragraphs.
+      2つの段落で構成されています。
     ...
 
-Template variables will be set automatically from the metadata.  Thus, for
-example, in writing HTML, the variable `abstract` will be set to the HTML
-equivalent of the markdown in the `abstract` field:
+テンプレート変数にはメタデータからの値が自動的にセットされます。つまり、例えば、HTMLを書き出す場合、変数`abstract`はMarkdown中の`abstract`フィールドに等しいものがHTML文書にセットされます：
 
-    <p>This is the abstract.</p>
-    <p>It consists of two paragraphs.</p>
+    <p>これは概要です。</p>
+    <p>2つの段落で構成されています。</p>
 
-Note:  The example above will not work with the default templates.
-The `author` variable in the templates expects a simple list or string,
-and there is no `abstract` variable in most templates.  To use these,
-you would need to use a custom template with appropriate variables.
-For example:
+注意：上記の例はデフォルトテンプレートでは正しく動きません。このテンプレート中の変数`author`はシンプルなリストまたは文字列を仮定しており、その他の多くのテンプレートではそもそも変数`abstract`がありません。これらの変数を使うには、適切な変数を用いたカスタムテンプレートを使用する必要があるでしょう。例を示します：
 
     $for(author)$
     $if(author.name)$
@@ -1806,431 +1581,332 @@ For example:
     Abstract: $abstract$
     $endif$
 
-Backslash escapes
------------------
+バックスラッシュ・エスケープ  {#backslash-escapes}
+------------------------
 
-**Extension: `all_symbols_escapable`**
+**拡張: `all_symbols_escapable`**
 
-Except inside a code block or inline code, any punctuation or space
-character preceded by a backslash will be treated literally, even if it
-would normally indicate formatting.  Thus, for example, if one writes
+コードブロックやインサイドコードを除き、バックスラッシュの次にある任意の記号やスペース文字は、文字通りに扱われます。これはテキスト修飾を表す記号に対しても同様です。例えば、
 
     *\*hello\**
 
-one will get
+は下記と等価であり、
 
     <em>*hello*</em>
 
-instead of
+下記とは異なります：
 
     <strong>hello</strong>
 
-This rule is easier to remember than standard markdown's rule,
-which allows only the following characters to be backslash-escaped:
+このルールはMarkdownの標準ルールよりも覚えやすいものです。Markdownの標準ルールでは、下記の記号のみがバックスラッシュでエスケープできます：
 
     \`*_{}[]()>#+-.!
 
-(However, if the `markdown_strict` format is used, the standard markdown rule
-will be used.)
+（しかし、`markdown_strict`フォーマットが指定された場合は、Markdownの標準ルールが適用されます。）
 
-A backslash-escaped space is parsed as a nonbreaking space.  It will
-appear in TeX output as `~` and in HTML and XML as `\&#160;` or
-`\&nbsp;`.
+バックスラッシュでエスケープされたスペースは、改行を伴わないスペースとして解釈されます。これはTeXの出力では`~`として、HTMLやXMLでは`\&#160;`または`\&nbsp;`として表れます。
 
-A backslash-escaped newline (i.e. a backslash occurring at the end of
-a line) is parsed as a hard line break.  It will appear in TeX output as
-`\\` and in HTML as `<br />`.  This is a nice alternative to
-markdown's "invisible" way of indicating hard line breaks using
-two trailing spaces on a line.
+バックスラッシュでエスケープされた改行（具体的には、行末に現れるバックスペース）は強制改行として解釈されます。これはTeXの出力では`\\`として、HTMLでは`<br />`として表れます。この方法はMarkdownにおける「見えない改行」（強制改行を末尾のスペース2つで表す方法）のよい代替案として使えます。
 
-Backslash escapes do not work in verbatim contexts.
+バックスペース・エスケープは、コードブロックやインラインコードなど文字通り(verbatim)に表す環境では機能しません。
 
-Smart punctuation
+スマートな記号  {#smart-punctuation}
+------------
+
+**拡張**
+
+`--smart`オプションが指定された場合、Pandocはタイポグラフィ的に正しい出力を行います。つまり、直線状の引用符を曲がった引用符に、`---`をemダッシュ「`—`」に、`--`をenダッシュ「`–`」に、 `...`を3点リーダーに変換します。"Mr."のようなある種の略記・略称に対しては、改行を伴わないスペースが挿入されます。
+
+注意：LaTeXのテンプレートで`csquotes`が使用されている場合、Pandocは自動的にこれを検出し、引用符のついたテキストには`\enquote{...}`が使用されます。
+
+インライン形式の修飾 {#inline-formatting}
 -----------------
 
-**Extension**
+### 強調 ###
 
-If the `--smart` option is specified, pandoc will produce typographically
-correct output, converting straight quotes to curly quotes, `---` to
-em-dashes, `--` to en-dashes, and `...` to ellipses. Nonbreaking spaces
-are inserted after certain abbreviations, such as "Mr."
+テキストを*強調*するには、下記のように`*`または`_`のペアで囲みます：
 
-Note:  if your LaTeX template uses the `csquotes` package, pandoc will
-detect automatically this and use `\enquote{...}` for quoted text.
+    このテキストは _アンダースコアで強調されており_、そして
+    これは *アスタリスクで強調されています*。
 
-Inline formatting
------------------
+2重の`*`または`_`は**強い強調**をもたらします：
 
-### Emphasis ###
+    これは **強い強調** で、これは __アンダースコアで囲んだものです__。
 
-To *emphasize* some text, surround it with `*`s or `_`, like this:
+スペースで囲まれた`*`や`_`、およびバックスペースでエスケープされたものは強調扱いになりません：
 
-    This text is _emphasized with underscores_, and this
-    is *emphasized with asterisks*.
+    これは * 強調されません *、そして \*これも同様です\*。
 
-Double `*` or `_` produces **strong emphasis**:
+**拡張: `intraword_underscores`**
 
-    This is **strong emphasis** and __with underscores__.
-
-A `*` or `_` character surrounded by spaces, or backslash-escaped,
-will not trigger emphasis:
-
-    This is * not emphasized *, and \*neither is this\*.
-
-**Extension: `intraword_underscores`**
-
-Because `_` is sometimes used inside words and identifiers,
-pandoc does not interpret a `_` surrounded by alphanumeric
-characters as an emphasis marker.  If you want to emphasize
-just part of a word, use `*`:
+`_`記号は時々、言葉や識別子の間に入ったりするので、Pandocでは英数字に囲まれた`_`を強調記号として認識しません。単語の一部分を強調したい場合は、`*`を使用してください：
 
     feas*ible*, not feas*able*.
 
+### 取り消し線 ###
 
-### Strikeout ###
+**拡張:  `strikeout`**
 
-**Extension:  `strikeout`**
+テキストに水平線の取り消し線をかける場合は、そのテキストを`~~`で囲んでください。例えば：
 
-To strikeout a section of text with a horizontal line, begin and end it
-with `~~`. Thus, for example,
+    これは ~~削除されたテキストです。~~
 
-    This ~~is deleted text.~~
+### 上付き文字と下付き文字 ###
 
+**拡張: `superscript`, `subscript`**
 
-### Superscripts and subscripts ###
+あるテキストを上付き文字にするには、テキストを`^`で囲んでください。同様に下付き文字にするには、テキストを`~`で囲んでください。例えば：
 
-**Extension: `superscript`, `subscript`**
+    H~2~O は液体です。2^10^ は 1024 です。
 
-Superscripts may be written by surrounding the superscripted text by `^`
-characters; subscripts may be written by surrounding the subscripted
-text by `~` characters.  Thus, for example,
-
-    H~2~O is a liquid.  2^10^ is 1024.
-
-If the superscripted or subscripted text contains spaces, these spaces
-must be escaped with backslashes.  (This is to prevent accidental
-superscripting and subscripting through the ordinary use of `~` and `^`.)
-Thus, if you want the letter P with 'a cat' in subscripts, use
-`P~a\ cat~`, not `P~a cat~`.
+上付き文字または下付き文字にスペースが含まれる場合、このスペースはバックスラッシュでエスケープする必要があります。（これは、通常の`~`や`^`の使用によって、意図に反して上付き文字や下付き文字が適用されることを防ぎます。つまり、もし文字Pに対して'a cat'を下付き文字にしたい場合、`P~a cat~`ではなく、`P~a\ cat~`とする必要があります。）
 
 
-### Verbatim ###
+### 文字通りの出力 (Verbatim)  {#verbatim}
 
-To make a short span of text verbatim, put it inside backticks:
+短いブロックで文字通りの出力(verbatim)を得たい場合、バックスラッシュで囲みます：
 
-    What is the difference between `>>=` and `>>`?
+    `>>=`と`>>`の違いは何でしょうか？
 
-If the verbatim text includes a backtick, use double backticks:
+もし文字通りの出力にバックスラッシュを含めたい場合は、2重のバックスラッシュを使います：
 
-    Here is a literal backtick `` ` ``.
+    これは文字通りのバックスラッシュです： `` ` ``。
 
-(The spaces after the opening backticks and before the closing
-backticks will be ignored.)
+（開きバックスラッシュと閉じバックスラッシュの間のスペースは無視されます。）
 
-The general rule is that a verbatim span starts with a string
-of consecutive backticks (optionally followed by a space)
-and ends with a string of the same number of backticks (optionally
-preceded by a space).
+共通のルールは、文字通りに出力させたい部分(span)を、同じ数の連続したバックスラッシュの組で囲むことです（その内側にそれぞれ1つずつのスペースを入れても構いません）。
 
-Note that backslash-escapes (and other markdown constructs) do not
-work in verbatim contexts:
+注意：バックスラッシュのエスケープ（や他のMarkdown文法）は、文字通りの出力を行っている最中には有効になりません。
 
-    This is a backslash followed by an asterisk: `\*`.
+    これはバックスラッシュの後にアスタリスクを付けたものです：`\*`。
 
-**Extension: `inline_code_attributes`**
+**拡張: `inline_code_attributes`**
 
 Attributes can be attached to verbatim text, just as with
 [fenced code blocks](#fenced-code-blocks):
 
+文字通りの出力に対して、[囲まれたコードブロック](#fenced-code-blocks)と同様に属性を付けることができます：
+
     `<$>`{.haskell}
 
-Math
+数式  {#math}
 ----
 
-**Extension: `tex_math_dollars`**
+**拡張: `tex_math_dollars`**
 
-Anything between two `$` characters will be treated as TeX math.  The
-opening `$` must have a character immediately to its right, while the
-closing `$` must have a character immediately to its left.  Thus,
-`$20,000 and $30,000` won't parse as math.  If for some reason
-you need to enclose text in literal `$` characters, backslash-escape
-them and they won't be treated as math delimiters.
+`$`で囲まれたものは全てTeXの数式として認識されます。左の（開く側の）`$`の次や、右の（閉じる側の）`$`の前には、スペースや改行が来てはいけません。つまり、`$20,000 and $30,000`は数式として認識されません。もし何らかの理由でテキストの末尾に`$`記号を付けなければならない場合は、バックスラッシュでエスケープしましょう。そうすれば、この`$`は数式の区切りとして認識されなくなります。
 
-TeX math will be printed in all output formats. How it is rendered
-depends on the output format:
+TeXの数式は全ての出力フォーマットで出力されます。どのように数式が生成されるかは、その出力フォーマットによります。
 
 Markdown, LaTeX, Org-Mode, ConTeXt
-  ~ It will appear verbatim between `$` characters.
+  ~ `$`記号に囲まれたものが、文字通りに出力されます。
 
 reStructuredText
-  ~ It will be rendered using an interpreted text role `:math:`, as described
-    [here](http://www.american.edu/econ/itex2mml/mathhack.rst).
+  ~ [ここ](http://www.american.edu/econ/itex2mml/mathhack.rst)で説明されているように、解釈済みテキストロール`:math:`を使用して生成されます。
 
 AsciiDoc
-  ~ It will be rendered as `latexmath:[...]`.
+  ~ `latexmath:[...]`として生成されます。
 
 Texinfo
-  ~ It will be rendered inside a `@math` command.
+  ~ `@math`コマンドに埋め込む形で生成されます。
 
 groff man
-  ~ It will be rendered verbatim without `$`'s.
+  ~ `$`記号を取り除いた形で、文字通りに出力されます。
 
 MediaWiki
-  ~ It will be rendered inside `<math>` tags.
+  ~ `<math>`で数式が囲まれた形で生成されます。
 
 Textile
-  ~ It will be rendered inside `<span class="math">` tags.
+  ~ `<span class="math">`で数式が囲まれた形で生成されます。
 
 RTF, OpenDocument, ODT
-  ~ It will be rendered, if possible, using unicode characters,
-    and will otherwise appear verbatim.
+  ~ 可能であれば、Unicode文字で生成されます。そうでなければ、文字通りに出力されます。
 
 Docbook
-  ~ If the `--mathml` flag is used, it will be rendered using mathml
-    in an `inlineequation` or `informalequation` tag.  Otherwise it
-    will be rendered, if possible, using unicode characters.
+  ~ `--mathml`オプションが指定された場合は、MathMLを用いて`inlineequation`または`informalequation`タグで囲んだ形で生成されます。そうでなければ、可能な限りUnicode文字で生成されます。
 
 Docx
-  ~ It will be rendered using OMML math markup.
+  ~ OMML数式マークアップの形式で生成されます。
 
 FictionBook2
-  ~ If the `--webtex` option is used, formulas are rendered as images
-    using Google Charts or other compatible web service, downloaded
-    and embedded in the e-book. Otherwise, they will appear verbatim.
+  ~ `--webtex`オプションが指定された場合は、数式はGoogle Chart APIやその他の互換性のあるWebサービス（e-bookにダウンロードおよび埋め込みされたもの）を用いて、画像として生成されます。そうでなければ、文字通りに出力されます。
 
 HTML, Slidy, DZSlides, S5, EPUB
-  ~ The way math is rendered in HTML will depend on the
-    command-line options selected:
+  ~ HTMLにおける数式の生成方法は、コマンドラインオプションに依存します：
 
-    1.  The default is to render TeX math as far as possible using unicode
-        characters, as with RTF, DocBook, and OpenDocument output. Formulas
-        are put inside a `span` with `class="math"`, so that they may be
-        styled differently from the surrounding text if needed.
+	1.  デフォルトではRTF, DocBookそしてOpenDocument出力のように、Unicode文字で可能な限り出力します。後でCSSなどを用いて修飾できるように、数式は`<span class="math">`タグで囲まれます。
 
-    2.  If the `--latexmathml` option is used, TeX math will be displayed
-        between `$` or `$$` characters and put in `<span>` tags with class `LaTeX`.
-        The [LaTeXMathML] script will be used to render it as formulas.
-        (This trick does not work in all browsers, but it works in Firefox.
-        In browsers that do not support LaTeXMathML, TeX math will appear
-        verbatim between `$` characters.)
+	2.  `--latexmathml`オプションが指定された場合、TeX数式は`$`または`$$`記号に囲まれた状態で、さらに`<span class="LaTeX">`タグで囲まれて出力されます。[LaTeXMathML]スクリプトが数式の生成に使用されます。（このトリックはFireFoxで使用できますが、LaTeXMathMLをサポートしない他のブラウザでは動作しません。後者の場合、TeX数式は`$`記号に囲まれた状態で文字通りに出力されます。）
 
-    3.  If the `--jsmath` option is used, TeX math will be put inside
-        `<span>` tags (for inline math) or `<div>` tags (for display math)
-        with class `math`.  The [jsMath] script will be used to render
-        it.
+    3. `--jsmath`オプションが指定された場合、TeX数式は`<span class="math">`タグ（インライン形式）または`<div class="math">`タグ（ディスプレイ形式）で囲まれて出力されます。[jsMath]スクリプトが数式の生成に使用されます。
 
-    4.  If the `--mimetex` option is used, the [mimeTeX] CGI script will
-        be called to generate images for each TeX formula. This should
-        work in all browsers. The `--mimetex` option takes an optional URL
-        as argument. If no URL is specified, it will be assumed that the
-        mimeTeX CGI script is at `/cgi-bin/mimetex.cgi`.
+	4.  `--mimetex`オプションが指定された場合、TeX数式を画像に変換するために[mimeTeX] CGIスクリプトが呼ばれます。この方法は全てのブラウザで動作します。`--mimetex`オプションは、任意でmimeTeX CGIスクリプトのURLを引数に指定できます。URLが指定されなかった場合は、その引数を`/cgi-bin/mimetex.cgi`と見なします。
 
-    5.  If the `--gladtex` option is used, TeX formulas will be enclosed
-        in `<eq>` tags in the HTML output.  The resulting `htex` file may then
-        be processed by [gladTeX], which will produce image files for each
-        formula and an `html` file with links to these images.  So, the
-        procedure is:
+	5.  `--gladtex`オプションが指定された場合、TeX数式はHTML出力において`<eq>`タグで囲まれて出力されます。この結果`htex`ファイルが得られ、[gladTeX]によって処理されます。これにより、それぞれの数式が画像として出力され、この画像がリンクされた`html`ファイルが生成されます。まとめると、これらの手続きは以下の通りになります：
 
             pandoc -s --gladtex myfile.txt -o myfile.htex
             gladtex -d myfile-images myfile.htex
             # produces myfile.html and images in myfile-images
 
-    6.  If the `--webtex` option is used, TeX formulas will be converted
-        to `<img>` tags that link to an external script that converts
-        formulas to images. The formula will be URL-encoded and concatenated
-        with the URL provided. If no URL is specified, the Google Chart
-        API will be used (`http://chart.apis.google.com/chart?cht=tx&chl=`).
+	6.  `--webtex`オプションが指定された場合、TeX数式は`<img>`タグで囲まれ、外部スクリプトによって変換された数式画像にリンクされます。数式はURLエンコードされ、与えられたURLに結合されます。引数としてURLが指定されなかった場合、[Google Chart API](http://chart.apis.google.com/chart?cht=tx&chl=)が使用されます。
 
-    7.  If the `--mathjax` option is used, TeX math will be displayed
-        between `\(...\)` (for inline math) or `\[...\]` (for display
-        math) and put in `<span>` tags with class `math`.
-        The [MathJax] script will be used to render it as formulas.
+	7.  `--mathjax`オプションが指定された場合、TeX数式は`\(...\)` （インライン形式）または`\[...\]`（ディスプレイ形式）で囲まれ、さらに`<span class="math">`タグで囲まれて出力されます。[MathJax]スクリプトが数式の生成に利用されます。
 
-Raw HTML
---------
+生のHTML (Raw HTML)  {#raw-html}
+-------------------
 
-**Extension: `raw_html`**
+**拡張: `raw_html`**
 
-Markdown allows you to insert raw HTML (or DocBook) anywhere in a document
-(except verbatim contexts, where `<`, `>`, and `&` are interpreted
-literally).  (Techncially this is not an extension, since standard
-markdown allows it, but it has been made an extension so that it can
-be disabled if desired.)
+Markdownでは生のHTML（またはDocBook）を文書中のどこにでも挿入することができます。（ただし文字通り(verbatim)の出力の中は除きます。この場合は、`<`, `>`や`&`は文字通りに出力されます。）
 
-The raw HTML is passed through unchanged in HTML, S5, Slidy, Slideous,
-DZSlides, EPUB, Markdown, and Textile output, and suppressed in other
-formats.
+メモ：厳密に言えばこれは拡張ではなく、標準のMarkdownでも許されていることです。しかし、必要なときにこの機能をオフにすることができるように、拡張機能として実装されています。
 
-**Extension: `markdown_in_html_blocks`**
+以下のフォーマットでは、生のHTMLはそのまま出力されます：HTML, S5, Slidy, Slideous, DZSlides, EPUB, Markdown, Textile。その他のフォーマットでは、出力されません。
 
-Standard markdown allows you to include HTML "blocks":  blocks
-of HTML between balanced tags that are separated from the surrounding text
-with blank lines, and start and end at the left margin.  Within
-these blocks, everything is interpreted as HTML, not markdown;
-so (for example), `*` does not signify emphasis.
+**拡張: `markdown_in_html_blocks`**
 
-Pandoc behaves this way when the `markdown_strict` format is used; but
-by default, pandoc interprets material between HTML block tags as markdown.
-Thus, for example, Pandoc will turn
+標準のMarkdownではHTML「ブロック」を含めることができます：HTMLのブロックは数に矛盾の無いタグのペアに挟まれ、さらに空行で挟まれたものです。始まりと終わりの行は左のマージンに揃っています。このブロックの中では、全てがMarkdownではなくHTMLとして解釈されます。例えば、`*`は強調を意味しません。
+
+Pandocでは`markdown_strict`が指定されたときにこのような振る舞いをします。しかしデフォルトでは、PandocはHTMLブロックの間にあるMarkdown記法を、そのままMarkdownとして解釈します。つまり、例えば、Pandocは下記のコードを
 
     <table>
-    	<tr>
-    		<td>*one*</td>
-    		<td>[a link](http://google.com)</td>
-    	</tr>
+        <tr>
+            <td>*one*</td>
+            <td>[a link](http://google.com)</td>
+        </tr>
     </table>
 
-into
+下記に変換します：
 
     <table>
-    	<tr>
-    		<td><em>one</em></td>
-    		<td><a href="http://google.com">a link</a></td>
-    	</tr>
+        <tr>
+            <td><em>one</em></td>
+            <td><a href="http://google.com">a link</a></td>
+        </tr>
     </table>
 
-whereas `Markdown.pl` will preserve it as is.
+一方で、`Markdown.pl`では`*one*`は変換せずそのまま保存します。
 
 There is one exception to this rule:  text between `<script>` and
 `<style>` tags is not interpreted as markdown.
 
-This departure from standard markdown should make it easier to mix
-markdown with HTML block elements.  For example, one can surround
-a block of markdown text with `<div>` tags without preventing it
-from being interpreted as markdown.
+このルールには1つ例外があります：`<script>`または`<style>`タグで囲まれたテキストはMarkdownとして解釈されません。
 
-Raw TeX
--------
+この標準Markdownからの「出発」は、MarkdownとHTMLブロック要素とのミックスを容易にします。例えば、`<div>`タグでMarkdownテキストを囲むことができるため、`<div>`タグ自身がMarkdownとして解釈されないかと心配する必要がなくなります。
 
-**Extension: `raw_tex`**
+生のTeX (Raw TeX)  {#raw-tex}
+-----------------
 
-In addition to raw HTML, pandoc allows raw LaTeX, TeX, and ConTeXt to be
-included in a document. Inline TeX commands will be preserved and passed
-unchanged to the LaTeX and ConTeXt writers. Thus, for example, you can use
-LaTeX to include BibTeX citations:
+**拡張: `raw_tex`**
 
-    This result was proved in \cite{jones.1967}.
+生のHTMLに加えて、Pandocでは生のLaTeX、TeX、ConTeXtを文書に含めることができます。インラインのTeXコマンドは保存され、変更されないままLaTeXまたはConTeXtのWriterに送られます。したがって、例えば、このようなBibTeX引用をLaTeXに使用することができます：
 
-Note that in LaTeX environments, like
+    この結果は\cite{jones.1967}で示された。
+
+注意：LaTeXの環境(environment)では
 
     \begin{tabular}{|l|l|}\hline
-    Age & Frequency \\ \hline
+    年齢 & 頻度 \\ \hline
     18--25  & 15 \\
     26--35  & 33 \\
     36--45  & 22 \\ \hline
     \end{tabular}
 
-the material between the begin and end tags will be interpreted as raw
-LaTeX, not as markdown.
+のようにbeginとendで囲まれたものは（Markdownではなく）生のLaTeXとして扱われます。
 
-Inline LaTeX is ignored in output formats other than Markdown, LaTeX,
-and ConTeXt.
+インラインLaTeXの記述はMarkdown, LaTeX, ConTeXt以外の出力フォーマットでは無視されます。
 
-LaTeX macros
+LaTeXマクロ  {#latex-macros}
 ------------
 
-**Extension: `latex_macros`**
+**拡張: `latex_macros`**
 
-For output formats other than LaTeX, pandoc will parse LaTeX `\newcommand` and
-`\renewcommand` definitions and apply the resulting macros to all LaTeX
-math.  So, for example, the following will work in all output formats,
-not just LaTeX:
+LaTeX以外の出力では、Pandocは`\newcommand`および`\renewcommand`による定義を解釈し、その結果を全てのLaTeX数式に適用します。例えば、以下の例は全ての出力フォーマット（LaTeXを除く）で働きます：
 
     \newcommand{\tuple}[1]{\langle #1 \rangle}
 
     $\tuple{a, b, c}$
 
-In LaTeX output, the `\newcommand` definition will simply be passed
-unchanged to the output.
+LaTeX出力では、`\newcommand`定義は変更されないまま単に出力されるだけです。
 
 
-リンク [links]
+リンク {#links}
 -----
 
-Markdown allows links to be specified in several ways.
+Markdownではいくつかのリンク形式を指定することができます。
 
-### Automatic links ###
+### 自動リンク ###
 
-If you enclose a URL or email address in pointy brackets, it
-will become a link:
+URLやEメールアドレスを不等号記号`<`, `>`で囲むと、それはリンクになります：
 
     <http://google.com>
     <sam@green.eggs.ham>
 
-### Inline links ###
+### インラインリンク ###
 
-An inline link consists of the link text in square brackets,
-followed by the URL in parentheses. (Optionally, the URL can
-be followed by a link title, in quotes.)
+インラインリンクは角括弧で囲まれたテキストと、それに続く丸括弧で囲まれたURLの組です。（任意で、URLの後には引用符付きでリンクタイトルを含めることができます。）
 
-    This is an [inline link](/url), and here's [one with
-    a title](http://fsf.org "click here for a good time!").
+    これは[インラインリンク](/url)です。そしてこれが [タイトル付きのリンク](http://fsf.org "クリックしてね！")です。
 
 There can be no space between the bracketed part and the parenthesized part.
 The link text can contain formatting (such as emphasis), but the title cannot.
 
+それぞれの括弧の中にはスペースを含めてはいけません。リンクテキストは（強調などの）修飾ができますが、タイトルはできません。
 
-### Reference links ###
 
-An *explicit* reference link has two parts, the link itself and the link
-definition, which may occur elsewhere in the document (either
-before or after the link).
+### 参照リンク ###
 
-The link consists of link text in square brackets, followed by a label in
-square brackets. (There can be space between the two.) The link definition
-consists of the bracketed label, followed by a colon and a space, followed by
-the URL, and optionally (after a space) a link title either in quotes or in
-parentheses.
+*明示的な*参照リンクは2つの部分に分かれます。1つはリンクそのもので、もう1つはリンクの定義です（これは文書のどこに置いても、リンクそのものに対しての前後どちらでもかまいません。）。
 
-Here are some examples:
+前者のリンクは2つの角括弧で構成されます。1つ目の角括弧にはリンクテキストが、もう1つには参照用のラベルが入ります。（両者の間にはスペースを入れても構いません。）
+後者のリンク定義は角括弧で囲まれた参照用ラベル、それにコロンとスペースが続き、さらに続けてURL、任意で（スペースの後に、引用符または丸括弧で囲んで）リンクタイトルが入ります。
 
-    [my label 1]: /foo/bar.html  "My title, optional"
+例を示します：
+
+    [my label 1]: /foo/bar.html  "お好みでタイトルを"
     [my label 2]: /foo
     [my label 3]: http://fsf.org (The free software foundation)
-    [my label 4]: /bar#special  'A title in single quotes'
+    [my label 4]: /bar#special  'シングルクォーテーションで囲まれたタイトル'
 
-The URL may optionally be surrounded by angle brackets:
+URLは任意で不等号記号で囲むこともできます：
 
     [my label 5]: <http://foo.bar.baz>
 
-The title may go on the next line:
+タイトルは次の行に続いても構いません：
 
     [my label 3]: http://fsf.org
       "The free software foundation"
 
-Note that link labels are not case sensitive.  So, this will work:
+注意：リンクラベルは大文字・小文字を区別しません。よって以下は正しく動きます：
 
-    Here is [my link][FOO]
+    これは[リンクです][FOO]
 
     [Foo]: /bar/baz
 
-In an *implicit* reference link, the second pair of brackets is
-empty, or omitted entirely:
+*暗黙の*参照リンクでは、2つ目の角括弧ペアを空にするか、角括弧ごと無くしてしまいます：
 
     See [my website][], or [my website].
 
     [my website]: http://foo.bar.baz
 
-Note:  In `Markdown.pl` and most other markdown implementations,
-reference link definitions cannot occur in nested constructions
-such as list items or block quotes.  Pandoc lifts this arbitrary
-seeming restriction.  So the following is fine in pandoc, though
-not in most other implementations:
+注意：`Markdown.pl`や多くのMarkdown処理系では、参照リンクの定義はリストアイテムや引用のように、他のブロックに対して入れ子にすることができません。Pandocでは任意の見た目上の制限としています。よって、以下の例はPandocでは期待通り動きますが、他の処理系では動きません：
 
     > My block [quote].
     >
     > [quote]: /foo
 
-### Internal links
+### 内部リンク
 
 To link to another section of the same document, use the automatically
 generated identifier (see [Header identifiers in HTML, LaTeX, and
 ConTeXt](#header-identifiers-in-html-latex-and-context), below).
 For example:
 
+同一文書中の他の節にリンクしたい場合は、自動的に生成された識別子を使用できます（下記の[HTML, LaTeX, ConTeXtにおけるヘッダ識別子](#header-identifiers-in-html-latex-and-context)を参照）。例えば：
+
     See the [Introduction](#introduction).
 
-or
+または
 
     See the [Introduction].
 
@@ -2239,21 +1915,25 @@ or
 Internal links are currently supported for HTML formats (including
 HTML slide shows and EPUB), LaTeX, and ConTeXt.
 
-Images
+内部リンクは現在のところ、HTML(HTMLスライドショーやEPUBも含む), LaTeX, ConTeXtフォーマットのみでサポートしています。
+
+画像   {#images}
 ------
 
 A link immediately preceded by a `!` will be treated as an image.
 The link text will be used as the image's alt text:
 
-    ![la lune](lalune.jpg "Voyage to the moon")
+`!`で始まるリンクは画像として扱われます（`!`の後ろにスペースを空けてはいけません）。リンクテキストは画像のalt属性として使われます：
 
-    ![movie reel]
+    ![ラ・ルーン](lalune.jpg "月への旅行")
 
-    [movie reel]: movie.gif
+    ![1編のフィルム]
 
-### Pictures with captions ###
+    [1編のフィルム]: movie.gif
 
-**Extension: `implicit_figures`**
+### 画像とキャプション ###
+
+**拡張: `implicit_figures`**
 
 An image occurring by itself in a paragraph will be rendered as
 a figure with a caption.[^5] (In LaTeX, a figure environment will be
@@ -2261,69 +1941,66 @@ used; in HTML, the image will be placed in a `div` with class
 `figure`, together with a caption in a `p` with class `caption`.)
 The image's alt text will be used as the caption.
 
-    ![This is the caption](/url/of/image.png)
+1つの段落に1つの画像のみを置いた場合、その画像はキャプション付き画像として生成されます。[^5] （LaTeXでは、figure環境が使用されます。HTMLでは、画像は`<div class="figure">`タグで囲まれ、さらに`<p class="caption">`で囲まれたキャプションが付きます。）画像のalt属性がキャプションとして使用されます。
 
-[^5]: This feature is not yet implemented for RTF, OpenDocument, or
-    ODT. In those formats, you'll just get an image in a paragraph by
-    itself, with no caption.
+    ![これはキャプションです](/url/of/image.png)
+
+[^5]: この機能はRTF, OpenDocument, ODTでは今のところ実装されていません。これらでは、1つの段落に置かれた画像が得られるだけで、キャプションは付きません。
 
 If you just want a regular inline image, just make sure it is not
 the only thing in the paragraph. One way to do this is to insert a
 nonbreaking space after the image:
 
-    ![This image won't be a figure](/url/of/image.png)\
+もしこれを1つのインライン画像として置きたい場合、1つの段落に1つの画像だけを置いてはいけません。1つの方法としては、画像の後に改行を伴わないスペースを置く手があります：
+
+    ![これはfigureにはなりません](/url/of/image.png)\
 
 
-Footnotes
----------
+脚注  {#footnotes}
+-----
 
-**Extension: `footnotes`**
+**拡張: `footnotes`**
 
-Pandoc's markdown allows footnotes, using the following syntax:
+PandocのMarkdownでは脚注を付けることができます。下記の文法の通りです：
 
-    Here is a footnote reference,[^1] and another.[^longnote]
+    これは脚注の参照です[^1]、 そしてもう1つ[^longnote]。
 
-    [^1]: Here is the footnote.
+    [^1]: これは脚注です。
 
-    [^longnote]: Here's one with multiple blocks.
+    [^longnote]: これは長いブロックから成る脚注です。
 
-        Subsequent paragraphs are indented to show that they
-    belong to the previous footnote.
+		インデントされたいくつかの段落が続くと、
+	それらは前の脚注に含まれます。
 
             { some.code }
 
-        The whole paragraph can be indented, or just the first
-        line.  In this way, multi-paragraph footnotes work like
-        multi-paragraph list items.
+		段落の全体または1行目がインデントされていればOKです。このように、
+		複数の段落による脚注は複数項目のリストアイテムのように機能します。
 
-    This paragraph won't be part of the note, because it
-    isn't indented.
+	この段落は脚注ではありません。なぜならインデントされていないからです。
 
-The identifiers in footnote references may not contain spaces, tabs,
-or newlines.  These identifiers are used only to correlate the
-footnote reference with the note itself; in the output, footnotes
-will be numbered sequentially.
+
+脚注を参照するための識別子にはスペース、タブ、改行を含んではいけません。これらの識別子は脚注の参照と脚注本体が対応しているときに限り使用され、出力では脚注は順に番号付けされます。
 
 The footnotes themselves need not be placed at the end of the
 document.  They may appear anywhere except inside other block elements
 (lists, block quotes, tables, etc.).
 
-**Extension: `inline_notes`**
+脚注そのものは文書の最後に置かれる必要はありません。他のブロック要素（リスト、引用、表など）の中を除けば、どこに置いても構いません。
 
-Inline footnotes are also allowed (though, unlike regular notes,
-they cannot contain multiple paragraphs).  The syntax is as follows:
+**拡張: `inline_notes`**
 
-    Here is an inline note.^[Inlines notes are easier to write, since
-    you don't have to pick an identifier and move down to type the
-    note.]
+インライン脚注が使用できます（ただし標準の引用とは違い、複数の段落を含むことはできません）。文法は以下の通りです：
 
-Inline and regular footnotes may be mixed freely.
+    これはインライン脚注です。^[識別子をわざわざ探して打つ必要が無いため、
+	インライン脚注は楽に書けます。]
 
+インライン脚注と標準の脚注は自由に混在できます。
 
-文献の引用 [citations]
+文献の引用 {#citations}
 --------
 
-**Extension: `citations`**
+**拡張: `citations`**
 
 Using an external filter, `pandoc-citeproc`, pandoc can automatically generate
 citations and a bibliography in a number of styles.  Basic usage is
@@ -2609,7 +2286,7 @@ To produce a PDF slide show using beamer, type
 Note that a reveal.js slide show can also be converted to a PDF
 by printing it to a file from the browser.
 
-スライドショーの構造を作る    [structuring-the-slide-show]
+スライドショーの構造を作る    {#structuring-the-slide-show}
 -----------------------
 
 By default, the *slide level* is the highest header level in
@@ -2731,7 +2408,7 @@ To show the notes window, press `s` while viewing the presentation.
 Notes are not yet supported for other slide formats, but the notes
 will not appear on the slides themselves.
 
-EPUBメタデータ [epub-metadata]
+EPUBメタデータ {#epub-metadata}
 =============
 
 EPUB metadata may be specified using the `--epub-metadata` option, but
@@ -2801,7 +2478,7 @@ The following fields are recognized:
 `stylesheet`
   ~ A string value (path to CSS stylesheet).
 
-Literate Haskellのサポート [literate-haskell-support]
+Literate Haskellのサポート {#literate-haskell-support}
 ========================
 
 If you append `+lhs` (or `+literate_haskell`) to an appropriate input or output
@@ -2847,7 +2524,7 @@ ordinary HTML (without bird tracks).
 writes HTML with the Haskell code in bird tracks, so it can be copied
 and pasted as literate Haskell source.
 
-カスタムWriter [custom-writers]
+カスタムWriter {#custom-writers}
 ==============
 
 Pandoc can be extended with custom writers written in [lua].  (Pandoc
