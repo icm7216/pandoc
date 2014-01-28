@@ -1787,9 +1787,6 @@ Pandocでは`markdown_strict`が指定されたときにこのような振る舞
 
 一方で、`Markdown.pl`では`*one*`は変換せずそのまま保存します。
 
-There is one exception to this rule:  text between `<script>` and
-`<style>` tags is not interpreted as markdown.
-
 このルールには1つ例外があります：`<script>`または`<style>`タグで囲まれたテキストはMarkdownとして解釈されません。
 
 この標準Markdownからの「出発」は、MarkdownとHTMLブロック要素とのミックスを容易にします。例えば、`<div>`タグでMarkdownテキストを囲むことができるため、`<div>`タグ自身がMarkdownとして解釈されないかと心配する必要がなくなります。
@@ -1848,9 +1845,6 @@ URLやEメールアドレスを不等号記号`<`, `>`で囲むと、それは�
 
     これは[インラインリンク](/url)です。そしてこれが [タイトル付きのリンク](http://fsf.org "クリックしてね！")です。
 
-There can be no space between the bracketed part and the parenthesized part.
-The link text can contain formatting (such as emphasis), but the title cannot.
-
 それぞれの括弧の中にはスペースを含めてはいけません。リンクテキストは（強調などの）修飾ができますが、タイトルはできません。
 
 
@@ -1897,11 +1891,6 @@ URLは任意で不等号記号で囲むこともできます：
 
 ### 内部リンク
 
-To link to another section of the same document, use the automatically
-generated identifier (see [Header identifiers in HTML, LaTeX, and
-ConTeXt](#header-identifiers-in-html-latex-and-context), below).
-For example:
-
 同一文書中の他の節にリンクしたい場合は、自動的に生成された識別子を使用できます（下記の[HTML, LaTeX, ConTeXtにおけるヘッダ識別子](#header-identifiers-in-html-latex-and-context)を参照）。例えば：
 
     See the [Introduction](#introduction).
@@ -1912,16 +1901,10 @@ For example:
 
     [Introduction]: #introduction
 
-Internal links are currently supported for HTML formats (including
-HTML slide shows and EPUB), LaTeX, and ConTeXt.
-
 内部リンクは現在のところ、HTML(HTMLスライドショーやEPUBも含む), LaTeX, ConTeXtフォーマットのみでサポートしています。
 
 画像   {#images}
 ------
-
-A link immediately preceded by a `!` will be treated as an image.
-The link text will be used as the image's alt text:
 
 `!`で始まるリンクは画像として扱われます（`!`の後ろにスペースを空けてはいけません）。リンクテキストは画像のalt属性として使われます：
 
@@ -1935,21 +1918,11 @@ The link text will be used as the image's alt text:
 
 **拡張: `implicit_figures`**
 
-An image occurring by itself in a paragraph will be rendered as
-a figure with a caption.[^5] (In LaTeX, a figure environment will be
-used; in HTML, the image will be placed in a `div` with class
-`figure`, together with a caption in a `p` with class `caption`.)
-The image's alt text will be used as the caption.
-
 1つの段落に1つの画像のみを置いた場合、その画像はキャプション付き画像として生成されます。[^5] （LaTeXでは、figure環境が使用されます。HTMLでは、画像は`<div class="figure">`タグで囲まれ、さらに`<p class="caption">`で囲まれたキャプションが付きます。）画像のalt属性がキャプションとして使用されます。
 
     ![これはキャプションです](/url/of/image.png)
 
 [^5]: この機能はRTF, OpenDocument, ODTでは今のところ実装されていません。これらでは、1つの段落に置かれた画像が得られるだけで、キャプションは付きません。
-
-If you just want a regular inline image, just make sure it is not
-the only thing in the paragraph. One way to do this is to insert a
-nonbreaking space after the image:
 
 もしこれを1つのインライン画像として置きたい場合、1つの段落に1つの画像だけを置いてはいけません。1つの方法としては、画像の後に改行を伴わないスペースを置く手があります：
 
@@ -1982,10 +1955,6 @@ PandocのMarkdownでは脚注を付けることができます。下記の文法
 
 脚注を参照するための識別子にはスペース、タブ、改行を含んではいけません。これらの識別子は脚注の参照と脚注本体が対応しているときに限り使用され、出力では脚注は順に番号付けされます。
 
-The footnotes themselves need not be placed at the end of the
-document.  They may appear anywhere except inside other block elements
-(lists, block quotes, tables, etc.).
-
 脚注そのものは文書の最後に置かれる必要はありません。他のブロック要素（リスト、引用、表など）の中を除けば、どこに置いても構いません。
 
 **拡張: `inline_notes`**
@@ -2002,14 +1971,11 @@ document.  They may appear anywhere except inside other block elements
 
 **拡張: `citations`**
 
-Using an external filter, `pandoc-citeproc`, pandoc can automatically generate
-citations and a bibliography in a number of styles.  Basic usage is
+`pandoc-citeproc`という外部フィルタを用いて、Pandocは自動的に引用やあらゆるスタイルの参考文献を生成することができます。標準的な使い方はこうです：
 
     pandoc --filter pandoc-citeproc myinput.txt
 
-In order to use this feature, you will need to specify a bibliography file
-using the `bibliography` metadata field in a YAML metadata section.
-The bibliography may have any of these formats:
+この機能を使うには、YAMLメタデータセクションの`bibliography`メタデータフィールドを使って参考文献ファイルを指定する必要があります。参考文献ファイルとしてこのようなフォーマットが使用できます：
 
   Format            File extension
   ------------      --------------
@@ -2024,12 +1990,9 @@ The bibliography may have any of these formats:
   Copac             .copac
   JSON citeproc     .json
 
-Note that `.bib` can generally be used with both BibTeX and BibLaTeX
-files, but you can use `.bibtex` to force BibTeX.
+注意：`.bib`はBibTeXとBibLaTeXの両方で通常使用されます。BibTeXを強制的に使用したい場合は、`.bibtex`を使用できます。
 
-Alternatively you can use a `references` field in the document's YAML
-metadata.  This should include an array of YAML-encoded references,
-for example:
+代わりに、文書中のYAMLメタデータに`references`フィールドを置くことができます。これにはYAML形式に直した参考文献を記入する必要があります。例えば：
 
     ---
     references:
@@ -2051,21 +2014,11 @@ for example:
         month: 3
     ...
 
-(The program `mods2yaml`, which comes with `pandoc-citeproc`, can help produce
-these from a MODS reference collection.)
+（`pandoc-citeproc`から派生したプログラム`mods2yaml`は、MODSリファレンスコレクションからYAML形式の参考文献を生成するのに役立ちます。）
 
-By default, `pandoc-citeproc` will use a Chicago author-date format for
-citations and references.  To use another style, you will need to specify
-a [CSL] 1.0 style file in the `csl` metadata field.  A primer on creating and
-modifying CSL styles can be found at
-<http://citationstyles.org/downloads/primer.html>.  A repository of CSL styles
-can be found at <https://github.com/citation-style-language/styles>.  See also
-<http://zotero.org/styles> for easy browsing.
+デフォルトでは、`pandoc-citeproc`はChicago author-dateフォーマットが引用および参考文献に使われます。他のスタイルを使用したい場合は、[CSL] 1.0 スタイルファイルを探し、`csl`メタデータフィールドに指定する必要があります。CSLスタイルファイルの作成および改造のための入門ガイドは<http://citationstyles.org/downloads/primer.html>を参照してください。CSLスタイルファイルのリポジトリは<https://github.com/citation-style-language/styles>で手に入ります。もっと楽に探したい場合は<http://zotero.org/styles>もご覧ください。
 
-Citations go inside square brackets and are separated by semicolons.
-Each citation must have a key, composed of '@' + the citation
-identifier from the database, and may optionally have a prefix,
-a locator, and a suffix.  Here are some examples:
+引用は角括弧の中に入れることができ、各内部要素はセミコロンで区切られます。それぞれの引用はキーを持つ必要があり、「`@` + 引用の識別子（データベースから）」という形式で構成され、オプションとして接頭辞、locator、接尾辞をつけることができます。例を示します：
 
     Blah blah [see @doe99, pp. 33-35; also @smith04, ch. 1].
 
@@ -2073,27 +2026,23 @@ a locator, and a suffix.  Here are some examples:
 
     Blah blah [@smith04; @doe99].
 
-A minus sign (`-`) before the `@` will suppress mention of
-the author in the citation.  This can be useful when the
-author is already mentioned in the text:
+`@`の前のマイナス記号は引用内での著者への言及(mention)をしないようにします。この機能は、著者が既に言及されている場合に便利です。
 
     Smith says blah [-@smith04].
 
-You can also write an in-text citation, as follows:
+テキスト内引用も以下の通り可能です：
 
     @smith04 says blah.
 
     @smith04 [p. 33] says blah.
 
-If the style calls for a list of works cited, it will be placed
-at the end of the document.  Normally, you will want to end your
-document with an appropriate header:
+もし使用しているスタイルが引用した文献のリストを呼んでいる場合、それを文書の最後に置くことができます。通常は、適切な見出しとともに文献リストを最後に置きたいでしょう：
 
     last paragraph...
 
     # References
 
-The bibliography will be inserted after this header.
+文献リストはこの見出しの後に配置されます。
 
 Non-pandoc extensions
 ---------------------
