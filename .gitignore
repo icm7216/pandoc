@@ -18,3 +18,4 @@ pandoc.cabal.orig
 /windows/*.msi
 /windows/*.wixpdb
 windows/*.wixobj
+/.dist-buildwrapper

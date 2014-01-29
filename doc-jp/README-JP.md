@@ -2,6 +2,12 @@
 % John MacFarlane; Yuki Fujiwara
 % January 19, 2013
 
+原著：John MacFarlane
+
+バージョン：1.9.4.5
+
+翻訳：Yuki Fujiwara（2014年1月29日）
+
 書式
 ====
 
