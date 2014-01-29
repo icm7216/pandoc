@@ -13,22 +13,50 @@ pandoc [*options*] [*input-file*]...
 Pandocは [Haskell] で書かれたライブラリおよびコマンドラインツールであり、
 あるマークアップ形式で書かれた文書を別の形式へ変換するものです。
 
-対応している入力形式は以下の通りです： [markdown]、[Textile] （のサブセット、以下同様）、
-[reStructuredText]、 [HTML]、[LaTeX]、[MediaWiki markup]、[Haddock markup]、[OPML]、[DocBook]。
+対応している入力形式は以下の通りです：
 
-出力形式は以下の通りです：プレーンテキスト、[markdown]、[reStructuredText]、[XHTML]、[HTML 5]、
-[LaTeX] （[beamer]スライドショーを含む）、[ConTeXt]、[RTF]、[OPML]、[DocBook]、
-[OpenDocument]、[ODT]、[Word docx]、[GNU Texinfo]、[MediaWiki markup]、
-[EPUB] (v2またはv3)、[FictionBook2]、[Textile]、[groff man]ページ、 [Emacs Org-Mode]、[AsciiDoc]、
-およびスライドショーの形式である[Slidy]、[Slideous]、[DZSlides]、[reveal.js]、[S5] HTMLスライドショー。
+* [markdown]
+* [Textile] （のサブセット、以下同様）
+* [reStructuredText]
+* [HTML]
+* [LaTeX]
+* [MediaWiki markup]
+* [Haddock markup]
+* [OPML]
+* [DocBook]
+
+出力形式は以下の通りです：
+
+* プレーンテキスト
+* [markdown]
+* [reStructuredText]
+* [XHTML]
+* [HTML 5]
+* [LaTeX] （[beamer]スライドショーを含む）
+* [ConTeXt]
+* [RTF]
+* [OPML]
+* [DocBook]
+* [OpenDocument]
+* [ODT]
+* [Word docx]
+* [GNU Texinfo]
+* [MediaWiki markup]
+* [EPUB] (v2またはv3)
+* [FictionBook2]
+* [Textile]
+* [groff man]ページ
+* [Emacs Org-Mode]
+* [AsciiDoc]
+* HTMLスライドショー：[Slidy]、[Slideous]、[DZSlides]、[reveal.js]、[S5] 
 
 Pandocによる拡張Markdown書式は以下を含みます：脚注、表、柔軟な順序付きリスト、
-定義リスト、囲う形式のコードブロック、上付き文字、下付き文字、取り消し線、
+定義リスト、囲まれた(fenced)コードブロック、上付き文字、下付き文字、取り消し線、
 タイトルブロック、目次の自動作成、LaTeX数式の埋め込み、引用、HTMLブロック要素のMarkdownへの埋め込み。
 （これらの拡張については、以下の [Pandocによる拡張Markdown](#pandocs-markdown) にて説明されます。
 また、これらの拡張は入力および出力形式として`markdown_strict`を与えることで無効にできます。）
 
-正規表現による置換を使ってHTMLからMarkdownに変換する多くのツールに対して、
+HTMLからMarkdownに変換する多くのツールが正規表現による置換を使っているのに対して、
 Pandocはモジュール式のデザインで構成されています。
 Pandocは、与えられた形式のテキストを解析してHaskell Native形式に変換するReader、
 およびHaskell Native形式をターゲットの出力形式に変換するWriterで構成されており、
@@ -38,14 +66,11 @@ Pandocは、与えられた形式のテキストを解析してHaskell Native形
 `pandoc` の使い方
 ----------------
 
-入力ファイルとして*input-file*が指定されていない場合は、
-入力として標準入力 *stdin* が指定されます。
-*input-file*が指定されている場合は、それが入力として指定されます。
-（ファイルを複数とることも可能です。）
+入力ファイルとして*input-file*が指定されていない場合は、 入力として標準入力 *stdin* が指定されます。
+*input-file*が指定されている場合は、それを入力とします。（ファイルを複数とることも可能です。）
 
 出力ファイルはデフォルトで標準出力 *stdout* に出力されます。
-（ただし出力フォーマットが`odt`、`docx`、`epub`、`epub3`の場合は、
-標準出力への出力が無効となります。）
+（ただし出力フォーマットが`odt`、`docx`、`epub`、`epub3`の場合は、標準出力への出力が無効となります。）
 ファイルへ出力したい場合は、`-o`オプションを使用してください：
 
     pandoc -o output.html input.txt
@@ -55,18 +80,16 @@ Pandocは、与えられた形式のテキストを解析してHaskell Native形
 
     pandoc -f html -t markdown http://www.fsf.org
 
-複数の*input-file*が指定されている場合、Pandocは解析の前に、
-各入力ファイルを結合してその間に空行を挿入します。
+複数の*input-file*が指定されている場合、Pandocは解析の前に、各入力ファイルを結合してその間に空行を挿入します。
 
 入力および出力フォーマットはオプションを用いて明示的に指定できます。
 入力フォーマットは`-r/--read`または`-f/--from`により、
 出力フォーマットは`-w/--write`または`-t/--to`により指定できます。
-例えば、LaTeXファイルの`hello.txt`を入力とし、Markdownに出力する場合は、
-以下のようなコマンドを作れるでしょう：
+例えば、LaTeXファイルの`hello.txt`を入力とし、Markdownに出力する場合は、以下のようなコマンドを実行します：
 
     pandoc -f markdown -t latex hello.txt
 
-HTMLファイルの`hello.html`をMarkdownに変換する場合はこうです：
+HTMLファイルの`hello.html`をMarkdownに変換する場合はこのようにします：
 
     pandoc -f html -t markdown hello.html
 
@@ -77,7 +100,7 @@ HTMLファイルの`hello.html`をMarkdownに変換する場合はこうです�
 
 入力または出力フォーマットが明示されていない場合、
 Pandocはファイル名の拡張子から入力・出力フォーマットを推測しようとします。
-例えば、このように、
+例えば、
 
     pandoc -o hello.tex hello.txt
 
@@ -115,11 +138,23 @@ Pandocは内部でLaTeXファイルを作成し、それをpdfLaTeXを用いてP
 PDFの生成のためには、LaTeXエンジンがインストールされている必要があります
 （詳細は以下の `--latex-engine` の項をご覧ください）。
 以下のLaTeXパッケージは有効であると見なされます：
-`amssymb`, `amsmath`, `ifxetex`, `ifluatex`, `listings` (`--listings`オプションが有効の場合),
-`fancyvrb`, `longtable`, `booktabs`, `url`, `graphicx`, `hyperref`, `ulem`,
-`babel` (`lang`オプションが有効の場合),
-`fontspec` (LaTeXエンジンとして`xelatex`または`lualatex`が指定されている場合),
-`xltxtra` and `xunicode` (LaTeXエンジンとして`xelatex`が指定されている場合).
+
+* `amssymb`
+* `amsmath`
+* `ifxetex`
+* `ifluatex`
+* `listings` (`--listings`オプションが有効の場合)
+* `fancyvrb`
+* `longtable`
+* `booktabs`
+* `url`
+* `graphicx`
+* `hyperref`
+* `ulem`
+* `babel` (`lang`オプションが有効の場合)
+* `fontspec` (LaTeXエンジンとして`xelatex`または`lualatex`が指定されている場合)
+* `xltxtra`
+* `xunicode` (LaTeXエンジンとして`xelatex`が指定されている場合).
 
 `hsmarkdown`
 ------------
@@ -146,17 +181,26 @@ Pandocはオプション `-f markdown_strict --email-obfuscation=references` が
 
 `-f` *FORMAT*, `-r` *FORMAT*, `--from=`*FORMAT*, `--read=`*FORMAT*
 :   入力フォーマットを指定します。*FORMAT* として指定できるのは以下のフォーマットです：
-    `native` (Native Haskell; Haskellで読み込める形式のデータ構造),
-    `json` (ネイティブASTのJSONバージョン),
-    `markdown` (Pandocによる拡張Markdown), `markdown_strict` (オリジナルの拡張されていないMarkdown),
-    `markdown_phpextra` (PHP Markdown Extraによる拡張Markdown),
-    `markdown_github` (GitHubによる拡張Markdown),
-    `textile` (Textile), `rst` (reStructuredText), `html` (HTML),
-    `docbook` (DocBook), `opml` (OPML), `mediawiki` (MediaWikiマークアップ),
-    `haddock` (Haddockマークアップ), `latex` (LaTeX)。
+
+    * `native` (Native Haskell; Haskellで読み込める形式のデータ構造)
+	* `json` (ネイティブASTのJSONバージョン)
+	* `markdown` (Pandocによる拡張Markdown)
+	* `markdown_strict` (オリジナルの拡張されていないMarkdown)
+	* `markdown_phpextra` (PHP Markdown Extraによる拡張Markdown)
+	* `markdown_github` (GitHubによる拡張Markdown)
+	* `textile` (Textile)
+	* `rst` (reStructuredText)
+	* `html` (HTML)
+	* `docbook` (DocBook)
+	* `opml` (OPML)
+	* `mediawiki` (MediaWikiマークアップ)
+	* `haddock` (Haddockマークアップ)
+	* `latex` (LaTeX)
+
     `+lhs` をフォーマット `markdown`, `rst`, `latex`, `html` の後ろにつけ加えた場合、
     その入力はLiterate Haskellのソースコードとして扱われます
     （詳細は下記の[Literate Haskellのサポート](#literate-haskell-support)を参照）。
+
     Markdownの拡張文法は、フォーマットの末尾に`+EXTENSION`または`-EXTENSION`をつけ加えることで
     それぞれ有効・無効を切り替えられます。
     例えば、`markdown_strict+footnotes+definition_lists`は、
@@ -168,28 +212,47 @@ Pandocはオプション `-f markdown_strict --email-obfuscation=references` が
 
 `-t` *FORMAT*, `-w` *FORMAT*, `--to=`*FORMAT*, `--write=`*FORMAT*
 :   出力フォーマットを指定します。*FORMAT*として指定できるのは以下のフォーマットです：
-    `native` (Native Haskell), `json` (ネイティブASTのJSONバージョン),
-    `plain` (プレーンテキスト), `markdown` (Pandocによる拡張Markdown),
-    `markdown_strict` (オリジナルの拡張されていないMarkdown),
-    `markdown_phpextra` (PHP Markdown Extraによる拡張Markdown),
-    `markdown_github` (GitHubによる拡張Markdown),
-    `rst` (reStructuredText), `html` (XHTML 1), `html5` (HTML 5),
-    `latex` (LaTeX), `beamer` (LaTeX beamer スライドショー),
-    `context` (ConTeXt), `man` (groff man), `mediawiki` (MediaWiki マークアップ),
-    `textile` (Textile), `org` (Emacs Org-Mode), `texinfo` (GNU Texinfo),
-    `opml` (OPML), `docbook` (DocBook), `opendocument` (OpenDocument), `odt`
-    (OpenOffice/LibreOffice Writerドキュメント), `docx` (Word docx),
-    `rtf` (リッチテキストフォーマット), `epub` (EPUB v2 book), `epub3`
-    (EPUB v3), `fb2` (FictionBook2 e-book), `asciidoc` (AsciiDoc), `slidy`
-    (Slidy HTML and javascript スライドショー), `slideous` (Slideous HTML and
-    javascript スライドショー), `dzslides` (DZSlides HTML5 + javascript スライドショー),
-    `revealjs` (reveal.js HTML5 + javascript スライドショー),
-    `s5` (S5 HTML and javascript スライドショー),
-    または カスタム Lua Writer へのパス(詳細は下記の [カスタムWriter](#custom-writers) を参照)。
+
+    * `native` (Native Haskell)
+	* `json` (ネイティブASTのJSONバージョン)
+	* `plain` (プレーンテキスト)
+	* `markdown` (Pandocによる拡張Markdown)
+	* `markdown_strict` (オリジナルの拡張されていないMarkdown)
+	* `markdown_phpextra` (PHP Markdown Extraによる拡張Markdown)
+	* `markdown_github` (GitHubによる拡張Markdown)
+	* `rst` (reStructuredText)
+	* `html` (XHTML 1)
+	* `html5` (HTML 5)
+	* `latex` (LaTeX)
+	* `beamer` (LaTeX beamer スライドショー)
+	* `context` (ConTeXt)
+	* `man` (groff man)
+	* `mediawiki` (MediaWiki マークアップ)
+	* `textile` (Textile)
+	* `org` (Emacs Org-Mode)
+	* `texinfo` (GNU Texinfo)
+	* `opml` (OPML)
+	* `docbook` (DocBook)
+	* `opendocument` (OpenDocument)
+	* `odt` (OpenOffice/LibreOffice Writerドキュメント)
+	* `docx` (Word docx)
+	* `rtf` (リッチテキストフォーマット)
+	* `epub` (EPUB v2 book)
+	* `epub3` (EPUB v3)
+	* `fb2` (FictionBook2 e-book)
+	* `asciidoc` (AsciiDoc)
+	* `slidy` (Slidy HTML and javascript スライドショー)
+	* `slideous` (Slideous HTML and javascript スライドショー)
+	* `dzslides` (DZSlides HTML5 + javascript スライドショー)
+	* `revealjs` (reveal.js HTML5 + javascript スライドショー)
+	* `s5` (S5 HTML and javascript スライドショー),
+    * カスタム Lua Writer へのパス（詳細は下記の [カスタムWriter](#custom-writers) を参照）
+
     注意：`odt`, `epub`, `epub3`の出力は 標準出力 *stdout* に出力されないため、
     出力ファイル名を `-o/--output`オプションにより必ず指定する必要があります。
     `+lhs`を`markdown`, `rst`, `latex`, `beamer`, `html`, `html5`のいずれかの後ろにつけ加えた場合、
     出力はLiterate Haskellソースコードとして出力されます （詳細は下記の[Literate Haskellのサポート](#literate-haskell-support)を参照）。
+
     Markdownの拡張文法は、`+EXTENSION` または `-EXTENSION` をフォーマット名の後ろにつけ加えることにより、
     それぞれ有効または無効を切り替えることができます（上記の `-f` セクションでの説明と同様）。
 
@@ -217,6 +280,7 @@ Pandocはオプション `-f markdown_strict --email-obfuscation=references` が
 
     です。（デフォルトのユーザデータディレクトリが分からない場合は、
     `pandoc --version`コマンドの出力の中から見つけることができます。）
+
     ユーザデータディレクトリに`reference.odt`, `reference.docx`, `default.csl`,
     `epub.css`ファイル、`templates`, `slidy`, `slideous`, `s5`ディレクトリを置いた場合、
     それらはPandocで通常使用されるのデフォルトのファイル・フォルダと置き換えられます。
@@ -244,7 +308,7 @@ Readerのオプション {#reader-options}
 `-S`, `--smart`
 :   タイポグラフィ的に正しく出力します。
     具体的には、直線状の引用符を曲がった引用符に、`---`をemダッシュ「`—`」に、`--`をenダッシュ「`–`」に、 `...`を3点リーダーに変換します。
-    また、"Mr."のようなある種の略記・略称に対しては、自動的な改行のないスペース(Nonbreaking Space)がその後に挿入されます。
+    また、"Mr."のようなある種の略記・略称に対しては、自動的な改行のないスペース(non-breaking space)がその後に挿入されます。
     （注意：入力フォーマットが`markdown`, `markdown_strict`, `textile`の場合にこのオプションは重要です。
     また、入力フォーマットが`textile`の場合や出力ファイルが`latex`, `context`の場合は、
     `--no-tex-ligatures`を有効にしない限り、このオプションが有効になります。）
@@ -255,14 +319,14 @@ Readerのオプション {#reader-options}
     このオプションは`textile`入力の際に自動的に選択されます。
 
 `--base-header-level=`*NUMBER*
-:   見出しのベースレベルを指定します（デフォルトは1）。
-    （訳注：見出しのベースレベルは、HTMLにおける最上位の見出しレベルと対応します。
-    例えば`--base-header-level=3`の場合は、HTMLの見出しが`<h3>`から始まります。）
+:   ヘッダのベースレベルを指定します（デフォルトは1）。
+    （訳注：ヘッダのベースレベルは、HTMLにおける最上位のヘッダレベルと対応します。
+    例えば`--base-header-level=3`の場合は、HTMLのヘッダが`<h3>`から始まります。）
 
 `--indented-code-classes=`*CLASSES*
-:   通常のインデントコードブロックに対して適用する構文強調表示用クラスを指定します。
+:   通常のインデントコードブロックに対して適用するシンタックスハイライト用クラスを指定します。
     例えば、`perl,numberLines`や`haskell`のように指定します。複数のクラスを指定する場合は、スペースかコンマで区切ります。
-    訳注：構文強調表示が可能な言語については下記の [訳注：構文強調表示が可能なプログラミング言語について](#code-highlighting) を参照して下さい。
+    訳注：シンタックスハイライトが可能な言語については下記の [訳注：シンタックスハイライトが可能なプログラミング言語](#code-highlighting) を参照して下さい。
 
 `--default-image-extension=`*EXTENSION*
 :   画像パス・URLの拡張子が無い場合のデフォルト拡張子を指定します。
@@ -284,7 +348,8 @@ Readerのオプション {#reader-options}
     後者のコマンド形式はフィルタをデバッグする際に有用です。
 
     フィルタは任意の言語で書くことができます。Haskellでは`Text.Pandoc.JSON`は`toJSONFilter`をエクスポートし、Haskellでフィルタを書くことを容易にします。
-    Pythonでフィルタを書きたい方は、モジュール`pandocfilters`をPyPIからインストールできます。このモジュールといくつかの例については、<http://github.com/jgm/pandocfilters>をご覧ください。
+    Pythonでフィルタを書きたい方は、モジュール`pandocfilters`をPyPIからインストールできます。このモジュールといくつかの例については、 <http://github.com/jgm/pandocfilters> をご覧ください。
+
     注意：Pandocは実行ファイル*EXECUTABLE*をユーザの環境変数`PATH`から見つけますが、ディレクトリ名を明示していない場合、カレントディレクトリにある実行ファイルは無視されます。
     カレントディレクトリにあるスクリプトをフィルタとして実行したい場合は、そのスクリプト名の前に `./` を付けて下さい。
 
@@ -306,14 +371,14 @@ Readerのオプション {#reader-options}
 `--tab-stop=`*NUMBER*
 :   タブ文字をスペースに変換する際に、1つのタブ文字を何個のスペースで置換するかを指定します（デフォルト値は4）。
 
-一般的なWriterオプション [general-writer-options]
+一般的なWriterオプション {#general-writer-options}
 ----------------------
 
 `-s`, `--standalone`
 :   スタンドアローンモード。適切なヘッダおよびフッタのついた出力を生成します。（言い換えると、この出力は断片ではなく、1つの完全で独立したHTML, LaTeX, およびRTFファイルです。）
     このオプションは出力フォーマットが`pdf`, `epub`, `epub3`, `fb2`, `docx`, `odt`の場合に自動的に付加されます。
     訳注：このオプションは、Pandoc実行後にブラウザでHTMLファイルを表示させたり、LaTeXコマンドで直接ソースを処理したりする場合に必要となるでしょう。リッチテキストエディタでRTFファイルを扱う場合にはおそらく必須です。
-    逆に、例えばブログなどに使う用途で最低限のHTMLだけが必要な場合は、このオプションを付けない方が用途にふさわしいでしょう。
+    逆に、例えばブログなどに使う用途で最低限のHTMLだけが必要な場合は、このオプションを付けない方が用途に合っているでしょう。
 
 `--template=`*FILE*
 :   テンプレートファイル*FILE*をカスタムテンプレートとして出力文書に適用します。
@@ -346,14 +411,14 @@ Readerのオプション {#reader-options}
 :   自動的に生成された目次を出力文書に含めます（`latex`, `context`, `rst`の場合は、目次を作成する命令を挿入します）。このオプションは、`man`, `docbook`, `slidy`, `slideous`, `s5`, `docx`, `odt`の場合は何も影響を与えません。
 
 `--toc-depth=`*NUMBER*
-:   目次に含める節のレベル番号を指定します。デフォルトは3です（つまり、レベル1, 2, 3の見出しが目次にリストアップされます）。
+:   目次に含める節のレベル番号を指定します。デフォルトは3です（つまり、レベル1, 2, 3のヘッダが目次にリストアップされます）。
 
 `--no-highlight`
 :   コードブロックやインラインにおける構文強調表示を無効にします（構文強調表示用に言語が指定されている場合も同様です）。
 
 `--highlight-style`=*STYLE*
-:   ソースコードの構文強調表示に用いる色のスタイルを指定します。オプションは`pygments` (デフォルト値), `kate`, `monochrome`, `espresso`, `zenburn`, `haddock`, `tango`の中から選べます。
-    訳注：これらのオプション値の名前の一部は実在の構文強調表示エンジンに由来しますが、そのエンジンを実際に使用するわけではなく、それに準じた色テーマを指定するだけです。
+:   ソースコードのシンタックスハイライトに用いる色のスタイルを指定します。オプションは`pygments` (デフォルト値), `kate`, `monochrome`, `espresso`, `zenburn`, `haddock`, `tango`の中から選べます。
+    訳注：これらのオプション値の名前の一部は実在のシンタックスハイライトエンジンに由来しますが、そのエンジンを実際に使用するわけではなく、それに準じた色テーマを指定するだけです。
 
 `-H` *FILE*, `--include-in-header=`*FILE*
 :   ヘッダの末尾に、*FILE*の内容をそのままつけ加えます。
@@ -400,31 +465,38 @@ Readerのオプション {#reader-options}
     （訳注：Markdownにおける各形式の詳細は [リンク](#links) の節をご覧ください。）
 
 `--atx-headers`
-:   MarkdownまたはAsciiDocを出力する際に、ATX形式の見出しを用いるようにします。デフォルトでは、レベル1-2の見出しに対してはSetext形式を、それ以降のレベルに対してはATX形式を用います。
+:   MarkdownまたはAsciiDocを出力する際に、ATX形式のヘッダを用いるようにします。デフォルトでは、レベル1-2のヘッダに対してはSetext形式を、それ以降のレベルに対してはATX形式を用います。
     （訳注：Markdownにおける各形式の詳細は [ヘッダ](#headers) の節をご覧ください。）
 
 `--chapters`
-:   最も上位の見出しを章(chapter)として扱います。LaTeX, ConTeXt, DocBookの出力にて有効です。
+:   最も上位のヘッダを章(chapter)として扱います。LaTeX, ConTeXt, DocBookの出力にて有効です。
     LaTeXのテンプレートがreport, book, memoirクラスファイルを用いる場合、このオプションが暗黙に指定されます。
-    出力フォーマットとして`beamer`が指定された場合、最上位の見出しは`\part{..}`になります。
+    出力フォーマットとして`beamer`が指定された場合、最上位のヘッダは`\part{..}`になります。
 
 `-N`, `--number-sections`
-:   番号付き節見出しを出力します。LaTeX, ConTeXt, HTML, EPUBの出力で有効です。
-    デフォルトでは、節に番号は付いていません。`unnumbered`クラスのある節では、`--number-section`が指定されていている場合でも、番号は付きません。
-    訳注1：例えば`\section{..}`に対して、`unnumbered`クラスとはLaTeXにおける`\section*{..}`、ConTeXtにおける`\subject{..}`だと思われます。
-    訳注2：Pandocのデフォルトでは、`-s/--standalone`オプション付きでLaTeX出力すると、見出しに番号を付けない設定付きのLaTeXソースが出力されます。これはLaTeXそのもののデフォルトと異なるので注意して下さい。
+:   番号付き節ヘッダを出力します。LaTeX, ConTeXt, HTML, EPUBの出力で有効です。
+    デフォルトでは、節に番号は付いていません。`unnumbered`クラスの付いている節では、`--number-section`が指定されていている場合でも、番号は付きません。
+
+    訳注1：`unnumbered`クラスは、例えば
+
+		# 見出し {.unnumbered}
+
+	のように指定します。
+	
+    訳注2：Pandocのデフォルトでは、`-s/--standalone`オプション付きでLaTeX出力すると、ヘッダに番号を付けない設定付きのLaTeXソースが出力されます。これはLaTeXそのもののデフォルトと異なるので注意して下さい。
 
 `--number-offset`=*NUMBER[,NUMBER,...]*,
-:   HTML出力中の節見出し番号に対して、指定されたオフセット値を加えます（他の出力フォーマットでは無視されます）。
-    オフセット値はカンマ区切りで複数指定でき、最初の番号はトップレベルの見出しに対して、 2番目の番号は2番目のレベルの見出しに対して、というように指定できます。
-    例えば、トップレベルの見出しを"6"から始めたい場合は、`--number-offset=5`と指定します。
-    また、レベル2の見出しを"1.5"から始めたい場合は、`--number-offset=1,4`と指定します。
+:   HTML出力中の節ヘッダ番号に対して、指定されたオフセット値を加えます（他の出力フォーマットでは無視されます）。
+    オフセット値はカンマ区切りで複数指定でき、最初の番号はトップレベルのヘッダに対して、 2番目の番号は2番目のレベルのヘッダに対して、というように指定できます。
+    例えば、トップレベルのヘッダを"6"から始めたい場合は、`--number-offset=5`と指定します。
+    また、レベル2のヘッダを"1.5"から始めたい場合は、`--number-offset=1,4`と指定します。
     オフセット値のデフォルトは0です。`--number-sections`を暗黙に指定します。
 
 `--no-tex-ligatures`
 :   LaTeXやConTeXtの出力において、引用符やアポストロフィ、ダッシュ記号をTeXの記号表記に変換しないようにします。
     その代わりに、Unicodeにおける各々の記号を文字通りに出力します。
     このオプションは、OpenTypeの高度な機能をXeLaTeXやLuaLaTeXで用いる際に必要となります。
+
     注意：通常、LaTeXとConTeXtの出力において `--smart` オプションが自動的に指定されます。しかし、`--no-tex-ligatures`を指定する場合は、`--smart`を明示的に指定しなければなりません。ただし、丸まった引用符やダッシュ記号、3点リーダー記号をソースコード内で用いる場合は、`--smart`を指定せずに`--no-tex-ligatures`を使う必要があるかもしれません。
 
 `--listings`
@@ -435,8 +507,8 @@ Readerのオプション {#reader-options}
     デフォルトでは、リスト項目は全てが一気に表示されます。
 
 `--slide-level`=*NUMBER*
-:   指定したレベルの見出しごとに1枚ずつスライドを作るようにします（`beamer`, `s5`, `slidy`, `slideous`, `dzslides`で有効です）。
-    このレベルよりも上の見出しはスライドショーを節ごとに区切るために使われます。また、このレベルよりも下の見出しはスライド内の副見出しを作ります。
+:   指定したレベルのヘッダごとに1枚ずつスライドを作るようにします（`beamer`, `s5`, `slidy`, `slideous`, `dzslides`で有効です）。
+    このレベルよりも上のヘッダはスライドショーを節ごとに区切るために使われます。また、このレベルよりも下のヘッダはスライド内の副ヘッダを作ります。
     デフォルト値はドキュメントの内容によって変わります。詳しくは [スライドショーの構造を作る](#structuring-the-slide-show) をご覧ください。
 
 `--section-divs`
@@ -464,28 +536,38 @@ Readerのオプション {#reader-options}
 :   OpenOffice/LibreOffice ODTファイルを出力する際に、スタイルの元となる参照用ODTファイルを使用します。ファイル名が指定されている場合は、そのファイルを参照用ODTファイルとして使用します。
     最も良い出力を得るために、参照用ODTファイルはPandocを用いて生成されたものを変更して使用して下さい。参照用ODTファイルの内容（コンテンツ）は無視され、そのスタイルシートが新しく出力されるODTファイルに適用されます。
     ODTファイルがコマンドラインに指定されていない場合、Pandocはユーザデータディレクトリから`reference.odt`という名前のファイルを検索します（`--data-dir`の節を参照）。もし見つからなければ、デフォルトの参照用ODTファイルを使います。
+
     訳注：カスタマイズの元になる参照用ODTファイルを得るには、
-        `pandoc --print-default-data-file reference.odt > reference.odt`
+
+        pandoc --print-default-data-file reference.odt > reference.odt
+
     を実行して下さい。
 
 `--reference-docx=`*FILE*
 :   Word docxファイルを出力する際に、スタイルの元となる参照用docxファイルを使用します。ファイル名が指定されている場合は、そのファイルを参照用docxファイルとして使用します。
     最も良い出力を得るためには、参照用docxファイルはPandocを用いて生成されたものを変更して使用して下さい。参照用odocxファイルの内容（コンテンツ）は無視され、そのスタイルシートが新しく出力されるdocxファイルに適用されます。
     docxファイルがコマンドラインに指定されていない場合、Pandocはユーザデータディレクトリから`reference.docx`という名前のファイルを検索します（`--data-dir`の節を参照）。もし見つからなければ、デフォルトの参照用docxファイルを使います。
-    Pandocでは以下のスタイルを使用します：[段落]
+
+    Pandocでは以下のスタイルを使用します：【段落】
     標準(Normal), Compact, 表題(Title), Authors, 日付(Date), Heading 1, Heading 2, Heading 3,
     Heading 4, Heading 5, Block Quote, Definition Term, Definition,
-    本文(Body Text), Table Caption, Image Caption; [文字] Default
+    本文(Body Text), Table Caption, Image Caption; 【文字】 Default
     Paragraph Font, Body Text Char, Verbatim Char, Footnote Ref,
     Link.
+
     訳注：カスタマイズの元になる参照用docxファイルを得るには、
-        `pandoc --print-default-data-file reference.docx > reference.docx`
+
+        pandoc --print-default-data-file reference.docx > reference.docx
+
     を実行して下さい。
 
 `--epub-stylesheet=`*FILE*
 :   EPUBでスタイルを整えるためにスタイルシート(CSS)を使用します。ファイル名が指定された場合はそれを使用し、指定されていない場合は`epub.css`という名前のファイルをユーザデータディレクトリから検索します（`--data-dir`の項を参照）。それでも見つからない場合は、デフォルトのスタイルシートを使用します。
+
     訳注：デフォルトのepub.cssを得るには、
-        `pandoc --print-default-data-file epub.css > epub.css`
+
+        pandoc --print-default-data-file epub.css > epub.css
+
     を実行して下さい。
 
 `--epub-cover-image=`*FILE*
@@ -502,11 +584,12 @@ Readerのオプション {#reader-options}
          <dc:language>es-AR</dc:language>
 
     デフォルトでは、Pandocは以下のメタデータ要素を含みます：
-    `<dc:title>` (文書のタイトルから取得),
-    `<dc:creator>` (文書の著者名から取得),
-    `<dc:date>` (文書の日付から取得, [ISO 8601 format]に従う必要があります),
-    `<dc:language>` (変数 `lang` から取得, 設定されていない場合はロケールから取得),
-    `<dc:identifier id="BookId">` (ランダムに生成されたUUID).
+
+	* `<dc:title>` (文書のタイトルから取得)
+	* `<dc:creator>` (文書の著者名から取得)
+	* `<dc:date>` (文書の日付から取得, [ISO 8601 format]に従う必要があります)
+	* `<dc:language>` (変数 `lang` から取得, 設定されていない場合はロケールから取得)
+	* `<dc:identifier id="BookId">` (ランダムに生成されたUUID)
 
     注意：入力文書がMarkdownの場合、文書中のYAMLメタデータブロックが代わりに使用されます。詳しくは下記の[EPUBメタデータ](#epub-metadata)を参照してください。
 
@@ -541,14 +624,14 @@ Readerのオプション {#reader-options}
         body { font-family: "DejaVuSans"; }
 
 `--epub-chapter-level=`*NUMBER*
-:   EPUBファイルをいくつかの"chapter"（章）ファイルに分割するために、章に相当する見出しレベルを設定します。
-    デフォルトでは、レベル1の見出しを使って複数の章に分割します。
+:   EPUBファイルをいくつかの"chapter"（章）ファイルに分割するために、章に相当するヘッダレベルを設定します。
+    デフォルトでは、レベル1のヘッダを使って複数の章に分割します。
     このオプションはEPUBファイルの内部構成に影響を与えるだけであり、ユーザに見せる章や節を制御するものではありません。
-    いくつかのEPUBリーダーでは、chapterファイルのサイズが大きすぎる場合、動作が遅くなることがあります。少数のレベル1見出しを持つ大きな文書を変換する場合には、このオプションを使って章の見出しレベルを2または3に設定したくなるかもしれません。
+    いくつかのEPUBリーダーでは、chapterファイルのサイズが大きすぎる場合、動作が遅くなることがあります。少数のレベル1ヘッダを持つ大きな文書を変換する場合には、このオプションを使って章のヘッダレベルを2または3に設定したくなるかもしれません。
 
 `--latex-engine=`*pdflatex|lualatex|xelatex*
 :   PDFを出力する際に、指定したLaTeXエンジンを利用します。デフォルトは`pdflatex`です。指定したエンジンがPATHの中に存在しない場合は、そのエンジンのフルパスを指定することもできます。
-    訳注：日本語文書を処理する場合、特に理由が無ければ`lualatex`を利用するようにして下さい。
+    訳注：日本語文書を処理する場合、特に理由が無ければ`lualatex`の利用を推奨します。
 
 引用文献の表示   {#citation-rendering}
 -------------
@@ -620,11 +703,11 @@ HTMLにおける数式の表示  {#math-rendering-in-html}
 `--ignore-args`
 :   コマンドライン引数を無視します（ラッパースクリプトで使用するためのオプションです）。
     標準のPandocオプションは無視されません。例えば、
-
+	
         pandoc --ignore-args -o foo.html -s foo.txt -- -e latin1
-
+	
     は以下と等価です：
-
+	
         pandoc -o foo.html -s
 
 [LaTeXMathML]: http://math.etsu.edu/LaTeXMathML/
@@ -644,6 +727,7 @@ HTMLにおける数式の表示  {#math-rendering-in-html}
 
 カスタムテンプレートは`--template`オプションで指定することができます。
 また、カスタムテンプレートをユーザデータディレクトリ（`--data-dir`を参照）の `templates/default.FORMAT`に置くことで、 与えられた出力フォーマット`FORMAT`に対するシステムのデフォルトテンプレートの代わりに使用することができます。
+
 *例外*：`odt`出力については、`default.opendocument`を使用して下さい。また、`pdf`出力については、`default.latex`を使用して下さい。
 
 テンプレートには*変数*が含まれます。変数名は英数字、`-`および`_`の並びから成り、1文字目は英字です。変数名を`$`記号で囲むと、その値に置換されます。
@@ -659,82 +743,56 @@ HTMLにおける数式の表示  {#math-rendering-in-html}
 
 `header-includes`
 :   `-H/--include-in-header`によって指定されるコンテンツ（複数の値を取ることができます）
-
 `toc`
 :   `--toc/--table-of-contents`が指定されたときの非null値
-
 `include-before`
 :   `-B/--include-before-body`によって指定されるコンテンツ（複数の値を取ることができます）
-
 `include-after`
 :   `-A/--include-after-body`によって指定されるコンテンツ（複数の値を取ることができます）
-
 `body`
 :   文書の本体(body)
-
 `lang`
 :   HTMLまたはLaTeX文書の言語コード
-
 `slidy-url`
 :   Slidy文書のベースURL（デフォルトは`http://www.w3.org/Talks/Tools/Slidy2`）
-
 `slideous-url`
 :   Slideous文書のベースURL（デフォルトは`default`）
-
 `s5-url`
 :   S5文書のベースURL（デフォルトは`ui/default`）
-
 `revealjs-url`
 :   reveal.js文書のベースURL（デフォルトは`reveal.js`）
-
 `theme`
 :   reveal.jsまたはLaTeX Beamerテーマ
-
 `transition`
 :   reveal.jsのトランジション（遷移）
-
 `fontsize`
 :   LaTeX文書のフォントサイズ（10pt, 11pt, 12pt）
-
 `documentclass`
 :   LaTeX文書のドキュメントクラス
-
 `classoption`
 :   LaTeXにおけるdocumentclassのオプション（例：`oneside`）；複数の値を繰り返し指定することができます
-
 `geometry`
 :   LaTeXにおける`geometry`クラスのオプション（例：`margin=1in`）；複数の値を繰り返し指定することができます
-
 `mainfont`, `sansfont`, `monofont`, `mathfont`
 :   LaTeX文書のフォント（XeLaTeXまたはLuaLaTeXのみで有効）
-
 `colortheme`
 :   LaTeX Beamer文書のcolortheme
-
 `fonttheme`
 :   LaTeX Beamer文書のfonttheme
-
 `linkcolor`
 :   LaTeX文書における内部リンクの色 （`red`, `green`, `magenta`, `cyan`, `blue`, `black`）
-
 `urlcolor`
 :   LaTeX文書における外部リンクの色
-
 `citecolor`
 :   LaTeX文書における引用リンクの色
-
 `links-as-notes`
 :   LaTeX文書においてリンクを脚注として表示
-
 `biblio-style`
 :   LaTeXにおける参考文献のスタイル（`--natbib`とともに使用する際に）
-
 `section`
 :   manページにおけるセクション番号
-
 `header`
 :   manページにおけるヘッダ
-
 `footer`
 :   manページにおけるフッタ
 
@@ -768,11 +826,13 @@ HTMLにおける数式の表示  {#math-rendering-in-html}
 
 カスタムテンプレートを使用する際には、Pandocのアップデートによる変更をそのテンプレートに反映させる必要があります。我々としては、デフォルトテンプレートの変更を追跡し、それに応じてあなたのカスタムテンプレートを変更することをお勧めします。これを行う簡単な方法として、pandoc-templatesリポジトリ(<http://github.com/jgm/pandoc-templates>)をフォークし、新しいPandocがリリースされた後に変更をマージすることができます。
 
-Pandocによる拡張Markdown [pandocs-markdown]
+Pandocによる拡張Markdown  {#pandocs-markdown}
 =======================
 
 Pandocは、拡張されわずかに改訂されたバージョンの、John Gruberによる[markdown]の文法を解釈することができます。この文書ではその文法とともに、標準的なMarkdownとの差分を説明します。
-注意として示したものを除いて、`markdown`フォーマットの代わりに`markdown_strict`を用いることでこれらの差分を無くした標準的なMarkdownを使用することができます。拡張部分は、`+EXTENSION`をフォーマット名につけ加えることで追加でき、`-EXTENSION`をつけ加えることで無効にすることができます。例えば、`markdown_strict+footnotes`は、厳密なMarkdownに加えて脚注機能を有効にします。一方で、`markdown-footnotes-pipe_tables`はPandoc拡張Markdownから脚注とパイプテーブル形式の表を無効にします。
+注意として示したものを除いて、`markdown`フォーマットの代わりに`markdown_strict`を用いることでこれらの差分を無くした標準的なMarkdownを使用することができます。
+
+拡張部分は、`+EXTENSION`をフォーマット名につけ加えることで追加でき、`-EXTENSION`をつけ加えることで無効にすることができます。例えば、`markdown_strict+footnotes`は、厳密なMarkdownに加えて脚注機能を有効にします。一方で、`markdown-footnotes-pipe_tables`はPandoc拡張Markdownから脚注とパイプテーブル形式の表を無効にします。
 
 哲学  {#philosophy}
 ----
@@ -853,22 +913,22 @@ Pandocではこの制約を付けています（もちろん、文書の先頭�
 
 この文法によりクラスとキー/値の属性を付けることができますが、識別子のみが現在のところWriterに影響を与えます（そしてそれは一部のWriterのみです：HTML, LaTeX, ConTeXt, Textile, AsciiDoc）。つまり、例えば、以下のようなヘッダには`foo`という識別子が割り当てられます：
 
-    # My header {#foo}
+    # ヘッダ {#foo}
 
-    ## My header ##    {#foo}
+    ## ヘッダ ##    {#foo}
 
-    My other header   {#foo}
-    ---------------
+    他のヘッダ  {#foo}
+    ----------
 
 （この文法は[PHP Markdown Extra]と互換性があります。）
 
 `unnumbered`クラスを付けたヘッダには、たとえ`--number-sections`オプションが指定されていても番号が付きません。単一のハイフン(`-`)を属性として使うと`.unnumbered`と等価な意味になります（非英語圏の文書に適しています）。よって、
 
-    # My header {-}
+    # ヘッダ {-}
 
 は以下と同じ意味になります：
 
-    # My header {.unnumbered}
+    # ヘッダ {.unnumbered}
 
 **拡張: `auto_identifiers`**
 
@@ -885,13 +945,13 @@ Pandocではこの制約を付けています（もちろん、文書の先頭�
 
 よって、例えば以下のようになります：
 
-  ヘッダ                             識別子
-  -------------------------------   ----------------------------
-  Header identifiers in HTML        `header-identifiers-in-html`
-  *Dogs*?--in *my* house?           `dogs--in-my-house`
-  [HTML], [S5], or [RTF]?           `html-s5-or-rtf`
-  3. Applications                   `applications`
-  33                                `section`
+  |ヘッダ                          |識別子                       | 
+  |-------------------------------|----------------------------|
+  |Header identifiers in HTML     |`header-identifiers-in-html`|
+  |*Dogs*?--in *my* house?        |`dogs--in-my-house`         |
+  |[HTML], [S5], or [RTF]?        |`html-s5-or-rtf`            |
+  |3. Applications                |`applications`              |
+  |33                             |`section`                   |
 
 訳注：ヘッダテキストが日本語の場合は、多くの場合、識別子も日本語テキストがそのまま割り当てられます。識別子が日本語の場合、HTMLやLaTeXなどで識別子が正しく動くかどうかは処理系に依存するため、ヘッダには英数字による識別子を明示的に与えることを推奨します。
 
@@ -946,9 +1006,6 @@ Markdownはテキストの引用についてEメールの慣習を踏襲して�
     >
     > 1. これは引用内部にあるリストです。
     > 2. 2つ目のアイテムです。
-
-A "lazy" form, which requires the `>` character only on the first
-line of each block, is also allowed:
 
 怠惰(lazy)な形、つまり`>`が各ブロックの最初の行だけにある形も有効です：
 
@@ -1039,7 +1096,7 @@ line of each block, is also allowed:
 シンタックスハイライトを無効にするには`--no-highlight`オプションを使用してください。
 シンタックスハイライトのスタイルを指定するには、`--highlight-style`オプションを使用してください。
 
-### 訳注：シンタックスハイライトが可能なプログラミング言語について [code-highlighting]
+### 訳注：シンタックスハイライトが可能なプログラミング言語 {#code-highlighting}
 
 Pandoc 1.12.2.1 においてシンタックスハイライトが可能なプログラミング言語は以下の通りです：
 
@@ -1682,9 +1739,6 @@ YAMLメタデータブロックは正当なYAMLオブジェクトであり、最
 
 **拡張: `inline_code_attributes`**
 
-Attributes can be attached to verbatim text, just as with
-[fenced code blocks](#fenced-code-blocks):
-
 文字通りの出力に対して、[囲まれたコードブロック](#fenced-code-blocks)と同様に属性を付けることができます：
 
     `<$>`{.haskell}
@@ -1700,37 +1754,26 @@ TeXの数式は全ての出力フォーマットで出力されます。どの�
 
 Markdown, LaTeX, Org-Mode, ConTeXt
   ~ `$`記号に囲まれたものが、文字通りに出力されます。
-
 reStructuredText
   ~ [ここ](http://www.american.edu/econ/itex2mml/mathhack.rst)で説明されているように、解釈済みテキストロール`:math:`を使用して生成されます。
-
 AsciiDoc
   ~ `latexmath:[...]`として生成されます。
-
 Texinfo
   ~ `@math`コマンドに埋め込む形で生成されます。
-
 groff man
   ~ `$`記号を取り除いた形で、文字通りに出力されます。
-
 MediaWiki
   ~ `<math>`で数式が囲まれた形で生成されます。
-
 Textile
   ~ `<span class="math">`で数式が囲まれた形で生成されます。
-
 RTF, OpenDocument, ODT
   ~ 可能であれば、Unicode文字で生成されます。そうでなければ、文字通りに出力されます。
-
 Docbook
   ~ `--mathml`オプションが指定された場合は、MathMLを用いて`inlineequation`または`informalequation`タグで囲んだ形で生成されます。そうでなければ、可能な限りUnicode文字で生成されます。
-
 Docx
   ~ OMML数式マークアップの形式で生成されます。
-
 FictionBook2
   ~ `--webtex`オプションが指定された場合は、数式はGoogle Chart APIやその他の互換性のあるWebサービス（e-bookにダウンロードおよび埋め込みされたもの）を用いて、画像として生成されます。そうでなければ、文字通りに出力されます。
-
 HTML, Slidy, DZSlides, S5, EPUB
   ~ HTMLにおける数式の生成方法は、コマンドラインオプションに依存します：
 
@@ -1971,7 +2014,7 @@ PandocのMarkdownでは脚注を付けることができます。下記の文法
 
 **拡張: `citations`**
 
-`pandoc-citeproc`という外部フィルタを用いて、Pandocは自動的に引用やあらゆるスタイルの参考文献を生成することができます。標準的な使い方はこうです：
+`pandoc-citeproc`という外部フィルタを用いて、Pandocは自動的に引用やあらゆるスタイルの参考文献を生成することができます。標準的な使い方はこのようなものです：
 
     pandoc --filter pandoc-citeproc myinput.txt
 
@@ -2016,7 +2059,7 @@ PandocのMarkdownでは脚注を付けることができます。下記の文法
 
 （`pandoc-citeproc`から派生したプログラム`mods2yaml`は、MODSリファレンスコレクションからYAML形式の参考文献を生成するのに役立ちます。）
 
-デフォルトでは、`pandoc-citeproc`はChicago author-dateフォーマットが引用および参考文献に使われます。他のスタイルを使用したい場合は、[CSL] 1.0 スタイルファイルを探し、`csl`メタデータフィールドに指定する必要があります。CSLスタイルファイルの作成および改造のための入門ガイドは<http://citationstyles.org/downloads/primer.html>を参照してください。CSLスタイルファイルのリポジトリは<https://github.com/citation-style-language/styles>で手に入ります。もっと楽に探したい場合は<http://zotero.org/styles>もご覧ください。
+デフォルトでは、`pandoc-citeproc`はChicago author-dateフォーマットが引用および参考文献に使われます。他のスタイルを使用したい場合は、[CSL] 1.0 スタイルファイルを探し、`csl`メタデータフィールドに指定する必要があります。CSLスタイルファイルの作成および修正のための入門ガイドは <http://citationstyles.org/downloads/primer.html> を参照してください。CSLスタイルファイルのリポジトリは <https://github.com/citation-style-language/styles> で手に入ります。もっと楽に探したい場合は <http://zotero.org/styles> もご覧ください。
 
 引用は角括弧の中に入れることができ、各内部要素はセミコロンで区切られます。それぞれの引用はキーを持つ必要があり、「`@` + 引用の識別子（データベースから）」という形式で構成され、オプションとして接頭辞、locator、接尾辞をつけることができます。例を示します：
 
@@ -2036,101 +2079,75 @@ PandocのMarkdownでは脚注を付けることができます。下記の文法
 
     @smith04 [p. 33] says blah.
 
-もし使用しているスタイルが引用した文献のリストを呼んでいる場合、それを文書の最後に置くことができます。通常は、適切な見出しとともに文献リストを最後に置きたいでしょう：
+もし使用しているスタイルが引用した文献のリストを呼んでいる場合、それを文書の最後に置くことができます。通常は、適切なヘッダとともに文献リストを最後に置きたいでしょう：
 
     last paragraph...
 
     # References
 
-文献リストはこの見出しの後に配置されます。
+文献リストはこのヘッダの後に配置されます。
 
-Non-pandoc extensions
----------------------
+Pandoc標準以外の拡張  {#non-pandoc-extensions}
+------------------
 
-The following markdown syntax extensions are not enabled by default
-in pandoc, but may be enabled by adding `+EXTENSION` to the format
-name, where `EXTENSION` is the name of the extension.  Thus, for
-example, `markdown+hard_line_breaks` is markdown with hard line breaks.
+下記のMarkdown文法はPandocのデフォルトでは有効になっていませんが、`+EXTENSION`をフォーマット名の前に付けることで有効にすることができます（`EXTENSION`は拡張の名前です）。例えば、`markdown+hard_line_breaks`はMarkdownに強制改行の機能を付けます。
 
-**Extension:  `lists_without_preceding_blankline`**\
-Allow a list to occur right after a paragraph, with no intervening
-blank space.
+**拡張:  `lists_without_preceding_blankline`**\
+段落の後ろに、空行を置くことなくすぐにリストを置くことができます。
 
-**Extension:  `hard_line_breaks`**\
-Causes all newlines within a paragraph to be interpreted as hard line
-breaks instead of spaces.
+**拡張:  `hard_line_breaks`**\
+段落内の全ての改行がスペースでなく強制改行として解釈されます。
 
-**Extension:  `ignore_line_breaks`**\
-Causes newlines within a paragraph to be ignored, rather than being
-treated as spaces or as hard line breaks.  This option is intended for
-use with East Asian languages where spaces are not used between words,
-but text is divided into lines for readability.
+**拡張:  `ignore_line_breaks`**\
+段落内の全ての改行がスペースや強制改行として解釈されることなく、無視されます。このオプションはスペースを単語区切りに用いない東アジアの言語（訳注：日本語、中国語、韓国語など）を意図していますが、可読性向上のためテキストは複数行に分割されます。
 
-**Extension: `tex_math_single_backslash`**\
-Causes anything between `\(` and `\)` to be interpreted as inline
-TeX math, and anything between `\[` and `\]` to be interpreted
-as display TeX math.  Note: a drawback of this extension is that
-it precludes escaping `(` and `[`.
+**拡張: `tex_math_single_backslash`**\
+`\(`と`\)`で囲まれた全てのものがTeXのインライン数式として解釈されます。`\[`と`\]`で囲まれたものはTeXのディスプレイ数式として解釈されます。注意：この拡張の欠点は、`(`と`[`のエスケープが不可能になることです。
 
-**Extension: `tex_math_double_backslash`**\
-Causes anything between `\\(` and `\\)` to be interpreted as inline
-TeX math, and anything between `\\[` and `\\]` to be interpreted
-as display TeX math.
+**拡張: `tex_math_double_backslash`**\
+`\\(`と`\\)`で囲まれた全てのものがTeXのインライン数式として解釈されます。`\\[`と`\\]`で囲まれたものはTeXのディスプレイ数式として解釈されます。
 
-**Extension: `markdown_attribute`**\
-By default, pandoc interprets material inside block-level tags as markdown.
-This extension changes the behavior so that markdown is only parsed
-inside block-level tags if the tags have the attribute `markdown=1`.
+**拡張: `markdown_attribute`**\
+デフォルトでは、Pandocはブロックレベルタグ内のテキストをMarkdownとして解釈します。この拡張ではその振る舞いを変えて、そのタグの属性として`markdown=1`が指定されている場合に限り、ブロックレベルタグ内のテキストをMarkdownとして解釈します。
 
-**Extension: `mmd_title_block`**\
-Enables a [MultiMarkdown] style title block at the top of
-the document, for example:
+**拡張: `mmd_title_block`**\
+文書先頭にある[MultiMarkdown]スタイルのタイトルブロックを有効にします。例えば：
 
-    Title:   My title
-    Author:  John Doe
+    Title:   タイトル
+    Author:  ジョン・ドゥ
     Date:    September 1, 2008
-    Comment: This is a sample mmd title block, with
-             a field spanning multiple lines.
+    Comment: MMDタイトルブロックのサンプルです。
+             複数行を置くことができます。
 
-See the MultiMarkdown documentation for details. Note that only title,
-author, and date are recognized; other fields are simply ignored by
-pandoc. If `pandoc_title_block` or `yaml_metadata_block` is enabled,
-it will take precedence over `mmd_title_block`.
+詳細はMultiMarkdownのドキュメンテーションを参照してください。
+注意：Title, Author, DateのみがPandocで解釈されます。その他のブロックは無視されます。もし`pandoc_title_block`または`yaml_metadata_block`が指定された場合は、それらが`mmd_title_block`よりも優先されます。
 
   [MultiMarkdown]: http://fletcherpenney.net/multimarkdown/
 
-**Extension: `abbreviations`**\
-Parses PHP Markdown Extra abbreviation keys, like
+**拡張: `abbreviations`**\
+PHP Markdown Extraの略語(abbreviation)記法を解釈します：
 
     *[HTML]: Hyper Text Markup Language
 
-Note that the pandoc document model does not support
-abbreviations, so if this extension is enabled, abbreviation keys are
-simply skipped (as opposed to being parsed as paragraphs).
+注意：Pandocの文書モデルは略語をサポートしません。よってこの拡張が有効な場合、略語のキーは単にスキップされます（段落として解釈されるのとは反対に）。
 
-**Extension: `autolink_bare_uris`**\
-Makes all absolute URIs into links, even when not surrounded by
-pointy braces `<...>`.
+**拡張: `autolink_bare_uris`**\
+リンクを`<...>`で囲まない場合でも、全ての絶対参照URIをリンクに変換します。
 
-**Extension: `ascii_identifiers`**\
-Causes the identifiers produced by `auto_identifiers` to be pure ASCII.
-Accents are stripped off of accented latin letters, and non-latin
-letters are omitted.
+**拡張: `ascii_identifiers`**\
+`auto_identifiers`により生成された識別子を純粋なASCII文字に変えます。アクセント記号の付いた英字はアクセント記号のない英字に置換され、非ラテン文字は削除されます。
 
-**Extension: `link_attributes`**\
-Parses multimarkdown style key-value attributes on link and image references.
-Note that pandoc's internal document model provides nowhere to put
-these, so they are presently just ignored.
+**拡張: `link_attributes`**\
+MultiMarkdownスタイルのような、リンクおよび画像の参照のkey-value属性を解釈します。
+注意：Pandocの文書モデルはこのタイプの属性をサポートしません。そのため現在のところ、これらは単に無視されます。
 
-**Extension: `mmd_header_identifiers`**\
-Parses multimarkdown style header identifiers (in square brackets,
-after the header but before any trailing `#`s in an ATX header).
+**拡張: `mmd_header_identifiers`**\
+MultiMarkdownスタイルのヘッダ識別子（角括弧で囲まれたもの、その後にATX形式のヘッダが続く）を解釈します。
 
-Markdown variants
------------------
+Markdownの派生バージョン  {#markdown-variants}
+----------------------
 
-In addition to pandoc's extended markdown, the following markdown
-variants are supported:
+Pandocによる拡張Markdownに加え、下記の派生版Markdownがサポートされています：
 
 `markdown_phpextra` (PHP Markdown Extra)
 :   `footnotes`, `pipe_tables`, `raw_html`, `markdown_attribute`,
@@ -2153,216 +2170,158 @@ variants are supported:
 `markdown_strict` (Markdown.pl)
 :   `raw_html`
 
-Extensions with formats other than markdown
+Markdown以外のフォーマットにおける拡張   {#extensions-with-formats-other-than-markdown}
 -------------------------------------------
 
-Some of the extensions discussed above can be used with formats
-other than markdown:
+上記で議論した拡張のうちいくつかがMarkdown以外のフォーマットでも使用できます：
 
-* `auto_identifiers` can be used with `latex`, `rst`, `mediawiki`,
-  and `textile` input (and is used by default).
+* `auto_identifiers` は `latex`, `rst`, `mediawiki`, `textile` 入力で使用できます（そしてこれはデフォルトで指定されます）。
 
-* `tex_math_dollars`, `tex_math_single_backslash`, and
-  `tex_math_double_backslash` can be used with `html` input.
-  (This is handy for reading web pages formatted using MathJax,
-  for example.)
+* `tex_math_dollars`、`tex_math_single_backslash`、そして `tex_math_double_backslash` は `html` 入力で使用できます。
+  （例えば、MathJaxでフォーマットされたページを読むのに便利です。）
 
-Producing slide shows with Pandoc
-=================================
 
-You can use Pandoc to produce an HTML + javascript slide presentation
-that can be viewed via a web browser.  There are five ways to do this,
-using [S5], [DZSlides], [Slidy], [Slideous], or [reveal.js].
-You can also produce a PDF slide show using LaTeX [beamer].
+Pandocでスライドショーを作る  {#producing-slide-shows-with-pandoc}
+===========================
 
-Here's the markdown source for a simple slide show, `habits.txt`:
+Pandocを使ってHTML+JavaScriptのスライドショーを作ることができます。このスライドショーはWebブラウザで見ることができます。[S5], [DZSlides], [Slidy], [Slideous], [reveal.js]の5つの方法があります。また、LaTeX [beamer]を用いて、PDFスライドショーを作ることもできます。
 
-    % Habits
-    % John Doe
+Markdownによるシンプルなスライドショーの例、`habits.txt`を示します：
+
+    % 毎日の習慣
+    % ジャン・ドゥー
     % March 22, 2005
 
-    # In the morning
+    # 朝にやること
 
-    ## Getting up
+    ## 起きる
 
-    - Turn off alarm
-    - Get out of bed
+    - アラームを止める
+    - ベッドから出る
 
-    ## Breakfast
+    ## 朝ご飯
 
-    - Eat eggs
-    - Drink coffee
+    - 卵を食べる
+    - コーヒーを飲む
 
-    # In the evening
+    # 夜にやること
 
-    ## Dinner
+    ## 夜ご飯
 
-    - Eat spaghetti
-    - Drink wine
+    - スパゲッティを食べる
+    - ワインを飲む
 
     ------------------
 
-    ![picture of spaghetti](images/spaghetti.jpg)
+    ![スパゲッティの写真](images/spaghetti.jpg)
 
-    ## Going to sleep
+    ## 眠る
 
-    - Get in bed
-    - Count sheep
+    - ベッドに入る
+    - 羊を数える
 
-To produce an HTML/javascript slide show, simply type
+HTML/JavaScriptスライドショーを生成するには以下をタイプしましょう：
 
     pandoc -t FORMAT -s habits.txt -o habits.html
 
-where `FORMAT` is either `s5`, `slidy`, `slideous`, `dzslides`, or `revealjs`.
+ここで`FORMAT`は`s5`, `slidy`, `slideous`, `dzslides`, `revealjs`のいずれかです。
 
-For Slidy, Slideous, reveal.js, and S5, the file produced by pandoc with the
-`-s/--standalone` option embeds a link to javascripts and CSS files, which are
-assumed to be available at the relative path `s5/default` (for S5), `slideous`
-(for Slideous), `reveal.js` (for reveal.js), or at the Slidy website at
-`w3.org` (for Slidy).  (These paths can be changed by setting the `slidy-url`,
-`slideous-url`, `revealjs-url`, or `s5-url` variables; see `--variable`,
-above.) For DZSlides, the (relatively short) javascript and css are included in
-the file by default.
+Slidy, Slideous, reveal.js, S5については、Pandocによって`-s/--standalone`オプションとともに出力されたファイルは、JavaScriptとCSSファイルへのリンクが埋め込まれます。それらのリンク先はある相対パスと見なされ、具体的には`s5/default` (S5), `slideous`(Slideous), `reveal.js` (reveal.js), Slidy Webサイト `w3.org` (Slidy)となります。（これらのパスはそれぞれ`slidy-url`, `slideous-url`, `revealjs-url`, `s5-url`変数によって変更できます。詳細は上記の`--variable`を参照。）DZSlidesについては、（比較的短い）JavaScriptとCSSがファイルに含まれます。
 
-With all HTML slide formats, the `--self-contained` option can be used to
-produce a single file that contains all of the data necessary to display the
-slide show, including linked scripts, stylesheets, images, and videos.
+全てのHTMLスライドショーフォーマットに対し、`--self-contained`オプションが使用できます。これはスライドショー表示に必要な全てのデータ（スクリプト、CSS、画像、動画など）を1つのファイルにまとめるオプションです。
 
-To produce a PDF slide show using beamer, type
+LaTeX Beamerを使ったPDFスライドショーを出力するには、下記を実行します：
 
     pandoc -t beamer habits.txt -o habits.pdf
 
-Note that a reveal.js slide show can also be converted to a PDF
-by printing it to a file from the browser.
+メモ：reveal.jsスライドショーはブラウザ上でPDF出力することで、PDFに変換することもできます。
 
 スライドショーの構造を作る    {#structuring-the-slide-show}
 -----------------------
 
-By default, the *slide level* is the highest header level in
-the hierarchy that is followed immediately by content, and not another
-header, somewhere in the document. In the example above, level 1 headers
-are always followed by level 2 headers, which are followed by content,
-so 2 is the slide level.  This default can be overridden using
-the `--slide-level` option.
+デフォルトでは、*スライドレベル*は文書中で最も上位のヘッダレベルと同じです。ただしこのヘッダには何らかの（別のヘッダ以外の）コンテンツが続く必要があります。例えば、レベル1ヘッダの後には常にレベル2ヘッダが続き、そのレベル2ヘッダには何らかのコンテンツが続いている場合、2がスライドレベルになります。このデフォルト値は`--slide-level`オプションで上書きすることができます。
 
-The document is carved up into slides according to the following
-rules:
+スライドショー文書は下記のルールによりいくつかのスライドに分割することができます：
 
-  * A horizontal rule always starts a new slide.
+  * 水平線は常に新しいスライドの始まりになります。
 
-  * A header at the slide level always starts a new slide.
+  * スライドレベル上のヘッダは常に新しいスライドの始まりになります。
 
-  * Headers *below* the slide level in the hierarchy create
-    headers *within* a slide.
+  * スライドレベルより*下位の*ヘッダはスライド*内部に*ヘッダを生成します。
 
-  * Headers *above* the slide level in the hierarchy create
-    "title slides," which just contain the section title
-    and help to break the slide show into sections.
+  * スライドレベルより*上位の*ヘッダは「タイトルスライド」を生成します。これはセクションのタイトルのみを含むもので、スライドショーをいくつかのセクションに分けるのに役立ちます。
 
-  * A title page is constructed automatically from the document's title
-    block, if present.  (In the case of beamer, this can be disabled
-    by commenting out some lines in the default template.)
+  * タイトルページが（もし存在すれば）文書のタイトルブロックから自動的に生成されます。（Beamerの場合、デフォルトテンプレート内でこの部分をコメントアウトすることで無効にできます。）
 
-These rules are designed to support many different styles of slide show. If
-you don't care about structuring your slides into sections and subsections,
-you can just use level 1 headers for all each slide. (In that case, level 1
-will be the slide level.) But you can also structure the slide show into
-sections, as in the example above.
+これらのルールはスライドショーにおける多くの異なるスタイルをサポートするために設計されています。もしスライドショーをセクションやサブセクションに分けることを考えていなければ、単にレベル1ヘッダを全てのスライドに使用すればスライドショーを作成できます。（この場合は、レベル1がスライドレベルになります。）しかし、上記で説明したように、スライドショーをいくつかのセクションで分割した構造も作ることができます。
 
-Note:  in reveal.js slide shows, if slide level is 2, a two-dimensional
-layout will be produced, with level 1 headers building horizontally
-and level 2 headers building vertically.  It is not recommended that
-you use deeper nesting of section levels with reveal.js.
+注意：reveal.jsスライドショーでは、スライドレベルが2の場合、2次元レイアウトが生成されます。レベル1ヘッダが水平に配置され、レベル2ヘッダが垂直に配置されます。もしreveal.jsで深いセクションレベルを作りたい場合には、このスライドレベルはお勧めしません。
 
-Incremental lists
------------------
+インクリメンタルリスト  {#incremental-lists}
+-------------------
 
-By default, these writers produces lists that display "all at once."
-If you want your lists to display incrementally (one item at a time),
-use the `-i` option. If you want a particular list to depart from the
-default (that is, to display incrementally without the `-i` option and
-all at once with the `-i` option), put it in a block quote:
+デフォルトでは、スライドショーのリストは「一気に」表示されます。リストを1つずつ（インクリメンタルに）表示したい場合は、`-i`オプションを使用します。リストの一部分をデフォルトの動作と変えたい場合（つまり、`-i`オプションを指定しないときに1つずつ表示したい場合、あるいは`-i`オプション使用時に一気に表示したい場合）は、引用の中にリストを書きます：
 
-    > - Eat spaghetti
-    > - Drink wine
+    > - スパゲッティを食べる
+    > - ワインを飲む
 
-In this way incremental and nonincremental lists can be mixed in
-a single document.
+このようにすると、インクリメンタルと非インクリメンタルなリストを1つの文書に混在させることができます。
 
-Inserting pauses
-----------------
+ポーズの挿入  {#inserting-pauses}
+------------
 
-You can add "pauses" within a slide by including a paragraph containing
-three dots, separated by spaces:
+スペースで区切られた3つのドットを含んだ段落を作ることで、スライド中に「ポーズ」を入れることができます：
 
-    # Slide with a pause
+    # ポーズ入りスライド
 
-    content before the pause
+    ポーズの前のコンテンツ
 
     . . .
 
-    content after the pause
+    ポーズの後のコンテンツ
 
-Styling the slides
-------------------
+スライドのスタイルを整える  {#styling-the-slides}
+----------------------
 
-You can change the style of HTML slides by putting customized CSS files
-in `$DATADIR/s5/default` (for S5), `$DATADIR/slidy` (for Slidy),
-or `$DATADIR/slideous` (for Slideous),
-where `$DATADIR` is the user data directory (see `--data-dir`, above).
-The originals may be found in pandoc's system data directory (generally
-`$CABALDIR/pandoc-VERSION/s5/default`). Pandoc will look there for any
-files it does not find in the user data directory.
+HTMLスライドのスタイルを変えるには、カスタマイズしたCSSファイルをユーザデータディレクトリに置きます。具体的には、`$DATADIR/s5/default` (S5), `$DATADIR/slidy` (Slidy), `$DATADIR/slideous` (Slideous)です。ただし、`$DATADIR`はユーザデータディレクトリです（上記の`--data-dir`の節を参照）。
+オリジナルのファイルはPandocのシステムデータディレクトリ（通常は`$CABALDIR/pandoc-VERSION/s5/default`）で見つかります。Pandocは、ユーザデータディレクトリから目的のファイルを探し出せなかった場合に、システムデータディレクトリを検索します。
 
-For dzslides, the CSS is included in the HTML file itself, and may
-be modified there.
+dzslidesについては、CSSはHTMLファイル自身に含まれており、そのHTML内のCSSを変更することができます。
 
-For reveal.js, themes can be used by setting the `theme` variable,
-for example:
+reveal.jsについては、変数`theme`をセットすることでテーマを設定できます。例えば：
 
     -V theme=moon
 
-Or you can specify a custom stylesheet using the `--css` option.
+または、カスタムスタイルシートを`--css`オプションで指定することもできます。
 
-To style beamer slides, you can specify a beamer "theme" or "colortheme"
-using the `-V` option:
+Beamerスライドのスタイルについては、`-V`オプションを用いてBeamerの"theme"または"colortheme"を設定できます：
 
     pandoc -t beamer habits.txt -V theme:Warsaw -o habits.pdf
 
-Note that header attributes will turn into slide attributes
-(on a `<div>` or `<section>`) in HTML slide formats, allowing you
-to style individual slides.  In Beamer, the only header attribute
-that affects slides is the `allowframebreaks` class, which sets the
-`allowframebreaks` option, causing multiple slides to be created
-if the content overfills the frame.  This is recommended especially for
-bibliographies:
+メモ：ヘッダの属性は、HTMLスライドでは（`<div>`または`<section>`にて）スライドの属性に変わります。これにより個別のスライドにスタイルを設定することができます。Beamerでは、`allowframebreaks`クラスのみがスライドに影響を与えるヘッダの属性になります。この属性を指定すると、フレームがコンテンツで一杯になったときに複数のスライドが作成されます。この属性は特に参考文献リストに対して推奨されます：
 
     # References {.allowframebreaks}
 
-Speaker notes
+発表者用ノート  {#speaker-notes}
 -------------
 
-reveal.js has good support for speaker notes.  You can add notes to your
-markdown document thus:
+reveal.jsでは嬉しいことに、発表者用ノートをサポートしています。Markdown文書に以下のようなノートをつけ加えることができます：
 
     <div class="notes">
-    This is my note.
+    これはノートです。
 
-    - It can contain markdown
-    - like this list
+    - リストのような
+    - Markdownも含めることができます。
 
     </div>
 
-To show the notes window, press `s` while viewing the presentation.
-Notes are not yet supported for other slide formats, but the notes
-will not appear on the slides themselves.
+発表者用ノートのウィンドウを表示するには、プレゼンテーションの表示中に`s`を押してください。
+他のスライドショーフォーマットでは発表者用ノートはサポートされていませんが、スライド自体にはこのノートは表示されません。
 
 EPUBメタデータ {#epub-metadata}
 =============
 
-EPUB metadata may be specified using the `--epub-metadata` option, but
-if the source document is markdown, it is better to use a YAML metadata
-block.  Here is an example:
+EPUBメタデータは`--epub-metadata`オプションにより指定できます。しかし、入力文書がMarkdownの場合、YAMLメタデータブロックを使用する方がより良いでしょう。例を示します：
 
     ---
     title:
@@ -2382,111 +2341,82 @@ block.  Here is an example:
     rights:  (c) 2007 John Smith, CC BY-NC
     ...
 
-The following fields are recognized:
+以下のフィールドが認識されます：
 
 `identifier`
-  ~ Either a string value or an object with fields `text` and
-    `scheme`.  Valid values for `scheme` are `ISBN-10`,
-    `GTIN-13`, `UPC`, `ISMN-10`, `DOI`, `LCCN`, `GTIN-14`,
-    `ISBN-13`, `Legal deposit number`, `URN`, `OCLC`,
-    `ISMN-13`, `ISBN-A`, `JP`, `OLCC`.
+  ~ フィールド`text`と`scheme`を持った文字列値またはオブジェクト。
+	`scheme`に対する正当な値は以下の通り：`ISBN-10`, `GTIN-13`, `UPC`, `ISMN-10`, `DOI`, `LCCN`, `GTIN-14`, `ISBN-13`, `Legal deposit number`, `URN`, `OCLC`, `ISMN-13`, `ISBN-A`, `JP`, `OLCC`.
 `title`
-  ~ Either a string value, or an object with fields `file-as` and
-    `type`, or a list of such objects.  Valid values for `type` are
-    `main`, `subtitle`, `short`, `collection`, `edition`, `extended`.
+  ~ フィールド`file-as`と`type`を持った文字列値、オブジェクト、またはそれらのリスト。`type`に対する正当な値は以下の通り： `main`, `subtitle`, `short`, `collection`, `edition`, `extended`.
 `creator`
-  ~ Either a string value, or an object with fields `role`, `file-as`,
-    and `text`, or a list of such objects.  Valid values for `role` are
-    [marc relators](http://www.loc.gov/marc/relators/relaterm.html), but
-    pandoc will attempt to translate the human-readable versions
-    (like "author" and "editor") to the appropriate marc relators.
+  ~ フィールド`role`と`file-as`と`text`を持った、文字列値、オブジェクト、またはそれらのリスト。`role`に対する正当な値は[marc relators](http://www.loc.gov/marc/relators/relaterm.html)を参照。
+	しかし、Pandocはヒューマン・リーダブルなバージョンからmarc relatorsへ翻訳しようと試みます（"author"や"editor"のように）。
 `contributor`
-  ~ Same format as `creator`.
+  ~ `creator`と同様のフォーマット。
 `date`
-  ~ A string value in `YYYY-MM-DD` format.  (Only the year is necessary.)
-    Pandoc will attempt to convert other common date formats.
+  ~ `YYYY-MM-DD`形式の文字列値。 (年のみが必須です)
+	Pandocは他の標準的なフォーマットでも変換しようと試みます。
 `language`
-  ~ A string value in [RFC5646] format.  Pandoc will default to the local
-    language if nothing is specified.
+  ~ [RFC5646]フォーマットの文字列値。
+	何も設定されていない場合は、Pandocはローカルの言語をデフォルト値とします。
 `subject`
-  ~ A string value or a list of such values.
+  ~ 文字列値またはそのリスト。 
 `description`
-  ~ A string value.
+  ~ 文字列値。
 `type`
-  ~ A string value.
+  ~ 文字列値。
 `format`
-  ~ A string value.
+  ~ 文字列値。
 `relation`
-  ~ A string value.
+  ~ 文字列値。
 `coverage`
-  ~ A string value.
+  ~ 文字列値。
 `rights`
-  ~ A string value.
+  ~ 文字列値。
 `cover-image`
-  ~ A string value (path to cover image).
+  ~ 文字列値 (カバーイメージへのパス)。
 `stylesheet`
-  ~ A string value (path to CSS stylesheet).
+  ~ 文字列値 (CSSスタイルシートへのパス)。
 
 Literate Haskellのサポート {#literate-haskell-support}
 ========================
 
-If you append `+lhs` (or `+literate_haskell`) to an appropriate input or output
-format (`markdown`, `mardkown_strict`, `rst`, or `latex` for input or output;
-`beamer`, `html` or `html5` for output only), pandoc will treat the document as
-literate Haskell source. This means that
+ある種の入力または出力フォーマット（`markdown`, `mardkown_strict`, `rst`, `latex`）に `+lhs` （または`+literate_haskell`）を付け足した場合、Pandocはその文書をLiterate Haskellのソースコードとして扱います。つまり、
 
-  - In markdown input, "bird track" sections will be parsed as Haskell
-    code rather than block quotations.  Text between `\begin{code}`
-    and `\end{code}` will also be treated as Haskell code.
+  - Markdownの入力では、'`> `'で始まる行 ("bird track"セクション) は引用ではなく、Haskellのソースコードとして扱われます。`\begin{code}`と`\end{code}`で囲まれたテキストも同様にHaskellコードとして扱われます。
 
-  - In markdown output, code blocks with classes `haskell` and `literate`
-    will be rendered using bird tracks, and block quotations will be
-    indented one space, so they will not be treated as Haskell code.
-    In addition, headers will be rendered setext-style (with underlines)
-    rather than atx-style (with '#' characters). (This is because ghc
-    treats '#' characters in column 1 as introducing line numbers.)
+  - Markdown出力では、クラス`haskell`と`literate`の付いたコードブロックが、各行頭に'`> `'が付けられた状態で出力されます。引用は1つのスペースでインデントされて出力されるため、Haskellコードとしては取り扱われません。加えて、ヘッダはATXスタイル（`#`のヘッダ）ではなくSetextスタイル（アンダーラインのヘッダ）が優先的に使用されます。（これは、GHCが1桁目の`#`記号を行番号の記号として扱うためです。）
 
-  - In restructured text input, "bird track" sections will be parsed
-    as Haskell code.
+  - reStructuredTextの入力では、'`> `'の部分がHaskellコードとして解釈されます。
 
-  - In restructured text output, code blocks with class `haskell` will
-    be rendered using bird tracks.
+  - reStructuredTextの出力では、クラス`haskell`の付いたコードブロックが、各行頭に'`> `'が付けられた状態で出力されます。
 
-  - In LaTeX input, text in `code` environments will be parsed as
-    Haskell code.
+  - LaTeX入力では、`code`環境で囲まれたテキストがHaskellコードとして解釈されます。
 
-  - In LaTeX output, code blocks with class `haskell` will be rendered
-    inside `code` environments.
+  - LaTeX出力では、クラス`haskell`の付いたコードブロックが`code`環境の中に出力されます。
 
-  - In HTML output, code blocks with class `haskell` will be rendered
-    with class `literatehaskell` and bird tracks.
+  - HTML出力では、クラス`haskell`の付いたコードブロックがクラス`literatehaskell`と'`> `'記号とともに出力されます。
 
-Examples:
+例：
 
     pandoc -f markdown+lhs -t html
 
-reads literate Haskell source formatted with markdown conventions and writes
-ordinary HTML (without bird tracks).
+は、Markdown形式のLiterate Haskellソースコードを読み込み、通常のHTML（'`> `'記号付き）を出力します。
 
     pandoc -f markdown+lhs -t html+lhs
 
-writes HTML with the Haskell code in bird tracks, so it can be copied
-and pasted as literate Haskell source.
+は、'`> `'記号付きのHaskellソースコードが入ったHTMLを出力します。よって、これはLiterate Haskellソースとしてコピー&ペーストができます。
 
 カスタムWriter {#custom-writers}
 ==============
 
-Pandoc can be extended with custom writers written in [lua].  (Pandoc
-includes a lua interpreter, so lua need not be installed separately.)
+Pandocは[Lua]で書かれたカスタムWriterによって拡張することができます。（PandocにはLuaインタプリタが内蔵されているため、個別にLuaをインストールする必要はありません。）
 
-To use a custom writer, simply specify the path to the lua script
-in place of the output format. For example:
+カスタムWriterを使用するには、単にLuaスクリプトへのパスを出力フォーマットとして指定するだけです。例えば：
 
     pandoc -t data/sample.lua
 
-Creating a custom writer requires writing a lua function for each
-possible element in a pandoc document.  To get a documented example
-which you can modify according to your needs, do
+カスタムWriterを作成するには、Pandoc文書中の各要素(element)に対するLua関数を書く必要があります。変更の元になるサンプルを入手するには、以下のコマンドを実行してください：
 
     pandoc --print-default-data-file sample.lua
 
@@ -2504,6 +2434,8 @@ Christopher Sawicki, Kelsey Hightower, Masayoshi Takahashi, Antoine
 Latter, Ralf Stephan, Eric Seidel, B. Scott Michel, Gavin Beatty,
 Sergey Astanin, Arlo O'Keeffe, Denis Laxalde, Brent Yorgey, David Lazar,
 Jamie F. Olson.
+
+日本語版翻訳： Yuki Fujiwara (@sky_y)
 
 [markdown]: http://daringfireball.net/projects/markdown/
 [reStructuredText]: http://docutils.sourceforge.net/docs/ref/rst/introduction.html
@@ -2537,6 +2469,6 @@ Jamie F. Olson.
 [PDF]: http://www.adobe.com/pdf/
 [reveal.js]: http://lab.hakim.se/reveal-js/
 [FictionBook2]: http://www.fictionbook.org/index.php/Eng:XML_Schema_Fictionbook_2.1
-[lua]: http://www.lua.org
+[Lua]: http://www.lua.org
 [marc relators]: http://www.loc.gov/marc/relators/relaterm.html
 [RFC5646]: http://tools.ietf.org/html/rfc5646
