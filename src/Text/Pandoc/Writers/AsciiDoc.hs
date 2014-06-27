@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-
-Copyright (C) 2006-2010 John MacFarlane <jgm@berkeley.edu>
+Copyright (C) 2006-2014 John MacFarlane <jgm@berkeley.edu>
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 {- |
    Module      : Text.Pandoc.Writers.AsciiDoc
-   Copyright   : Copyright (C) 2006-2010 John MacFarlane
+   Copyright   : Copyright (C) 2006-2014 John MacFarlane
    License     : GNU GPL, version 2 or above
 
    Maintainer  : John MacFarlane <jgm@berkeley.edu>
@@ -217,7 +217,9 @@ blockToAsciiDoc opts (Table caption aligns widths headers rows) =  do
   let makeCell [Plain x] = do d <- blockListToAsciiDoc opts [Plain x]
                               return $ text "|" <> chomp d
       makeCell [Para x]  = makeCell [Plain x]
-      makeCell _         = return $ text "|" <> "[multiblock cell omitted]"
+      makeCell []        = return $ text "|"
+      makeCell bs        = do d <- blockListToAsciiDoc opts bs
+                              return $ text "a|" $$ d
   let makeRow cells = hsep `fmap` mapM makeCell cells
   rows' <- mapM makeRow rows
   head' <- makeRow headers
@@ -227,7 +229,7 @@ blockToAsciiDoc opts (Table caption aligns widths headers rows) =  do
                     else 100000
   let maxwidth = maximum $ map offset (head':rows')
   let body = if maxwidth > colwidth then vsep rows' else vcat rows'
-  let border = text $ "|" ++ replicate ((min maxwidth colwidth) - 1) '='
+  let border = text $ "|" ++ replicate (max 5 (min maxwidth colwidth) - 1) '='
   return $
     caption'' $$ tablespec $$ border $$ head'' $$ body $$ border $$ blankline
 blockToAsciiDoc opts (BulletList items) = do

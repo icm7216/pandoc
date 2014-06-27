@@ -6,12 +6,13 @@ VERSION=$(grep -e '^Version' pandoc.cabal | awk '{print $2}')
 RESOURCES=$DIST/Resources
 ROOT=$DIST/pandoc
 DEST=$ROOT/usr/local
-SCRIPTS=osx-resources
+OSX=osx
+SCRIPTS=$OSX/osx-resources
 BASE=pandoc-$VERSION
-ME=jgm
+ME=$(whoami)
 CODESIGNID="Developer ID Application: John Macfarlane"
 PACKAGEMAKER=/Applications/PackageMaker.app/Contents/MacOS/PackageMaker
-EXES="pandoc pandoc-citeproc biblio2yaml"
+EXES="pandoc pandoc-citeproc"
 
 read -s -p "sudo password: " PASSWORD
 echo $PASSWORD | sudo -S echo "Password valid, continuing."
@@ -20,14 +21,16 @@ echo Removing old files...
 rm -rf $DIST
 mkdir -p $RESOURCES
 
-echo Updating database
-cabal update
+cabal sandbox init
+# echo Updating database
+# cabal update
 
 echo Building pandoc...
-cabal sandbox init
 cabal clean
-cabal install --reinstall --flags="embed_data_files"
-cabal install --reinstall --flags="embed_data_files" pandoc-citeproc
+# Use cpphs to avoid problems with clang cpp on ghc 7.8 osx:
+cabal install cpphs alex happy hsb2hs
+cabal install --ghc-options="-optl-mmacosx-version-min=10.6" --reinstall --flags="embed_data_files" --ghc-options '-pgmPcpphs -optP--cpp'
+cabal install --ghc-options="-optl-mmacosx-version-min=10.6" --reinstall --flags="embed_data_files" pandoc-citeproc --ghc-options '-pgmPcpphs -optP--cpp'
 
 mkdir -p $DEST/bin
 mkdir -p $DEST/share/man/man1
@@ -73,7 +76,8 @@ sudo codesign --force --sign "$CODESIGNID" $BASE.pkg
 spctl --assess --type install $BASE.pkg
 
 echo Creating zip...
-zip -9 -r $BASE.pkg.zip $BASE.pkg
+zip -9 -r $BASE-osx.zip $BASE.pkg
+zip -9 -j -r $BASE-osx.zip $OSX/uninstall-pandoc.pl
 
 # echo Creating disk image...
 # sudo hdiutil create "$BASE.dmg" \

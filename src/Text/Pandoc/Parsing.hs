@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving, TypeSynonymInstances,
     FlexibleInstances#-}
 {-
-Copyright (C) 2006-2010 John MacFarlane <jgm@berkeley.edu>
+Copyright (C) 2006-2014 John MacFarlane <jgm@berkeley.edu>
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 {- |
    Module      : Text.Pandoc.Parsing
-   Copyright   : Copyright (C) 2006-2010 John MacFarlane
+   Copyright   : Copyright (C) 2006-2014 John MacFarlane
    License     : GNU GPL, version 2 or above
 
    Maintainer  : John MacFarlane <jgm@berkeley.edu>
@@ -54,7 +54,6 @@ module Text.Pandoc.Parsing ( (>>~),
                              withRaw,
                              escaped,
                              characterReference,
-                             updateLastStrPos,
                              anyOrderedListMarker,
                              orderedListMarker,
                              charRef,
@@ -64,13 +63,16 @@ module Text.Pandoc.Parsing ( (>>~),
                              gridTableWith,
                              readWith,
                              testStringWith,
-                             getOption,
                              guardEnabled,
                              guardDisabled,
+                             updateLastStrPos,
+                             notAfterString,
                              ParserState (..),
                              HasReaderOptions (..),
                              HasHeaderMap (..),
                              HasIdentifierList (..),
+                             HasMacros (..),
+                             HasLastStrPosition (..),
                              defaultParserState,
                              HeaderType (..),
                              ParserContext (..),
@@ -92,6 +94,7 @@ module Text.Pandoc.Parsing ( (>>~),
                              apostrophe,
                              dash,
                              nested,
+                             citeKey,
                              macro,
                              applyMacros',
                              Parser,
@@ -174,13 +177,13 @@ import Text.Pandoc.Asciify (toAsciiChar)
 import Data.Default
 import qualified Data.Set as Set
 import Control.Monad.Reader
-import Control.Applicative ((*>), (<*), (<$), liftA2)
+import Control.Applicative ((*>), (<*), (<$), liftA2, Applicative)
 import Data.Monoid
 import Data.Maybe (catMaybes)
 
 type Parser t s = Parsec t s
 
-newtype F a = F { unF :: Reader ParserState a } deriving (Monad, Functor)
+newtype F a = F { unF :: Reader ParserState a } deriving (Monad, Applicative, Functor)
 
 runF :: F a -> ParserState -> a
 runF = runReader . unF
@@ -271,7 +274,7 @@ spaceChar = satisfy $ \c -> c == ' ' || c == '\t'
 
 -- | Parses a nonspace, nonnewline character.
 nonspaceChar :: Parser [Char] st Char
-nonspaceChar = satisfy $ \x -> x /= '\t' && x /= '\n' && x /= ' ' && x /= '\r'
+nonspaceChar = satisfy $ flip notElem ['\t', '\n', ' ', '\r']
 
 -- | Skips zero or more spaces or tabs.
 skipSpaces :: Parser [Char] st ()
@@ -461,11 +464,13 @@ mathInlineWith :: String -> String -> Parser [Char] st String
 mathInlineWith op cl = try $ do
   string op
   notFollowedBy space
-  words' <- many1Till (count 1 (noneOf "\n\\")
+  words' <- many1Till (count 1 (noneOf " \t\n\\")
                    <|> (char '\\' >> anyChar >>= \c -> return ['\\',c])
-                   <|> count 1 newline <* notFollowedBy' blankline
-                       *> return " ")
-              (try $ string cl)
+                   <|> do (blankline <* notFollowedBy' blankline) <|>
+                             (oneOf " \t" <* skipMany (oneOf " \t"))
+                          notFollowedBy (char '$')
+                          return " "
+                    ) (try $ string cl)
   notFollowedBy digit  -- to prevent capture of $5
   return $ concat words'
 
@@ -504,7 +509,7 @@ withHorizDisplacement parser = do
 
 -- | Applies a parser and returns the raw string that was parsed,
 -- along with the value produced by the parser.
-withRaw :: Parser [Char] st a -> Parser [Char] st (a, [Char])
+withRaw :: Monad m => ParsecT [Char] st m a -> ParsecT [Char] st m (a, [Char])
 withRaw parser = do
   pos1 <- getPosition
   inp <- getInput
@@ -853,6 +858,11 @@ data ParserState = ParserState
       stateHasChapters     :: Bool,          -- ^ True if \chapter encountered
       stateMacros          :: [Macro],       -- ^ List of macros defined so far
       stateRstDefaultRole  :: String,        -- ^ Current rST default interpreted text role
+      stateRstCustomRoles  :: M.Map String (String, Maybe String, Attr -> (String, Attr)), -- ^ Current rST custom text roles
+      -- Triple represents: 1) Base role, 2) Optional format (only for :raw:
+      -- roles), 3) Source language annotation for code (could be used to
+      -- annotate role classes too).
+      stateCaption         :: Maybe Inlines, -- ^ Caption in current environment
       stateWarnings        :: [String]       -- ^ Warnings generated by the parser
     }
 
@@ -865,33 +875,47 @@ instance HasMeta ParserState where
   deleteMeta field st =
     st{ stateMeta = deleteMeta field $ stateMeta st }
 
-class Monad m => HasReaderOptions m where
-  askReaderOption :: (ReaderOptions -> b) -> m b
-
-class Monad m => HasHeaderMap m where
-  getHeaderMap    :: m (M.Map Inlines String)
-  putHeaderMap    :: M.Map Inlines String -> m ()
-  modifyHeaderMap :: (M.Map Inlines String -> M.Map Inlines String) -> m ()
+class HasReaderOptions st where
+  extractReaderOptions :: st -> ReaderOptions
+  getOption            :: (ReaderOptions -> b) -> Parser s st b
   -- default
-  modifyHeaderMap f = getHeaderMap >>= putHeaderMap . f
+  getOption  f         = (f . extractReaderOptions) `fmap` getState
 
-class Monad m => HasIdentifierList m where
-  getIdentifierList    :: m [String]
-  putIdentifierList    :: [String] -> m ()
-  modifyIdentifierList :: ([String] -> [String]) -> m ()
-  -- default
-  modifyIdentifierList f = getIdentifierList >>= putIdentifierList . f
+instance HasReaderOptions ParserState where
+  extractReaderOptions = stateOptions
 
-instance HasReaderOptions (Parser s ParserState) where
-  askReaderOption = getOption
+class HasHeaderMap st where
+  extractHeaderMap  :: st -> M.Map Inlines String
+  updateHeaderMap   :: (M.Map Inlines String -> M.Map Inlines String) ->
+                       st -> st
 
-instance HasHeaderMap (Parser s ParserState) where
-  getHeaderMap      = fmap stateHeaders getState
-  putHeaderMap hm   = updateState $ \st -> st{ stateHeaders = hm }
+instance HasHeaderMap ParserState where
+  extractHeaderMap     = stateHeaders
+  updateHeaderMap f st = st{ stateHeaders = f $ stateHeaders st }
 
-instance HasIdentifierList (Parser s ParserState) where
-  getIdentifierList   = fmap stateIdentifiers  getState
-  putIdentifierList l = updateState $ \st -> st{ stateIdentifiers = l }
+class HasIdentifierList st where
+  extractIdentifierList  :: st -> [String]
+  updateIdentifierList   :: ([String] -> [String]) -> st -> st
+
+instance HasIdentifierList ParserState where
+  extractIdentifierList     = stateIdentifiers
+  updateIdentifierList f st = st{ stateIdentifiers = f $ stateIdentifiers st }
+
+class HasMacros st where
+  extractMacros         :: st -> [Macro]
+  updateMacros          :: ([Macro] -> [Macro]) -> st -> st
+
+instance HasMacros ParserState where
+  extractMacros        = stateMacros
+  updateMacros f st    = st{ stateMacros = f $ stateMacros st }
+
+class HasLastStrPosition st where
+  setLastStrPos  :: SourcePos -> st -> st
+  getLastStrPos  :: st -> Maybe SourcePos
+
+instance HasLastStrPosition ParserState where
+  setLastStrPos pos st = st{ stateLastStrPos = Just pos }
+  getLastStrPos st     = stateLastStrPos st
 
 defaultParserState :: ParserState
 defaultParserState =
@@ -915,18 +939,28 @@ defaultParserState =
                   stateHasChapters     = False,
                   stateMacros          = [],
                   stateRstDefaultRole  = "title-reference",
+                  stateRstCustomRoles  = M.empty,
+                  stateCaption         = Nothing,
                   stateWarnings        = []}
 
-getOption :: (ReaderOptions -> a) -> Parser s ParserState a
-getOption f = (f . stateOptions) `fmap` getState
-
 -- | Succeed only if the extension is enabled.
-guardEnabled :: Extension -> Parser s ParserState ()
+guardEnabled :: HasReaderOptions st => Extension -> Parser s st ()
 guardEnabled ext = getOption readerExtensions >>= guard . Set.member ext
 
 -- | Succeed only if the extension is disabled.
-guardDisabled :: Extension -> Parser s ParserState ()
+guardDisabled :: HasReaderOptions st => Extension -> Parser s st ()
 guardDisabled ext = getOption readerExtensions >>= guard . not . Set.member ext
+
+-- | Update the position on which the last string ended.
+updateLastStrPos :: HasLastStrPosition st => Parser s st ()
+updateLastStrPos = getPosition >>= updateState . setLastStrPos
+
+-- | Whether we are right after the end of a string.
+notAfterString :: HasLastStrPosition st => Parser s st Bool
+notAfterString = do
+  pos <- getPosition
+  st  <- getState
+  return $ getLastStrPos st /= Just pos
 
 data HeaderType
     = SingleHeader Char  -- ^ Single line of characters underneath
@@ -962,11 +996,11 @@ type SubstTable = M.Map Key Inlines
 --  and the auto_identifers extension is set, generate a new
 --  unique identifier, and update the list of identifiers
 --  in state.
-registerHeader :: (HasReaderOptions m, HasHeaderMap m, HasIdentifierList m)
-               => Attr -> Inlines -> m Attr
+registerHeader :: (HasReaderOptions st, HasHeaderMap st, HasIdentifierList st)
+               => Attr -> Inlines -> Parser s st Attr
 registerHeader (ident,classes,kvs) header' = do
-  ids <- getIdentifierList
-  exts <- askReaderOption readerExtensions
+  ids <- extractIdentifierList `fmap` getState
+  exts <- getOption readerExtensions
   let insert' = M.insertWith (\_new old -> old)
   if null ident && Ext_auto_identifiers `Set.member` exts
      then do
@@ -974,30 +1008,30 @@ registerHeader (ident,classes,kvs) header' = do
        let id'' = if Ext_ascii_identifiers `Set.member` exts
                      then catMaybes $ map toAsciiChar id'
                      else id'
-       putIdentifierList $ if id' == id''
-                              then id' : ids
-                              else id' : id'' : ids
-       modifyHeaderMap $ insert' header' id'
+       updateState $ updateIdentifierList $
+         if id' == id'' then (id' :) else ([id', id''] ++)
+       updateState $ updateHeaderMap $ insert' header' id'
        return (id'',classes,kvs)
      else do
-        unless (null ident) $ modifyHeaderMap $ insert' header' ident
+        unless (null ident) $
+          updateState $ updateHeaderMap $ insert' header' ident
         return (ident,classes,kvs)
 
 -- | Fail unless we're in "smart typography" mode.
-failUnlessSmart :: Parser [tok] ParserState ()
+failUnlessSmart :: HasReaderOptions st => Parser s st ()
 failUnlessSmart = getOption readerSmart >>= guard
 
-smartPunctuation :: Parser [Char] ParserState Inline
-                 -> Parser [Char] ParserState Inline
+smartPunctuation :: Parser [Char] ParserState Inlines
+                 -> Parser [Char] ParserState Inlines
 smartPunctuation inlineParser = do
   failUnlessSmart
   choice [ quoted inlineParser, apostrophe, dash, ellipses ]
 
-apostrophe :: Parser [Char] ParserState Inline
-apostrophe = (char '\'' <|> char '\8217') >> return (Str "\x2019")
+apostrophe :: Parser [Char] ParserState Inlines
+apostrophe = (char '\'' <|> char '\8217') >> return (B.str "\x2019")
 
-quoted :: Parser [Char] ParserState Inline
-       -> Parser [Char] ParserState Inline
+quoted :: Parser [Char] ParserState Inlines
+       -> Parser [Char] ParserState Inlines
 quoted inlineParser = doubleQuoted inlineParser <|> singleQuoted inlineParser
 
 withQuoteContext :: QuoteContext
@@ -1012,20 +1046,19 @@ withQuoteContext context parser = do
   setState newState { stateQuoteContext = oldQuoteContext }
   return result
 
-singleQuoted :: Parser [Char] ParserState Inline
-             -> Parser [Char] ParserState Inline
+singleQuoted :: Parser [Char] ParserState Inlines
+             -> Parser [Char] ParserState Inlines
 singleQuoted inlineParser = try $ do
   singleQuoteStart
   withQuoteContext InSingleQuote $ many1Till inlineParser singleQuoteEnd >>=
-    return . Quoted SingleQuote . normalizeSpaces
+    return . B.singleQuoted . mconcat
 
-doubleQuoted :: Parser [Char] ParserState Inline
-             -> Parser [Char] ParserState Inline
+doubleQuoted :: Parser [Char] ParserState Inlines
+             -> Parser [Char] ParserState Inlines
 doubleQuoted inlineParser = try $ do
   doubleQuoteStart
-  withQuoteContext InDoubleQuote $ do
-    contents <- manyTill inlineParser doubleQuoteEnd
-    return . Quoted DoubleQuote . normalizeSpaces $ contents
+  withQuoteContext InDoubleQuote $ manyTill inlineParser doubleQuoteEnd >>=
+    return . B.doubleQuoted . mconcat
 
 failIfInQuoteContext :: QuoteContext -> Parser [tok] ParserState ()
 failIfInQuoteContext context = do
@@ -1040,17 +1073,11 @@ charOrRef cs =
                        guard (c `elem` cs)
                        return c)
 
-updateLastStrPos :: Parser [Char] ParserState ()
-updateLastStrPos = getPosition >>= \p ->
-  updateState $ \s -> s{ stateLastStrPos = Just p }
-
 singleQuoteStart :: Parser [Char] ParserState ()
 singleQuoteStart = do
   failIfInQuoteContext InSingleQuote
-  pos <- getPosition
-  st <- getState
   -- single quote start can't be right after str
-  guard $ stateLastStrPos st /= Just pos
+  guard =<< notAfterString
   () <$ charOrRef "'\8216\145"
 
 singleQuoteEnd :: Parser [Char] st ()
@@ -1062,24 +1089,24 @@ doubleQuoteStart :: Parser [Char] ParserState ()
 doubleQuoteStart = do
   failIfInQuoteContext InDoubleQuote
   try $ do charOrRef "\"\8220\147"
-           notFollowedBy (satisfy (\c -> c == ' ' || c == '\t' || c == '\n'))
+           notFollowedBy . satisfy $ flip elem [' ', '\t', '\n']
 
 doubleQuoteEnd :: Parser [Char] st ()
 doubleQuoteEnd = do
   charOrRef "\"\8221\148"
   return ()
 
-ellipses :: Parser [Char] st Inline
+ellipses :: Parser [Char] st Inlines
 ellipses = do
   try (charOrRef "\8230\133") <|> try (string "..." >> return '…')
-  return (Str "\8230")
+  return (B.str "\8230")
 
-dash :: Parser [Char] ParserState Inline
+dash :: Parser [Char] ParserState Inlines
 dash = do
   oldDashes <- getOption readerOldDashes
   if oldDashes
      then emDashOld <|> enDashOld
-     else Str `fmap` (hyphenDash <|> emDash <|> enDash)
+     else B.str `fmap` (hyphenDash <|> emDash <|> enDash)
 
 -- Two hyphens = en-dash, three = em-dash
 hyphenDash :: Parser [Char] st String
@@ -1097,16 +1124,16 @@ enDash = do
   try (charOrRef "\8212\151")
   return "\8211"
 
-enDashOld :: Parser [Char] st Inline
+enDashOld :: Parser [Char] st Inlines
 enDashOld = do
   try (charOrRef "\8211\150") <|>
     try (char '-' >> lookAhead (satisfy isDigit) >> return '–')
-  return (Str "\8211")
+  return (B.str "\8211")
 
-emDashOld :: Parser [Char] st Inline
+emDashOld :: Parser [Char] st Inlines
 emDashOld = do
   try (charOrRef "\8212\151") <|> (try $ string "--" >> optional (char '-') >> return '-')
-  return (Str "\8212")
+  return (B.str "\8212")
 
 -- This is used to prevent exponential blowups for things like:
 -- a**a*a**a*a**a*a**a*a**a*a**a*a**
@@ -1120,12 +1147,24 @@ nested p = do
   updateState $ \st -> st{ stateMaxNestingLevel = nestlevel }
   return res
 
+citeKey :: HasLastStrPosition st => Parser [Char] st (Bool, String)
+citeKey = try $ do
+  guard =<< notAfterString
+  suppress_author <- option False (char '-' *> return True)
+  char '@'
+  firstChar <- letter <|> char '_'
+  let regchar = satisfy (\c -> isAlphaNum c || c == '_')
+  let internal p = try $ p <* lookAhead regchar
+  rest <- many $ regchar <|> internal (oneOf ":.#$%&-+?<>~/")
+  let key = firstChar:rest
+  return (suppress_author, key)
+
 --
 -- Macros
 --
 
 -- | Parse a \newcommand or \renewcommand macro definition.
-macro :: Parser [Char] ParserState Blocks
+macro :: (HasMacros st, HasReaderOptions st) => Parser [Char] st Blocks
 macro = do
   apply <- getOption readerApplyMacros
   inp <- getInput
@@ -1135,7 +1174,7 @@ macro = do
                         if apply
                            then do
                              updateState $ \st ->
-                               st { stateMacros = ms ++ stateMacros st }
+                               updateMacros (ms ++) st
                              return mempty
                            else return $ rawBlock "latex" def'
 
@@ -1144,7 +1183,6 @@ applyMacros' :: String -> Parser [Char] ParserState String
 applyMacros' target = do
   apply <- getOption readerApplyMacros
   if apply
-     then do macros <- liftM stateMacros getState
+     then do macros <- extractMacros `fmap` getState
              return $ applyMacros macros target
      else return target
-

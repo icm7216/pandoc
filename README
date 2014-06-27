@@ -1,6 +1,6 @@
 % Pandoc User's Guide
 % John MacFarlane
-% January 19, 2013
+% May 16, 2014
 
 Synopsis
 ========
@@ -13,14 +13,15 @@ Description
 Pandoc is a [Haskell] library for converting from one markup format to
 another, and a command-line tool that uses this library. It can read
 [markdown] and (subsets of) [Textile], [reStructuredText], [HTML],
-[LaTeX], [MediaWiki markup], [Haddock markup], [OPML], and [DocBook]; and
-it can write plain text, [markdown], [reStructuredText], [XHTML], [HTML 5],
-[LaTeX] (including [beamer] slide shows), [ConTeXt], [RTF], [OPML], [DocBook],
+[LaTeX], [MediaWiki markup], [Haddock markup], [OPML], [Emacs
+Org-mode], [DocBook], and [Word docx]; and it can write plain text,
+[markdown], [reStructuredText], [XHTML], [HTML 5], [LaTeX] (including
+[beamer] slide shows), [ConTeXt], [RTF], [OPML], [DocBook],
 [OpenDocument], [ODT], [Word docx], [GNU Texinfo], [MediaWiki markup],
-[EPUB] (v2 or v3), [FictionBook2], [Textile], [groff man] pages, [Emacs
-Org-Mode], [AsciiDoc], and [Slidy], [Slideous], [DZSlides], [reveal.js]
-or [S5] HTML slide shows. It can also produce [PDF] output on systems
-where LaTeX is installed.
+[Haddock markup], [EPUB] (v2 or v3), [FictionBook2], [Textile],
+[groff man] pages, [Emacs Org-Mode], [AsciiDoc], [InDesign ICML],
+and [Slidy], [Slideous], [DZSlides], [reveal.js] or [S5] HTML slide shows.
+It can also produce [PDF] output on systems where LaTeX is installed.
 
 Pandoc's enhanced version of markdown includes syntax for footnotes,
 tables, flexible ordered lists, definition lists, fenced code blocks,
@@ -143,14 +144,14 @@ General options
     `markdown_phpextra` (PHP Markdown Extra extended markdown),
     `markdown_github` (github extended markdown),
     `textile` (Textile), `rst` (reStructuredText), `html` (HTML),
-    `docbook` (DocBook), `opml` (OPML), `mediawiki` (MediaWiki markup),
-    `haddock` (Haddock markup), or `latex` (LaTeX).
-    If `+lhs` is appended to `markdown`, `rst`, `latex`, or `html`,
-    the input will be treated as literate Haskell source:
-    see [Literate Haskell support](#literate-haskell-support), below.
-    Markdown syntax extensions can be individually enabled or disabled
-    by appending `+EXTENSION` or `-EXTENSION` to the format name.
-    So, for example, `markdown_strict+footnotes+definition_lists`
+    `docbook` (DocBook), `opml` (OPML), `org` (Emacs Org-mode),
+    `mediawiki` (MediaWiki markup), `haddock` (Haddock markup), or
+    `latex` (LaTeX).  If `+lhs` is appended to `markdown`, `rst`,
+    `latex`, or `html`, the input will be treated as literate Haskell
+    source: see [Literate Haskell support](#literate-haskell-support),
+    below. Markdown syntax extensions can be individually enabled or
+    disabled by appending `+EXTENSION` or `-EXTENSION` to the format
+    name. So, for example, `markdown_strict+footnotes+definition_lists`
     is strict markdown with footnotes and definition lists enabled,
     and `markdown-pipe_tables+hard_line_breaks` is pandoc's markdown
     without pipe tables and with hard line breaks. See [Pandoc's
@@ -168,22 +169,22 @@ General options
     `context` (ConTeXt), `man` (groff man), `mediawiki` (MediaWiki markup),
     `textile` (Textile), `org` (Emacs Org-Mode), `texinfo` (GNU Texinfo),
     `opml` (OPML), `docbook` (DocBook), `opendocument` (OpenDocument), `odt`
-    (OpenOffice text document), `docx` (Word docx),
-    `rtf` (rich text format), `epub` (EPUB v2 book), `epub3`
-    (EPUB v3), `fb2` (FictionBook2 e-book), `asciidoc` (AsciiDoc), `slidy`
-    (Slidy HTML and javascript slide show), `slideous` (Slideous HTML and
-    javascript slide show), `dzslides` (DZSlides HTML5 + javascript slide
-    show), `revealjs` (reveal.js HTML5 + javascript slide show), `s5`
-    (S5 HTML and javascript slide show), or the path of a custom
-    lua writer (see [Custom writers](#custom-writers), below). Note that
-    `odt`, `epub`, and `epub3` output will not be directed to *stdout*; an
-    output filename must be specified using the `-o/--output` option. If
-    `+lhs` is appended to `markdown`, `rst`, `latex`, `beamer`, `html`, or
-    `html5`, the output will be rendered as literate Haskell source: see
-    [Literate Haskell support](#literate-haskell-support), below.  Markdown
-    syntax extensions can be individually enabled or disabled by appending
-    `+EXTENSION` or `-EXTENSION` to the format name, as described above
-    under `-f`.
+    (OpenOffice text document), `docx` (Word docx), `haddock` (Haddock
+    markup), `rtf` (rich text format), `epub` (EPUB v2 book), `epub3`
+    (EPUB v3), `fb2` (FictionBook2 e-book), `asciidoc` (AsciiDoc),
+    `icml` (InDesign ICML), `slidy` (Slidy HTML and javascript slide show),
+    `slideous` (Slideous HTML and javascript slide show), `dzslides`
+    (DZSlides HTML5 + javascript slide show), `revealjs` (reveal.js
+    HTML5 + javascript slide show), `s5` (S5 HTML and javascript slide show),
+    or the path of a custom lua writer (see [Custom writers](#custom-writers),
+    below). Note that `odt`, `epub`, and `epub3` output will not be directed
+    to *stdout*; an output filename must be specified using the `-o/--output`
+    option. If `+lhs` is appended to `markdown`, `rst`, `latex`, `beamer`,
+    `html`, or `html5`, the output will be rendered as literate Haskell
+    source: see [Literate Haskell support](#literate-haskell-support), below.
+    Markdown syntax extensions can be individually enabled or disabled by
+    appending `+EXTENSION` or `-EXTENSION` to the format name, as described
+    above under `-f`.
 
 `-o` *FILE*, `--output=`*FILE*
 :   Write output to *FILE* instead of *stdout*.  If *FILE* is
@@ -306,6 +307,17 @@ Reader options
 
 `--tab-stop=`*NUMBER*
 :   Specify the number of spaces per tab (default is 4).
+
+`--track-changes=`*accept|reject|all*
+:   Specifies what to do with insertions and deletions produced by the MS
+    Word "track-changes" feature.  *accept* (the default), inserts all
+    insertions, and ignores all deletions. *reject* inserts all
+    deletions and ignores insertions. *all* puts in both insertions
+    and deletions, wrapped in spans with `insertion` and `deletion`
+    classes, respectively. The author and time of change is
+    included. *all* is useful for scripting: only accepting changes
+    from a certain reviewer, say, or before a certain date. This
+    option only affects the Docx reader.
 
 General writer options
 ----------------------
@@ -506,7 +518,7 @@ Options affecting specific writers
 
 `-c` *URL*, `--css=`*URL*
 :   Link to a CSS style sheet. This option can be be used repeatedly to
-    include multiple files. They will be included in the order specified. 
+    include multiple files. They will be included in the order specified.
 
 `--reference-odt=`*FILE*
 :   Use the specified file as a style reference in producing an ODT.
@@ -522,7 +534,8 @@ Options affecting specific writers
 :   Use the specified file as a style reference in producing a docx file.
     For best results, the reference docx should be a modified version
     of a docx file produced using pandoc.  The contents of the reference docx
-    are ignored, but its stylesheets are used in the new docx. If no
+    are ignored, but its stylesheets and document properties (including
+    margins, page size, header, and footer) are used in the new docx. If no
     reference docx is specified on the command line, pandoc will look
     for a file `reference.docx` in the user data directory (see
     `--data-dir`). If this is not found either, sensible defaults will be
@@ -632,10 +645,16 @@ Citation rendering
     `--metadata citation-abbreviations=FILE`.)
 
 `--natbib`
-:   Use natbib for citations in LaTeX output.
+:   Use natbib for citations in LaTeX output.  This option is not for use
+    with the `pandoc-citeproc` filter or with PDF output.  It is intended for
+    use in producing a LaTeX file that can be processed with pdflatex and
+    bibtex.
 
 `--biblatex`
-:   Use biblatex for citations in LaTeX output.
+:   Use biblatex for citations in LaTeX output.  This option is not for use
+    with the `pandoc-citeproc` filter or with PDF output. It is intended for
+    use in producing a LaTeX file that can be processed with pdflatex and
+    bibtex or biber.
 
 Math rendering in HTML
 ----------------------
@@ -764,9 +783,9 @@ as `title`, `author`, and `date`) as well as the following:
 :   base URL for Slidy documents (defaults to
     `http://www.w3.org/Talks/Tools/Slidy2`)
 `slideous-url`
-:   base URL for Slideous documents (defaults to `default`)
+:   base URL for Slideous documents (defaults to `slideous`)
 `s5-url`
-:   base URL for S5 documents (defaults to `ui/default`)
+:   base URL for S5 documents (defaults to `s5/default`)
 `revealjs-url`
 :   base URL for reveal.js documents (defaults to `reveal.js`)
 `theme`
@@ -783,6 +802,15 @@ as `title`, `author`, and `date`) as well as the following:
 `geometry`
 :   options for LaTeX `geometry` class, e.g. `margin=1in`;
     may be repeated for multiple options
+`linestretch`
+:   adjusts line spacing (requires the `setspace` package)
+`fontfamily`
+:   font package to use for LaTeX documents (with pdflatex):
+    TeXLive has `bookman` (Bookman), `utopia` or `fourier` (Utopia),
+    `fouriernc` (New Century Schoolbook), `times` or `txfonts` (Times),
+    `mathpazo` or `pxfonts` or `mathpple` (Palatino),
+    `libertine` (Linux Libertine), `arev` (Arev Sans),
+    and the default `lmodern`, among others.
 `mainfont`, `sansfont`, `monofont`, `mathfont`
 :   fonts for LaTeX documents (works only with xelatex
     and lualatex)
@@ -801,6 +829,8 @@ as `title`, `author`, and `date`) as well as the following:
 :   causes links to be printed as footnotes in LaTeX documents
 `biblio-style`
 :   bibliography style in LaTeX, when used with `--natbib`
+`biblio-files`
+:   bibliography files to use in LaTeX, with `--natbib` or `--biblatex`
 `section`
 :   section number in man pages
 `header`
@@ -894,6 +924,9 @@ If you need a hard line break, put two or more spaces at the end of a line.
 **Extension: `escaped_line_breaks`**
 
 A backslash followed by a newline is also a hard line break.
+Note:  in multiline and grid table cells, this is the only way
+to create a hard line break, since trailing spaces in the cells
+are ignored.
 
 Headers
 -------
@@ -950,10 +983,8 @@ of the line containing the header text:
 
     {#identifier .class .class key=value key=value}
 
-Although this syntax allows assignment of classes and key/value attributes,
-only identifiers currently have any affect in the writers (and only in some
-writers: HTML, LaTeX, ConTeXt, Textile, AsciiDoc).  Thus, for example,
-the following headers will all be assigned the identifier `foo`:
+Thus, for example, the following headers will all be assigned the identifier
+`foo`:
 
     # My header {#foo}
 
@@ -963,6 +994,12 @@ the following headers will all be assigned the identifier `foo`:
     ---------------
 
 (This syntax is compatible with [PHP Markdown Extra].)
+
+Note that although this syntax allows assignment of classes and key/value
+attributes, writers generally don't use all of this information.  Identifiers,
+classes, and key/value attributes are used in HTML and HTML-based formats such
+as EPUB and slidy.  Identifiers are used for labels and link anchors in the
+LaTeX, ConTeXt, Textile, and AsciiDoc writers.
 
 Headers with the class `unnumbered` will not be numbered, even if
 `--number-sections` is specified.  A single hyphen (`-`) in an attribute
@@ -1277,7 +1314,7 @@ one tab:
         + pears
         + peaches
     * vegetables
-        + brocolli
+        + broccoli
         + chard
 
 As noted above, markdown allows you to write list items "lazily," instead of
@@ -1843,11 +1880,9 @@ equivalent of the markdown in the `abstract` field:
     <p>This is the abstract.</p>
     <p>It consists of two paragraphs.</p>
 
-Note:  The example above will not work with the default templates.
-The `author` variable in the templates expects a simple list or string,
-and there is no `abstract` variable in most templates.  To use these,
-you would need to use a custom template with appropriate variables.
-For example:
+Note: The `author` variable in the default templates expects a simple list or
+string.  To use the structured authors in the example, you would need a
+custom template.  For example:
 
     $for(author)$
     $if(author.name)$
@@ -1857,9 +1892,6 @@ For example:
     $endif$
     $endfor$
 
-    $if(abstract)$
-    Abstract: $abstract$
-    $endif$
 
 Backslash escapes
 -----------------
@@ -1999,6 +2031,14 @@ Attributes can be attached to verbatim text, just as with
 
     `<$>`{.haskell}
 
+### Small caps ###
+
+To write small caps, you can use an HTML span tag:
+
+    <span style="font-variant:small-caps;">Small caps</span>
+
+This will work in all output formats that support small caps.
+
 Math
 ----
 
@@ -2108,7 +2148,7 @@ Raw HTML
 
 Markdown allows you to insert raw HTML (or DocBook) anywhere in a document
 (except verbatim contexts, where `<`, `>`, and `&` are interpreted
-literally).  (Techncially this is not an extension, since standard
+literally).  (Technically this is not an extension, since standard
 markdown allows it, but it has been made an extension so that it can
 be disabled if desired.)
 
@@ -2443,7 +2483,9 @@ can be found at <https://github.com/citation-style-language/styles>.  See also
 Citations go inside square brackets and are separated by semicolons.
 Each citation must have a key, composed of '@' + the citation
 identifier from the database, and may optionally have a prefix,
-a locator, and a suffix.  Here are some examples:
+a locator, and a suffix.  The citation key must begin with a letter
+or `_`, and may contain alphanumerics, `_`, and internal punctuation
+characters (`:.#$%&-+?<>~/`).  Here are some examples:
 
     Blah blah [see @doe99, pp. 33-35; also @smith04, ch. 1].
 
@@ -2471,7 +2513,24 @@ document with an appropriate header:
 
     # References
 
-The bibliography will be inserted after this header.
+The bibliography will be inserted after this header.  Note that
+the `unnumbered` class will be added to this header, so that the
+section will not be numbered.
+
+If you want to include items in the bibliography without actually
+citing them in the body text, you can define a dummy `nocite` metadata
+field and put the citations there:
+
+    ---
+    nocite: |
+      @item1, @item2
+    ...
+
+    @item3
+
+In this example, the document will contain a citation for `item3`
+only, but the bibliography will contain entries for `item1`, `item2`, and
+`item3`.
 
 Non-pandoc extensions
 ---------------------
@@ -2521,10 +2580,9 @@ the document, for example:
     Comment: This is a sample mmd title block, with
              a field spanning multiple lines.
 
-See the MultiMarkdown documentation for details. Note that only title,
-author, and date are recognized; other fields are simply ignored by
-pandoc. If `pandoc_title_block` or `yaml_metadata_block` is enabled,
-it will take precedence over `mmd_title_block`.
+See the MultiMarkdown documentation for details.  If `pandoc_title_block` or
+`yaml_metadata_block` is enabled, it will take precedence over
+`mmd_title_block`.
 
   [MultiMarkdown]: http://fletcherpenney.net/multimarkdown/
 
@@ -2860,7 +2918,7 @@ Literate Haskell support
 ========================
 
 If you append `+lhs` (or `+literate_haskell`) to an appropriate input or output
-format (`markdown`, `mardkown_strict`, `rst`, or `latex` for input or output;
+format (`markdown`, `markdown_strict`, `rst`, or `latex` for input or output;
 `beamer`, `html` or `html5` for output only), pandoc will treat the document as
 literate Haskell source. This means that
 
@@ -2932,7 +2990,8 @@ Nathan Gass, Jonathan Daugherty, Jérémy Bobbio, Justin Bogner, qerub,
 Christopher Sawicki, Kelsey Hightower, Masayoshi Takahashi, Antoine
 Latter, Ralf Stephan, Eric Seidel, B. Scott Michel, Gavin Beatty,
 Sergey Astanin, Arlo O'Keeffe, Denis Laxalde, Brent Yorgey, David Lazar,
-Jamie F. Olson.
+Jamie F. Olson, Matthew Pickering, Albert Krewinkel, mb21, Jesse
+Rosenthal.
 
 [markdown]: http://daringfireball.net/projects/markdown/
 [reStructuredText]: http://docutils.sourceforge.net/docs/ref/rst/introduction.html
@@ -2969,3 +3028,4 @@ Jamie F. Olson.
 [lua]: http://www.lua.org
 [marc relators]: http://www.loc.gov/marc/relators/relaterm.html
 [RFC5646]: http://tools.ietf.org/html/rfc5646
+[InDesign ICML]: https://www.adobe.com/content/dam/Adobe/en/devnet/indesign/cs55-docs/IDML/idml-specification.pdf

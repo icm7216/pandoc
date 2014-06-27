@@ -1,5 +1,5 @@
 {-
-Copyright (C) 2012 John MacFarlane <jgm@berkeley.edu>
+Copyright (C) 2012-2014 John MacFarlane <jgm@berkeley.edu>
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 {- |
    Module      : Text.Pandoc.Options
-   Copyright   : Copyright (C) 2012 John MacFarlane
+   Copyright   : Copyright (C) 2012-2014 John MacFarlane
    License     : GNU GPL, version 2 or above
 
    Maintainer  : John MacFarlane <jgm@berkeley.edu>
@@ -41,6 +41,7 @@ module Text.Pandoc.Options ( Extension(..)
                            , HTMLSlideVariant (..)
                            , EPUBVersion (..)
                            , WriterOptions (..)
+                           , TrackChanges (..)
                            , def
                            , isEnabled
                            ) where
@@ -210,6 +211,8 @@ data ReaderOptions = ReaderOptions{
        , readerIndentedCodeClasses :: [String] -- ^ Default classes for
                                        -- indented code blocks
        , readerDefaultImageExtension :: String -- ^ Default extension for images
+       , readerTrace           :: Bool -- ^ Print debugging info
+       , readerTrackChanges    :: TrackChanges
 } deriving (Show, Read)
 
 instance Default ReaderOptions
@@ -225,6 +228,8 @@ instance Default ReaderOptions
                , readerApplyMacros           = True
                , readerIndentedCodeClasses   = []
                , readerDefaultImageExtension = ""
+               , readerTrace                 = False
+               , readerTrackChanges          = AcceptChanges
                }
 
 --
@@ -261,6 +266,12 @@ data HTMLSlideVariant = S5Slides
                       | RevealJsSlides
                       | NoSlides
                       deriving (Show, Read, Eq)
+
+-- | Options for accepting or rejecting MS Word track-changes.
+data TrackChanges = AcceptChanges
+                  | RejectChanges
+                  | AllChanges
+                  deriving (Show, Read, Eq)
 
 -- | Options for writers
 data WriterOptions = WriterOptions

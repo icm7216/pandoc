@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-
-Copyright (C) 2006-2010 John MacFarlane <jgm@berkeley.edu>
+Copyright (C) 2006-2014 John MacFarlane <jgm@berkeley.edu>
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 {- |
    Module      : Text.Pandoc.Writers.RST
-   Copyright   : Copyright (C) 2006-2010 John MacFarlane
+   Copyright   : Copyright (C) 2006-2014 John MacFarlane
    License     : GNU GPL, version 2 or above
 
    Maintainer  : John MacFarlane <jgm@berkeley.edu>
@@ -219,11 +219,15 @@ blockToRST (Table caption _ widths headers rows) =  do
                      else blankline <> text "Table: " <> caption'
   headers' <- mapM blockListToRST headers
   rawRows <- mapM (mapM blockListToRST) rows
-  let isSimple = all (==0) widths && all (all (\bs -> length bs <= 1)) rows
+  -- let isSimpleCell [Plain _] = True
+  --     isSimpleCell [Para _]  = True
+  --     isSimpleCell []        = True
+  --     isSimpleCell _         = False
+  -- let isSimple = all (==0) widths && all (all isSimpleCell) rows
   let numChars = maximum . map offset
   opts <- get >>= return . stOptions
   let widthsInChars =
-       if isSimple
+       if all (== 0) widths
           then map ((+2) . numChars) $ transpose (headers' : rawRows)
           else map (floor . (fromIntegral (writerColumns opts) *)) widths
   let hpipeBlocks blocks = hcat [beg, middle, end]
@@ -287,7 +291,7 @@ definitionListItemToRST (label, defs) = do
   label' <- inlineListToRST label
   contents <- liftM vcat $ mapM blockListToRST defs
   tabstop <- get >>= (return . writerTabStop . stOptions)
-  return $ label' $$ nest tabstop (contents <> cr)
+  return $ label' $$ nest tabstop (nestle contents <> cr)
 
 -- | Convert list of Pandoc block elements to RST.
 blockListToRST :: [Block]       -- ^ List of block elements

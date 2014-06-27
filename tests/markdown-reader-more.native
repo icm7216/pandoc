@@ -16,6 +16,8 @@
 ,Header 3 ("my-header",[],[]) [Str "my",Space,Str "header"]
 ,Header 2 ("in-math",[],[]) [Str "$",Space,Str "in",Space,Str "math"]
 ,Para [Math InlineMath "\\$2 + \\$3"]
+,Para [Str "This",Space,Str "should",Space,Str "not",Space,Str "be",Space,Str "math:"]
+,Para [Str "$PATH",Space,Str "90",Space,Str "$PATH"]
 ,Header 2 ("commented-out-list-item",[],[]) [Str "Commented-out",Space,Str "list",Space,Str "item"]
 ,BulletList
  [[Plain [Str "one",Space,RawInline (Format "html") "<!--\n- two\n-->"]]
@@ -40,7 +42,7 @@
 ,OrderedList (3,Example,TwoParens)
  [[Plain [Str "Third",Space,Str "example."]]]
 ,Header 2 ("macros",[],[]) [Str "Macros"]
-,Para [Math InlineMath "\\langle x,y \\rangle"]
+,Para [Math InlineMath "{\\langle x,y \\rangle}"]
 ,Header 2 ("case-insensitive-references",[],[]) [Str "Case-insensitive",Space,Str "references"]
 ,Para [Link [Str "Fum"] ("/fum","")]
 ,Para [Link [Str "FUM"] ("/fum","")]
@@ -136,4 +138,7 @@
 ,Para [Link [Str "link"] ("/hithere)","")]
 ,Para [Link [Str "linky"] ("hi_(there_(nested))","")]
 ,Header 2 ("reference-link-fallbacks",[],[]) [Str "Reference",Space,Str "link",Space,Str "fallbacks"]
-,Para [Str "[",Emph [Str "not",Space,Str "a",Space,Str "link"],Str "]",Space,Str "[",Emph [Str "nope"],Str "]\8230"]]
+,Para [Str "[",Emph [Str "not",Space,Str "a",Space,Str "link"],Str "]",Space,Str "[",Emph [Str "nope"],Str "]\8230"]
+,Header 2 ("empty-reference-links",[],[]) [Str "Empty",Space,Str "reference",Space,Str "links"]
+,Para [Str "bar"]
+,Para [Link [Str "foo2"] ("","")]]

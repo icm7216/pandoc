@@ -1,7 +1,7 @@
 {-# LANGUAGE RelaxedPolyRec, FlexibleInstances, TypeSynonymInstances #-}
 -- RelaxedPolyRec needed for inlinesBetween on GHC < 7
 {-
-  Copyright (C) 2012 John MacFarlane <jgm@berkeley.edu>
+  Copyright (C) 2012-2014 John MacFarlane <jgm@berkeley.edu>
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 {- |
    Module      : Text.Pandoc.Readers.MediaWiki
-   Copyright   : Copyright (C) 2012 John MacFarlane
+   Copyright   : Copyright (C) 2012-2014 John MacFarlane
    License     : GNU GPL, version 2 or above
 
    Maintainer  : John MacFarlane <jgm@berkeley.edu>
@@ -54,6 +54,9 @@ import Data.Sequence (viewl, ViewL(..), (<|))
 import qualified Data.Foldable as F
 import qualified Data.Map as M
 import Data.Char (isDigit, isSpace)
+import Data.Maybe (fromMaybe)
+import Text.Printf (printf)
+import Debug.Trace (trace)
 
 -- | Read mediawiki from an input string and return a Pandoc document.
 readMediaWiki :: ReaderOptions -- ^ Reader options
@@ -81,16 +84,16 @@ data MWState = MWState { mwOptions         :: ReaderOptions
 
 type MWParser = Parser [Char] MWState
 
-instance HasReaderOptions MWParser where
-  askReaderOption f = (f . mwOptions) `fmap` getState
+instance HasReaderOptions MWState where
+  extractReaderOptions = mwOptions
 
-instance HasHeaderMap MWParser where
-  getHeaderMap      = fmap mwHeaderMap getState
-  putHeaderMap hm   = updateState $ \st -> st{ mwHeaderMap = hm }
+instance HasHeaderMap MWState where
+  extractHeaderMap     = mwHeaderMap
+  updateHeaderMap f st = st{ mwHeaderMap = f $ mwHeaderMap st }
 
-instance HasIdentifierList MWParser where
-  getIdentifierList   = fmap mwIdentifierList getState
-  putIdentifierList l = updateState $ \st -> st{ mwIdentifierList = l }
+instance HasIdentifierList MWState where
+  extractIdentifierList     = mwIdentifierList
+  updateIdentifierList f st = st{ mwIdentifierList = f $ mwIdentifierList st }
 
 --
 -- auxiliary functions
@@ -148,9 +151,16 @@ inlinesInTags tag = try $ do
 blocksInTags :: String -> MWParser Blocks
 blocksInTags tag = try $ do
   (_,raw) <- htmlTag (~== TagOpen tag [])
+  let closer = if tag == "li"
+                  then htmlTag (~== TagClose "li")
+                     <|> lookAhead (
+                              htmlTag (~== TagOpen "li" [])
+                          <|> htmlTag (~== TagClose "ol")
+                          <|> htmlTag (~== TagClose "ul"))
+                  else htmlTag (~== TagClose tag)
   if '/' `elem` raw   -- self-closing tag
      then return mempty
-     else mconcat <$> manyTill block (htmlTag (~== TagClose tag))
+     else mconcat <$> manyTill block closer
 
 charsInTags :: String -> MWParser [Char]
 charsInTags tag = try $ do
@@ -179,7 +189,10 @@ parseMediaWiki = do
 --
 
 block :: MWParser Blocks
-block =  mempty <$ skipMany1 blankline
+block = do
+  tr <- getOption readerTrace
+  pos <- getPosition
+  res <- mempty <$ skipMany1 blankline
      <|> table
      <|> header
      <|> hrule
@@ -191,6 +204,10 @@ block =  mempty <$ skipMany1 blankline
      <|> blockTag
      <|> (B.rawBlock "mediawiki" <$> template)
      <|> para
+  when tr $
+    trace (printf "line %d: %s" (sourceLine pos)
+           (take 60 $ show $ B.toList res)) (return ())
+  return res
 
 para :: MWParser Blocks
 para = do
@@ -204,7 +221,7 @@ table = do
   tableStart
   styles <- option [] parseAttrs <* blankline
   let tableWidth = case lookup "width" styles of
-                         Just w  -> maybe 1.0 id $ parseWidth w
+                         Just w  -> fromMaybe 1.0 $ parseWidth w
                          Nothing -> 1.0
   caption <- option mempty tableCaption
   optional rowsep
@@ -219,6 +236,7 @@ table = do
   let widths' = map (\w -> if w == 0 then defaultwidth else w) widths
   let cellspecs = zip (map fst cellspecs') widths'
   rows' <- many $ try $ rowsep *> (map snd <$> tableRow)
+  optional blanklines
   tableEnd
   let cols = length hdr
   let (headers,rows) = if hasheader
@@ -267,7 +285,7 @@ tableCaption = try $ do
   (trimInlines . mconcat) <$> many (notFollowedBy (cellsep <|> rowsep) *> inline)
 
 tableRow :: MWParser [((Alignment, Double), Blocks)]
-tableRow = try $ many tableCell
+tableRow = try $ skipMany htmlComment *> many tableCell
 
 tableCell :: MWParser ((Alignment, Double), Blocks)
 tableCell = try $ do
@@ -285,7 +303,7 @@ tableCell = try $ do
                     Just "center" -> AlignCenter
                     _             -> AlignDefault
   let width = case lookup "width" attrs of
-                    Just xs -> maybe 0.0 id $ parseWidth xs
+                    Just xs -> fromMaybe 0.0 $ parseWidth xs
                     Nothing -> 0.0
   return ((align, width), bs)
 
@@ -299,6 +317,7 @@ template :: MWParser String
 template = try $ do
   string "{{"
   notFollowedBy (char '{')
+  lookAhead $ letter <|> digit <|> char ':'
   let chunk = template <|> variable <|> many1 (noneOf "{}") <|> count 1 anyChar
   contents <- manyTill chunk (try $ string "}}")
   return $ "{{" ++ concat contents ++ "}}"
@@ -380,15 +399,13 @@ bulletList = B.bulletList <$>
 orderedList :: MWParser Blocks
 orderedList =
        (B.orderedList <$> many1 (listItem '#'))
-   <|> (B.orderedList <$> (htmlTag (~== TagOpen "ul" []) *> spaces *>
-        many (listItem '#' <|> li) <*
-        optional (htmlTag (~== TagClose "ul"))))
-   <|> do (tag,_) <- htmlTag (~== TagOpen "ol" [])
-          spaces
-          items <- many (listItem '#' <|> li)
-          optional (htmlTag (~== TagClose "ol"))
-          let start = maybe 1 id $ safeRead $ fromAttrib "start" tag
-          return $ B.orderedListWith (start, DefaultStyle, DefaultDelim) items
+   <|> try
+       (do (tag,_) <- htmlTag (~== TagOpen "ol" [])
+           spaces
+           items <- many (listItem '#' <|> li)
+           optional (htmlTag (~== TagClose "ol"))
+           let start = fromMaybe 1 $ safeRead $ fromAttrib "start" tag
+           return $ B.orderedListWith (start, DefaultStyle, DefaultDelim) items)
 
 definitionList :: MWParser Blocks
 definitionList = B.definitionList <$> many1 defListItem
@@ -432,7 +449,8 @@ listItem c = try $ do
        skipMany spaceChar
        first <- concat <$> manyTill listChunk newline
        rest <- many
-                (try $ string extras *> (concat <$> manyTill listChunk newline))
+                (try $ string extras *> lookAhead listStartChar *>
+                       (concat <$> manyTill listChunk newline))
        contents <- parseFromString (many1 $ listItem' c)
                           (unlines (first : rest))
        case c of
@@ -549,10 +567,14 @@ endline = () <$ try (newline <*
                      notFollowedBy' header <*
                      notFollowedBy anyListStart)
 
+imageIdentifiers :: [MWParser ()]
+imageIdentifiers = [sym (identifier ++ ":") | identifier <- identifiers]
+    where identifiers = ["File", "Image", "Archivo", "Datei", "Fichier"]
+
 image :: MWParser Inlines
 image = try $ do
   sym "[["
-  sym "File:" <|> sym "Image:"
+  choice imageIdentifiers
   fname <- many1 (noneOf "|]")
   _ <- many (try $ char '|' *> imageOption)
   caption <-   (B.str fname <$ sym "]]")

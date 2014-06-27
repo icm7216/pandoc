@@ -1,6 +1,6 @@
 {-# LANGUAGE OverlappingInstances, FlexibleInstances, OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-{- Copyright (C) 2012 John MacFarlane <jgm@berkeley.edu>
+{- Copyright (C) 2012-2014 John MacFarlane <jgm@berkeley.edu>
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 {- |
    Module      : Text.Pandoc.Writers.Custom
-   Copyright   : Copyright (C) 2012 John MacFarlane
+   Copyright   : Copyright (C) 2012-2014 John MacFarlane
    License     : GNU GPL, version 2 or above
 
    Maintainer  : John MacFarlane <jgm@berkeley.edu>
@@ -131,7 +131,7 @@ instance StackValue MetaValue where
 -- | Convert Pandoc to custom markup.
 writeCustom :: FilePath -> WriterOptions -> Pandoc -> IO String
 writeCustom luaFile opts doc = do
-  luaScript <- readFile luaFile
+  luaScript <- C8.unpack `fmap` C8.readFile luaFile
   lua <- Lua.newstate
   Lua.openlibs lua
   Lua.loadstring lua luaScript "custom"

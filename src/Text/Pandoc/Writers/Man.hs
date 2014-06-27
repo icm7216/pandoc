@@ -1,5 +1,5 @@
 {-
-Copyright (C) 2007-2010 John MacFarlane <jgm@berkeley.edu>
+Copyright (C) 2007-2014 John MacFarlane <jgm@berkeley.edu>
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 {- |
    Module      : Text.Pandoc.Writers.Man
-   Copyright   : Copyright (C) 2007-2010 John MacFarlane
+   Copyright   : Copyright (C) 2007-2014 John MacFarlane
    License     : GNU GPL, version 2 or above
 
    Maintainer  : John MacFarlane <jgm@berkeley.edu>
@@ -283,7 +283,7 @@ definitionListItemToMan opts (label, defs) = do
                                   mapM (\item -> blockToMan opts item) rest
                         first' <- blockToMan opts first
                         return $ first' $$ text ".RS" $$ rest' $$ text ".RE"
-  return $ text ".TP" $$ text ".B " <> labelText $$ contents
+  return $ text ".TP" $$ nowrap (text ".B " <> labelText) $$ contents
 
 -- | Convert list of Pandoc block elements to man.
 blockListToMan :: WriterOptions -- ^ Options

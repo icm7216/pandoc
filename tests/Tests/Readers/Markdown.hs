@@ -171,13 +171,13 @@ tests = [ testGroup "inline code"
         , testGroup "smart punctuation"
           [ test markdownSmart "quote before ellipses"
             ("'...hi'"
-            =?> para (singleQuoted ("…hi")))
+            =?> para (singleQuoted "…hi"))
           , test markdownSmart "apostrophe before emph"
             ("D'oh! A l'*aide*!"
             =?> para ("D’oh! A l’" <> emph "aide" <> "!"))
           , test markdownSmart "apostrophe in French"
             ("À l'arrivée de la guerre, le thème de l'«impossibilité du socialisme»"
-            =?> para ("À l’arrivée de la guerre, le thème de l’«impossibilité du socialisme»"))
+            =?> para "À l’arrivée de la guerre, le thème de l’«impossibilité du socialisme»")
           ]
         , testGroup "mixed emphasis and strong"
           [ "emph and strong emph alternating" =:
@@ -216,4 +216,13 @@ tests = [ testGroup "inline code"
 --        , testGroup "round trip"
 --          [ property "p_markdown_round_trip" p_markdown_round_trip
 --          ]
+        , testGroup "lists"
+          [ "issue #1154" =:
+              " -  <div>\n    first div breaks\n    </div>\n\n    <button>if this button exists</button>\n\n    <div>\n    with this div too.\n    </div>\n"
+              =?> bulletList [divWith nullAttr (plain $ text "first div breaks") <>
+                              rawBlock "html" "<button>" <>
+                              plain (text "if this button exists") <>
+                              rawBlock "html" "</button>\n" <>
+                              divWith nullAttr (plain $ text "with this div too.")]
+          ]
         ]

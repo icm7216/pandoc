@@ -1,6 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-
-Copyright (C) 2012 John MacFarlane <jgm@berkeley.edu>
+Copyright (C) 2012-2014 John MacFarlane <jgm@berkeley.edu>
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 {- |
    Module      : Text.Pandoc.Writers.Docx
-   Copyright   : Copyright (C) 2012 John MacFarlane
+   Copyright   : Copyright (C) 2012-2014 John MacFarlane
    License     : GNU GPL, version 2 or above
 
    Maintainer  : John MacFarlane <jgm@berkeley.edu>
@@ -29,7 +29,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 Conversion of 'Pandoc' documents to docx.
 -}
 module Text.Pandoc.Writers.Docx ( writeDocx ) where
-import Data.List ( intercalate, groupBy )
+import Data.Maybe (fromMaybe)
+import Data.List ( intercalate, isPrefixOf, isSuffixOf )
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Lazy.Char8 as BL8
@@ -42,6 +43,7 @@ import Text.Pandoc.Definition
 import Text.Pandoc.Generic
 import Text.Pandoc.ImageSize
 import Text.Pandoc.Shared hiding (Element)
+import Text.Pandoc.Writers.Shared (fixDisplayMath)
 import Text.Pandoc.Options
 import Text.Pandoc.Readers.TeXMath
 import Text.Pandoc.Highlighting ( highlight )
@@ -57,6 +59,31 @@ import Text.Printf (printf)
 import qualified Control.Exception as E
 import Text.Pandoc.MIME (getMimeType, extensionFromMimeType)
 import Control.Applicative ((<|>))
+import Data.Maybe (mapMaybe)
+
+data ListMarker = NoMarker
+                | BulletMarker
+                | NumberMarker ListNumberStyle ListNumberDelim Int
+                deriving (Show, Read, Eq, Ord)
+
+listMarkerToId :: ListMarker -> String
+listMarkerToId NoMarker = "990"
+listMarkerToId BulletMarker = "991"
+listMarkerToId (NumberMarker sty delim n) =
+  '9' : '9' : styNum : delimNum : show n
+  where styNum = case sty of
+                      DefaultStyle   -> '2'
+                      Example        -> '3'
+                      Decimal        -> '4'
+                      LowerRoman     -> '5'
+                      UpperRoman     -> '6'
+                      LowerAlpha     -> '7'
+                      UpperAlpha     -> '8'
+        delimNum = case delim of
+                      DefaultDelim   -> '0'
+                      Period         -> '1'
+                      OneParen       -> '2'
+                      TwoParens      -> '3'
 
 data WriterState = WriterState{
          stTextProperties :: [Element]
@@ -67,14 +94,8 @@ data WriterState = WriterState{
        , stImages         :: M.Map FilePath (String, String, Maybe String, Element, B.ByteString)
        , stListLevel      :: Int
        , stListNumId      :: Int
-       , stNumStyles      :: M.Map ListMarker Int
        , stLists          :: [ListMarker]
        }
-
-data ListMarker = NoMarker
-                | BulletMarker
-                | NumberMarker ListNumberStyle ListNumberDelim Int
-                deriving (Show, Read, Eq, Ord)
 
 defaultWriterState :: WriterState
 defaultWriterState = WriterState{
@@ -86,7 +107,6 @@ defaultWriterState = WriterState{
       , stImages         = M.empty
       , stListLevel      = -1
       , stListNumId      = 1
-      , stNumStyles      = M.fromList [(NoMarker, 0)]
       , stLists          = [NoMarker]
       }
 
@@ -114,11 +134,46 @@ writeDocx opts doc@(Pandoc meta _) = do
        case writerReferenceDocx opts of
              Just f  -> B.readFile f
              Nothing -> readDataFile datadir "reference.docx"
+  distArchive <- liftM (toArchive . toLazy) $ readDataFile Nothing "reference.docx"
 
   ((contents, footnotes), st) <- runStateT (writeOpenXML opts{writerWrapText = False} doc')
                        defaultWriterState
   epochtime <- floor `fmap` getPOSIXTime
   let imgs = M.elems $ stImages st
+
+  -- create entries for images in word/media/...
+  let toImageEntry (_,path,_,_,img) = toEntry ("word/" ++ path) epochtime $ toLazy img
+  let imageEntries = map toImageEntry imgs
+
+  -- adjust contents to add sectPr from reference.docx
+  parsedDoc <- parseXml refArchive distArchive "word/document.xml"
+  let wname f qn = qPrefix qn == Just "w" && f (qName qn)
+  let mbsectpr = filterElementName (wname (=="sectPr")) parsedDoc
+
+  let sectpr = maybe (mknode "w:sectPr" [] $ ()) id mbsectpr
+
+  let stdAttributes =
+            [("xmlns:w","http://schemas.openxmlformats.org/wordprocessingml/2006/main")
+            ,("xmlns:m","http://schemas.openxmlformats.org/officeDocument/2006/math")
+            ,("xmlns:r","http://schemas.openxmlformats.org/officeDocument/2006/relationships")
+            ,("xmlns:o","urn:schemas-microsoft-com:office:office")
+            ,("xmlns:v","urn:schemas-microsoft-com:vml")
+            ,("xmlns:w10","urn:schemas-microsoft-com:office:word")
+            ,("xmlns:a","http://schemas.openxmlformats.org/drawingml/2006/main")
+            ,("xmlns:pic","http://schemas.openxmlformats.org/drawingml/2006/picture")
+            ,("xmlns:wp","http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing")]
+
+  let contents' = contents ++ [sectpr]
+  let docContents = mknode "w:document" stdAttributes
+                    $ mknode "w:body" [] $ contents'
+
+  parsedRels <- parseXml refArchive distArchive "word/_rels/document.xml.rels"
+  let isHeaderNode e = findAttr (QName "Type" Nothing Nothing) e == Just "http://schemas.openxmlformats.org/officeDocument/2006/relationships/header"
+  let isFooterNode e = findAttr (QName "Type" Nothing Nothing) e == Just "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer"
+  let headers = filterElements isHeaderNode parsedRels
+  let footers = filterElements isFooterNode parsedRels
+
+  let extractTarget e = findAttr (QName "Target" Nothing Nothing) e
 
   -- we create [Content_Types].xml and word/_rels/document.xml.rels
   -- from scratch rather than reading from reference.docx,
@@ -130,8 +185,12 @@ writeDocx opts doc@(Pandoc meta _) = do
   let mkOverrideNode (part', contentType') = mknode "Override"
                [("PartName",part'),("ContentType",contentType')] ()
   let mkImageOverride (_, imgpath, mbMimeType, _, _) =
-             mkOverrideNode ("/word/" ++ imgpath, maybe "application/octet-stream" id mbMimeType)
-  let overrides = map mkOverrideNode
+             mkOverrideNode ("/word/" ++ imgpath,
+                             fromMaybe "application/octet-stream" mbMimeType)
+  let mkMediaOverride imgpath = mkOverrideNode ('/':imgpath,
+                                 fromMaybe "application/octet-stream"
+                                   $ getMimeType imgpath)
+  let overrides = map mkOverrideNode (
                   [("/word/webSettings.xml",
                     "application/vnd.openxmlformats-officedocument.wordprocessingml.webSettings+xml")
                   ,("/word/numbering.xml",
@@ -152,7 +211,15 @@ writeDocx opts doc@(Pandoc meta _) = do
                     "application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml")
                   ,("/word/footnotes.xml",
                     "application/vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml")
-                  ] ++ map mkImageOverride imgs
+                  ] ++
+                  map (\x -> (maybe "" ("/word/" ++) $ extractTarget x,
+                       "application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml")) headers ++
+                  map (\x -> (maybe "" ("/word/" ++) $ extractTarget x,
+                       "application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml")) footers) ++
+                    map mkImageOverride imgs ++
+                    map mkMediaOverride [ eRelativePath e | e <- zEntries refArchive
+                                        , "word/media/" `isPrefixOf` eRelativePath e ]
+
   let defaultnodes = [mknode "Default"
               [("Extension","xml"),("ContentType","application/xml")] (),
              mknode "Default"
@@ -187,7 +254,9 @@ writeDocx opts doc@(Pandoc meta _) = do
                       "theme/theme1.xml")
                     ,("http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes",
                       "rId7",
-                      "footnotes.xml")]
+                      "footnotes.xml")
+                    ] ++
+                    headers ++ footers
   let toImgRel (ident,path,_,_,_) =  mknode "Relationship" [("Type","http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"),("Id",ident),("Target",path)] ()
   let imgrels = map toImgRel imgs
   let toLinkRel (src,ident) =  mknode "Relationship" [("Type","http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"),("Id",ident),("Target",src),("TargetMode","External") ] ()
@@ -196,15 +265,14 @@ writeDocx opts doc@(Pandoc meta _) = do
   let relEntry = toEntry "word/_rels/document.xml.rels" epochtime
         $ renderXml reldoc
 
-  -- create entries for images in word/media/...
-  let toImageEntry (_,path,_,_,img) = toEntry ("word/" ++ path) epochtime $ toLazy img
-  let imageEntries = map toImageEntry imgs
 
   -- word/document.xml
-  let contentEntry = toEntry "word/document.xml" epochtime $ renderXml contents
+  let contentEntry = toEntry "word/document.xml" epochtime
+                     $ renderXml docContents
 
   -- footnotes
-  let footnotesEntry = toEntry "word/footnotes.xml" epochtime $ renderXml footnotes
+  let notes = mknode "w:footnotes" stdAttributes footnotes
+  let footnotesEntry = toEntry "word/footnotes.xml" epochtime $ renderXml notes
 
   -- footnote rels
   let footnoteRelEntry = toEntry "word/_rels/footnotes.xml.rels" epochtime
@@ -214,15 +282,22 @@ writeDocx opts doc@(Pandoc meta _) = do
   -- styles
   let newstyles = styleToOpenXml $ writerHighlightStyle opts
   let stylepath = "word/styles.xml"
-  styledoc <- parseXml refArchive stylepath
+  styledoc <- parseXml refArchive distArchive stylepath
   let styledoc' = styledoc{ elContent = elContent styledoc ++
                   [Elem x | x <- newstyles, writerHighlight opts] }
   let styleEntry = toEntry stylepath epochtime $ renderXml styledoc'
 
   -- construct word/numbering.xml
   let numpath = "word/numbering.xml"
-  numEntry <- (toEntry numpath epochtime . renderXml)
-                 `fmap` mkNumbering (stNumStyles st) (stLists st)
+  numbering <- parseXml refArchive distArchive numpath
+  newNumElts <- mkNumbering (stLists st)
+  let allElts = onlyElems (elContent numbering) ++ newNumElts
+  let numEntry = toEntry numpath epochtime $ renderXml numbering{ elContent =
+                       -- we want all the abstractNums first, then the nums,
+                       -- otherwise things break:
+                       [Elem e | e <- allElts
+                               , qName (elName e) == "abstractNum" ] ++
+                       [Elem e | e <- allElts, qName (elName e) == "num" ] }
   let docPropsPath = "docProps/core.xml"
   let docProps = mknode "cp:coreProperties"
           [("xmlns:cp","http://schemas.openxmlformats.org/package/2006/metadata/core-properties")
@@ -253,13 +328,27 @@ writeDocx opts doc@(Pandoc meta _) = do
         ]
   let relsEntry = toEntry relsPath epochtime $ renderXml rels
 
-  let entryFromArchive path = (toEntry path epochtime . renderXml) `fmap`
-                                parseXml refArchive path
-  docPropsAppEntry <- entryFromArchive "docProps/app.xml"
-  themeEntry <- entryFromArchive "word/theme/theme1.xml"
-  fontTableEntry <- entryFromArchive "word/fontTable.xml"
-  settingsEntry <- entryFromArchive "word/settings.xml"
-  webSettingsEntry <- entryFromArchive "word/webSettings.xml"
+  let entryFromArchive arch path =
+         maybe (fail $ path ++ " corrupt or missing in reference docx")
+               return
+               (findEntryByPath path arch `mplus` findEntryByPath path distArchive)
+  docPropsAppEntry <- entryFromArchive refArchive "docProps/app.xml"
+  themeEntry <- entryFromArchive refArchive "word/theme/theme1.xml"
+  fontTableEntry <- entryFromArchive refArchive "word/fontTable.xml"
+  -- we use dist archive for settings.xml, because Word sometimes
+  -- adds references to footnotes or endnotes we don't have...
+  settingsEntry <- entryFromArchive distArchive "word/settings.xml"
+  webSettingsEntry <- entryFromArchive refArchive "word/webSettings.xml"
+  headerFooterEntries <- mapM (entryFromArchive refArchive) $
+                     mapMaybe (\e -> fmap ("word/" ++) $ extractTarget e)
+                     (headers ++ footers)
+  let miscRelEntries = [ e | e <- zEntries refArchive
+                       , "word/_rels/" `isPrefixOf` (eRelativePath e)
+                       , ".xml.rels" `isSuffixOf` (eRelativePath e)
+                       , eRelativePath e /= "word/_rels/document.xml.rels"
+                       , eRelativePath e /= "word/_rels/footnotes.xml.rels" ]
+  let otherMediaEntries = [ e | e <- zEntries refArchive
+                          , "word/media/" `isPrefixOf` eRelativePath e ]
 
   -- Create archive
   let archive = foldr addEntryToArchive emptyArchive $
@@ -267,7 +356,8 @@ writeDocx opts doc@(Pandoc meta _) = do
                   footnoteRelEntry : numEntry : styleEntry : footnotesEntry :
                   docPropsEntry : docPropsAppEntry : themeEntry :
                   fontTableEntry : settingsEntry : webSettingsEntry :
-                  imageEntries
+                  imageEntries ++ headerFooterEntries ++
+                  miscRelEntries ++ otherMediaEntries
   return $ fromArchive archive
 
 styleToOpenXml :: Style -> [Element]
@@ -305,29 +395,30 @@ styleToOpenXml style = parStyle : map toStyle alltoktypes
                                  $ backgroundColor style )
                              ]
 
-mkNumbering :: M.Map ListMarker Int -> [ListMarker] -> IO Element
-mkNumbering markers lists = do
-  elts <- mapM mkAbstractNum (M.toList markers)
-  return $ mknode "w:numbering"
-     [("xmlns:w","http://schemas.openxmlformats.org/wordprocessingml/2006/main")]
-     $ elts ++ zipWith (mkNum markers) lists [1..(length lists)]
+-- this is the lowest number used for a list numId
+baseListId :: Int
+baseListId = 1000
 
-mkNum :: M.Map ListMarker Int -> ListMarker -> Int -> Element
-mkNum markers marker numid =
+mkNumbering :: [ListMarker] -> IO [Element]
+mkNumbering lists = do
+  elts <- mapM mkAbstractNum (ordNub lists)
+  return $ elts ++ zipWith mkNum lists [baseListId..(baseListId + length lists - 1)]
+
+mkNum :: ListMarker -> Int -> Element
+mkNum marker numid =
   mknode "w:num" [("w:numId",show numid)]
-   $ mknode "w:abstractNumId" [("w:val",show absnumid)] ()
+   $ mknode "w:abstractNumId" [("w:val",listMarkerToId marker)] ()
    : case marker of
        NoMarker     -> []
        BulletMarker -> []
        NumberMarker _ _ start ->
           map (\lvl -> mknode "w:lvlOverride" [("w:ilvl",show (lvl :: Int))]
               $ mknode "w:startOverride" [("w:val",show start)] ()) [0..6]
-   where absnumid = maybe 0 id $ M.lookup marker markers
 
-mkAbstractNum :: (ListMarker,Int) -> IO Element
-mkAbstractNum (marker,numid) = do
+mkAbstractNum :: ListMarker -> IO Element
+mkAbstractNum marker = do
   nsid <- randomRIO (0x10000000 :: Integer, 0xFFFFFFFF :: Integer)
-  return $ mknode "w:abstractNum" [("w:abstractNumId",show numid)]
+  return $ mknode "w:abstractNum" [("w:abstractNumId",listMarkerToId marker)]
     $ mknode "w:nsid" [("w:val", printf "%8x" nsid)] ()
     : mknode "w:multiLevelType" [("w:val","multilevel")] ()
     : map (mkLvl marker) [0..6]
@@ -379,10 +470,11 @@ mkLvl marker lvl =
           patternFor _ s = s ++ "."
 
 getNumId :: WS Int
-getNumId = length `fmap` gets stLists
+getNumId = ((999 +) . length) `fmap` gets stLists
 
--- | Convert Pandoc document to two OpenXML elements (the main document and footnotes).
-writeOpenXML :: WriterOptions -> Pandoc -> WS (Element, Element)
+-- | Convert Pandoc document to two lists of
+-- OpenXML elements (the main document and footnotes).
+writeOpenXML :: WriterOptions -> Pandoc -> WS ([Element], [Element])
 writeOpenXML opts (Pandoc meta blocks) = do
   let tit = docTitle meta ++ case lookupMeta "subtitle" meta of
                                   Just (MetaBlocks [Plain xs]) -> LineBreak : xs
@@ -400,19 +492,7 @@ writeOpenXML opts (Pandoc meta blocks) = do
   doc' <- blocksToOpenXML opts blocks'
   notes' <- reverse `fmap` gets stFootnotes
   let meta' = title ++ authors ++ date
-  let stdAttributes =
-            [("xmlns:w","http://schemas.openxmlformats.org/wordprocessingml/2006/main")
-            ,("xmlns:m","http://schemas.openxmlformats.org/officeDocument/2006/math")
-            ,("xmlns:r","http://schemas.openxmlformats.org/officeDocument/2006/relationships")
-            ,("xmlns:o","urn:schemas-microsoft-com:office:office")
-            ,("xmlns:v","urn:schemas-microsoft-com:vml")
-            ,("xmlns:w10","urn:schemas-microsoft-com:office:word")
-            ,("xmlns:a","http://schemas.openxmlformats.org/drawingml/2006/main")
-            ,("xmlns:pic","http://schemas.openxmlformats.org/drawingml/2006/picture")
-            ,("xmlns:wp","http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing")]
-  let doc = mknode "w:document" stdAttributes $ mknode "w:body" [] (meta' ++ doc')
-  let notes = mknode "w:footnotes" stdAttributes notes'
-  return (doc, notes)
+  return (meta' ++ doc', notes')
 
 -- | Convert a list of Pandoc blocks to OpenXML.
 blocksToOpenXML :: WriterOptions -> [Block] -> WS [Element]
@@ -491,10 +571,12 @@ blockToOpenXML opts (Table caption aligns widths headers rows) = do
                     [ mknode "w:tcBorders" []
                       $ mknode "w:bottom" [("w:val","single")] ()
                     , mknode "w:vAlign" [("w:val","bottom")] () ]
+  let emptyCell = [mknode "w:p" [] [mknode "w:pPr" [] $
+                    [mknode "w:pStyle" [("w:val","Compact")] ()]]]
   let mkcell border contents = mknode "w:tc" []
                             $ [ borderProps | border ] ++
                             if null contents
-                               then [mknode "w:p" [] ()]
+                               then emptyCell
                                else contents
   let mkrow border cells = mknode "w:tr" [] $ map (mkcell border) cells
   let textwidth = 7920  -- 5.5 in in twips, 1/20 pt
@@ -539,17 +621,13 @@ addList :: ListMarker -> WS ()
 addList marker = do
   lists <- gets stLists
   modify $ \st -> st{ stLists = lists ++ [marker] }
-  numStyles <- gets stNumStyles
-  case M.lookup marker numStyles of
-           Just _  -> return ()
-           Nothing -> modify $ \st ->
-                 st{ stNumStyles = M.insert marker (M.size numStyles + 1) numStyles }
 
 listItemToOpenXML :: WriterOptions -> Int -> [Block] -> WS [Element]
 listItemToOpenXML _ _ []                   = return []
 listItemToOpenXML opts numid (first:rest) = do
   first' <- withNumId numid $ blockToOpenXML opts first
-  rest'  <- withNumId 1      $ blocksToOpenXML opts rest
+  -- baseListId is the code for no list marker:
+  rest'  <- withNumId baseListId $ blocksToOpenXML opts rest
   return $ first' ++ rest'
 
 alignmentToString :: Alignment -> [Char]
@@ -805,32 +883,10 @@ inlineToOpenXML opts (Image alt (src, tit)) = do
 br :: Element
 br = mknode "w:r" [] [mknode "w:br" [("w:type","textWrapping")] () ]
 
-parseXml :: Archive -> String -> IO Element
-parseXml refArchive relpath =
-  case (findEntryByPath relpath refArchive >>= parseXMLDoc . UTF8.toStringLazy . fromEntry) of
-       Just d  -> return d
-       Nothing -> fail $ relpath ++ " missing in reference docx"
-
-isDisplayMath :: Inline -> Bool
-isDisplayMath (Math DisplayMath _) = True
-isDisplayMath _                    = False
-
-stripLeadingTrailingSpace :: [Inline] -> [Inline]
-stripLeadingTrailingSpace = go . reverse . go . reverse
-  where go (Space:xs) = xs
-        go xs         = xs
-
-fixDisplayMath :: Block -> Block
-fixDisplayMath (Plain lst)
-  | any isDisplayMath lst && not (all isDisplayMath lst) =
-    -- chop into several paragraphs so each displaymath is its own
-    Div ("",["math"],[]) $ map (Plain . stripLeadingTrailingSpace) $
-       groupBy (\x y -> (isDisplayMath x && isDisplayMath y) ||
-                         not (isDisplayMath x || isDisplayMath y)) lst
-fixDisplayMath (Para lst)
-  | any isDisplayMath lst && not (all isDisplayMath lst) =
-    -- chop into several paragraphs so each displaymath is its own
-    Div ("",["math"],[]) $ map (Para . stripLeadingTrailingSpace) $
-       groupBy (\x y -> (isDisplayMath x && isDisplayMath y) ||
-                         not (isDisplayMath x || isDisplayMath y)) lst
-fixDisplayMath x = x
+parseXml :: Archive -> Archive -> String -> IO Element
+parseXml refArchive distArchive relpath =
+  case ((findEntryByPath relpath refArchive `mplus`
+         findEntryByPath relpath distArchive)
+         >>= parseXMLDoc . UTF8.toStringLazy . fromEntry) of
+            Just d  -> return d
+            Nothing -> fail $ relpath ++ " corrupt or missing in reference docx"

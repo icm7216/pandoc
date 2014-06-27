@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable, CPP, MultiParamTypeClasses,
-    FlexibleContexts #-}
+    FlexibleContexts, ScopedTypeVariables #-}
 {-
-Copyright (C) 2006-2013 John MacFarlane <jgm@berkeley.edu>
+Copyright (C) 2006-2014 John MacFarlane <jgm@berkeley.edu>
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 {- |
    Module      : Text.Pandoc.Shared
-   Copyright   : Copyright (C) 2006-2013 John MacFarlane
+   Copyright   : Copyright (C) 2006-2014 John MacFarlane
    License     : GNU GPL, version 2 or above
 
    Maintainer  : John MacFarlane <jgm@berkeley.edu>
@@ -35,6 +35,7 @@ module Text.Pandoc.Shared (
                      splitByIndices,
                      splitStringByIndices,
                      substitute,
+                     ordNub,
                      -- * Text processing
                      backslashEscapes,
                      escapeStringUsing,
@@ -52,10 +53,12 @@ module Text.Pandoc.Shared (
                      -- * Pandoc block and inline list processing
                      orderedListMarkers,
                      normalizeSpaces,
+                     extractSpaces,
                      normalize,
                      stringify,
                      compactify,
                      compactify',
+                     compactify'DL,
                      Element (..),
                      hierarchicalize,
                      uniqueIdent,
@@ -82,7 +85,7 @@ module Text.Pandoc.Shared (
 import Text.Pandoc.Definition
 import Text.Pandoc.Walk
 import Text.Pandoc.Generic
-import Text.Pandoc.Builder (Blocks, ToMetaValue(..))
+import Text.Pandoc.Builder (Inlines, Blocks, ToMetaValue(..))
 import qualified Text.Pandoc.Builder as B
 import qualified Text.Pandoc.UTF8 as UTF8
 import System.Environment (getProgName)
@@ -91,7 +94,9 @@ import Data.Char ( toLower, isLower, isUpper, isAlpha,
                    isLetter, isDigit, isSpace )
 import Data.List ( find, isPrefixOf, intercalate )
 import qualified Data.Map as M
-import Network.URI ( escapeURIString, isURI, unEscapeString )
+import Network.URI ( escapeURIString, isURI, nonStrictRelativeTo,
+                     unEscapeString, parseURIReference )
+import qualified Data.Set as Set
 import System.Directory
 import Text.Pandoc.MIME (getMimeType)
 import System.FilePath ( (</>), takeExtension, dropExtension )
@@ -109,6 +114,7 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as B8
 import Text.Pandoc.Compat.Monoid
 import Data.ByteString.Base64 (decodeLenient)
+import Data.Sequence (ViewR(..), ViewL(..), viewl, viewr)
 
 #ifdef EMBED_DATA_FILES
 import Text.Pandoc.Data (dataFiles)
@@ -116,10 +122,14 @@ import System.FilePath ( joinPath, splitDirectories )
 #else
 import Paths_pandoc (getDataFileName)
 #endif
-#ifdef HTTP_CONDUIT
+#ifdef HTTP_CLIENT
 import Data.ByteString.Lazy (toChunks)
-import Network.HTTP.Conduit (httpLbs, parseUrl, withManager,
-                             responseBody, responseHeaders)
+import Network.HTTP.Client (httpLbs, parseUrl, withManager,
+                            responseBody, responseHeaders,
+                            Request(port,host))
+import Network.HTTP.Client.Internal (addProxy)
+import Network.HTTP.Client.TLS (tlsManagerSettings)
+import System.Environment (getEnv)
 import Network.HTTP.Types.Header ( hContentType)
 import Network (withSocketsDo)
 #else
@@ -167,6 +177,13 @@ substitute target replacement lst@(x:xs) =
     if target `isPrefixOf` lst
        then replacement ++ substitute target replacement (drop (length target) lst)
        else x : substitute target replacement xs
+
+ordNub :: (Ord a) => [a] -> [a]
+ordNub l = go Set.empty l
+  where
+    go _ [] = []
+    go s (x:xs) = if x `Set.member` s then go s xs
+                                      else x : go (Set.insert x s) xs
 
 --
 -- Text processing
@@ -231,9 +248,9 @@ toRomanNumeral x =
               _ | x >= 50   -> "L"  ++ toRomanNumeral (x - 50)
               _ | x >= 40   -> "XL" ++ toRomanNumeral (x - 40)
               _ | x >= 10   -> "X" ++ toRomanNumeral (x - 10)
-              _ | x >= 9    -> "IX" ++ toRomanNumeral (x - 5)
+              _ | x == 9    -> "IX"
               _ | x >= 5    -> "V" ++ toRomanNumeral (x - 5)
-              _ | x >= 4    -> "IV" ++ toRomanNumeral (x - 4)
+              _ | x == 4    -> "IV"
               _ | x >= 1    -> "I" ++ toRomanNumeral (x - 1)
               _             -> ""
 
@@ -315,6 +332,20 @@ isSpaceOrEmpty :: Inline -> Bool
 isSpaceOrEmpty Space = True
 isSpaceOrEmpty (Str "") = True
 isSpaceOrEmpty _ = False
+
+-- | Extract the leading and trailing spaces from inside an inline element
+-- and place them outside the element. 
+
+extractSpaces :: (Inlines -> Inlines) -> Inlines -> Inlines
+extractSpaces f is = 
+  let contents = B.unMany is
+      left  = case viewl contents of
+                    (Space :< _) -> B.space
+                    _            -> mempty
+      right = case viewr contents of
+                    (_ :> Space) -> B.space
+                    _            -> mempty in
+  (left <> f (B.trimInlines . B.Many $ contents) <> right)
 
 -- | Normalize @Pandoc@ document, consolidating doubled 'Space's,
 -- combining adjacent 'Str's and 'Emph's, remove 'Null's and
@@ -432,6 +463,21 @@ compactify' items =
                             _   -> items
            _      -> items
 
+-- | Like @compactify'@, but akts on items of definition lists.
+compactify'DL :: [(Inlines, [Blocks])] -> [(Inlines, [Blocks])]
+compactify'DL items =
+  let defs = concatMap snd items
+      defBlocks = reverse $ concatMap B.toList defs
+  in  case defBlocks of
+           (Para x:_) -> if not $ any isPara (drop 1 defBlocks)
+                            then let (t,ds) = last items
+                                     lastDef = B.toList $ last ds
+                                     ds' = init ds ++
+                                          [B.fromList $ init lastDef ++ [Plain x]]
+                                  in init items ++ [(t, ds')]
+                            else items
+           _          -> items
+
 isPara :: Block -> Bool
 isPara (Para _) = True
 isPara _        = False
@@ -532,7 +578,7 @@ headerShift n = walk shift
 
 -- | Detect if a list is tight.
 isTightList :: [[Block]] -> Bool
-isTightList = and . map firstIsPlain
+isTightList = all firstIsPlain
   where firstIsPlain (Plain _ : _) = True
         firstIsPlain _             = False
 
@@ -545,8 +591,10 @@ addMetaField :: ToMetaValue a
              -> Meta
 addMetaField key val (Meta meta) =
   Meta $ M.insertWith combine key (toMetaValue val) meta
-  where combine newval (MetaList xs) = MetaList (xs ++ [newval])
+  where combine newval (MetaList xs) = MetaList (xs ++ tolist newval)
         combine newval x             = MetaList [x, newval]
+        tolist (MetaList ys)         = ys
+        tolist y                     = [y]
 
 -- | Create 'Meta' from old-style title, authors, date.  This is
 -- provided to ease the transition from the old API.
@@ -564,14 +612,10 @@ makeMeta title authors date =
 -- | Render HTML tags.
 renderTags' :: [Tag String] -> String
 renderTags' = renderTagsOptions
-               renderOptions{ optMinimize = \x ->
-                                    let y = map toLower x
-                                    in  y == "hr" || y == "br" ||
-                                        y == "img" || y == "meta" ||
-                                        y == "link"
-                            , optRawTag = \x ->
-                                    let y = map toLower x
-                                    in  y == "script" || y == "style" }
+               renderOptions{ optMinimize = matchTags ["hr", "br", "img",
+                                                       "meta", "link"]
+                            , optRawTag   = matchTags ["script", "style"] }
+              where matchTags = \tags -> flip elem tags . map toLower
 
 --
 -- File handling
@@ -627,9 +671,13 @@ fetchItem :: Maybe String -> String
           -> IO (Either E.SomeException (BS.ByteString, Maybe String))
 fetchItem sourceURL s
   | isURI s         = openURL s
-  | otherwise       = case sourceURL of
-                           Just u  -> openURL (u ++ "/" ++ s)
-                           Nothing -> E.try readLocalFile
+  | otherwise       =
+      case sourceURL >>= parseURIReference of
+           Just u  -> case parseURIReference s of
+                           Just s' -> openURL $ show $
+                                        s' `nonStrictRelativeTo` u
+                           Nothing -> openURL $ show u ++ "/" ++ s
+           Nothing -> E.try readLocalFile
   where readLocalFile = do
           let mime = case takeExtension s of
                           ".gz" -> getMimeType $ dropExtension s
@@ -644,10 +692,16 @@ openURL u
     let mime     = takeWhile (/=',') $ drop 5 u
         contents = B8.pack $ unEscapeString $ drop 1 $ dropWhile (/=',') u
     in  return $ Right (decodeLenient contents, Just mime)
-#ifdef HTTP_CONDUIT
+#ifdef HTTP_CLIENT
   | otherwise = withSocketsDo $ E.try $ do
      req <- parseUrl u
-     resp <- withManager $ httpLbs req
+     (proxy :: Either E.SomeException String) <- E.try $ getEnv "http_proxy"
+     let req' = case proxy of
+                     Left _   -> req
+                     Right pr -> case parseUrl pr of
+                                      Just r  -> addProxy (host r) (port r) req
+                                      Nothing -> req
+     resp <- withManager tlsManagerSettings $ httpLbs req'
      return (BS.concat $ toChunks $ responseBody resp,
              UTF8.toString `fmap` lookup hContentType (responseHeaders resp))
 #else
@@ -689,5 +743,3 @@ safeRead s = case reads s of
                   (d,x):_
                     | all isSpace x -> return d
                   _                 -> fail $ "Could not read `" ++ s ++ "'"
-
-

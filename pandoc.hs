@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-
-Copyright (C) 2006-2013 John MacFarlane <jgm@berkeley.edu>
+Copyright (C) 2006-2014 John MacFarlane <jgm@berkeley.edu>
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 {- |
    Module      : Main
-   Copyright   : Copyright (C) 2006-2013 John MacFarlane
+   Copyright   : Copyright (C) 2006-2014 John MacFarlane
    License     : GNU GPL, version 2 or above
 
    Maintainer  : John MacFarlane <jgm@berkeley@edu>
@@ -47,8 +47,9 @@ import System.Exit ( exitWith, ExitCode (..) )
 import System.FilePath
 import System.Console.GetOpt
 import Data.Char ( toLower )
-import Data.List ( intercalate, isPrefixOf, sort )
-import System.Directory ( getAppUserDataDirectory, findExecutable )
+import Data.List ( intercalate, isPrefixOf, isSuffixOf, sort )
+import System.Directory ( getAppUserDataDirectory, findExecutable,
+                          doesFileExist )
 import System.IO ( stdout, stderr )
 import System.IO.Error ( isDoesNotExistError )
 import qualified Control.Exception as E
@@ -61,14 +62,12 @@ import qualified Data.ByteString.Lazy as B
 import qualified Data.ByteString as BS
 import Data.Aeson (eitherDecode', encode)
 import qualified Data.Map as M
-import System.IO.Error(ioeGetErrorType)
-import GHC.IO.Exception (IOErrorType(ResourceVanished))
 import Data.Yaml (decode)
 import qualified Data.Yaml as Yaml
 import qualified Data.Text as T
 
 copyrightMessage :: String
-copyrightMessage = "\nCopyright (C) 2006-2013 John MacFarlane\n" ++
+copyrightMessage = "\nCopyright (C) 2006-2014 John MacFarlane\n" ++
                     "Web:  http://johnmacfarlane.net/pandoc\n" ++
                     "This is free software; see the source for copying conditions.  There is no\n" ++
                     "warranty, not even for merchantability or fitness for a particular purpose."
@@ -97,18 +96,30 @@ isTextFormat s = takeWhile (`notElem` "+-") s `notElem` ["odt","docx","epub","ep
 
 externalFilter :: FilePath -> [String] -> Pandoc -> IO Pandoc
 externalFilter f args' d = do
+      mbexe <- findExecutable f
+      (f', args'') <- case mbexe of
+                           Just x  -> return (x, args')
+                           Nothing -> do
+                             exists <- doesFileExist f
+                             if exists
+                                then return $
+                                    case map toLower $ takeExtension f of
+                                         ".py"  -> ("python", f:args')
+                                         ".hs"  -> ("runhaskell", f:args')
+                                         ".pl"  -> ("perl", f:args')
+                                         ".rb"  -> ("ruby", f:args')
+                                         ".php" -> ("php", f:args')
+                                         _      -> (f, args')
+                                else err 85 $ "Filter " ++ f ++ " not found"
       (exitcode, outbs, errbs) <- E.handle filterException $
-                                    pipeProcess Nothing f args' $ encode d
+                                    pipeProcess Nothing f' args'' $ encode d
       when (not $ B.null errbs) $ B.hPutStr stderr errbs
       case exitcode of
            ExitSuccess    -> return $ either error id $ eitherDecode' outbs
            ExitFailure _  -> err 83 $ "Error running filter " ++ f
  where filterException :: E.SomeException -> IO a
        filterException e = err 83 $ "Error running filter " ++ f ++ "\n" ++
-                                  if ioeGetErrorType `fmap` E.fromException e ==
-                                          Just ResourceVanished
-                                     then f ++ " not found in path"
-                                     else show e
+                                       show e
 
 -- | Data structure for command line options.
 data Opt = Opt
@@ -162,6 +173,8 @@ data Opt = Opt
     , optAscii             :: Bool       -- ^ Use ascii characters only in html
     , optTeXLigatures      :: Bool       -- ^ Use TeX ligatures for quotes/dashes
     , optDefaultImageExtension :: String -- ^ Default image extension
+    , optTrace             :: Bool       -- ^ Print debug information
+    , optTrackChanges      :: TrackChanges -- ^ Accept or reject MS Word track-changes. 
     }
 
 -- | Defaults for command-line options.
@@ -217,6 +230,8 @@ defaultOpts = Opt
     , optAscii                 = False
     , optTeXLigatures          = True
     , optDefaultImageExtension = ""
+    , optTrace                 = False
+    , optTrackChanges          = AcceptChanges
     }
 
 -- | A list of functions, each transforming the options data structure
@@ -225,13 +240,13 @@ options :: [OptDescr (Opt -> IO Opt)]
 options =
     [ Option "fr" ["from","read"]
                  (ReqArg
-                  (\arg opt -> return opt { optReader = map toLower arg })
+                  (\arg opt -> return opt { optReader = arg })
                   "FORMAT")
                  ""
 
     , Option "tw" ["to","write"]
                  (ReqArg
-                  (\arg opt -> return opt { optWriter = map toLower arg })
+                  (\arg opt -> return opt { optWriter = arg })
                   "FORMAT")
                  ""
 
@@ -656,7 +671,7 @@ options =
                  (ReqArg
                   (\arg opt -> do
                      let b = takeBaseName arg
-                     if (b == "pdflatex" || b == "lualatex" || b == "xelatex")
+                     if b `elem` ["pdflatex", "lualatex", "xelatex"]
                         then return opt { optLaTeXEngine = arg }
                         else err 45 "latex-engine must be pdflatex, lualatex, or xelatex.")
                   "PROGRAM")
@@ -667,6 +682,9 @@ options =
                   (\arg opt -> return opt{ optMetadata = addMetadata
                                              "bibliography" (readMetaValue arg)
                                              $ optMetadata opt
+                                         , optVariables =
+                                            ("biblio-files", dropExtension arg) :
+                                            optVariables opt
                                          })
                    "FILE")
                  ""
@@ -755,6 +773,24 @@ options =
                   (\opt -> return opt { optHTMLMathMethod = GladTeX }))
                  "" -- "Use gladtex for HTML math"
 
+    , Option "" ["trace"]
+                 (NoArg
+                  (\opt -> return opt { optTrace = True }))
+                 "" -- "Turn on diagnostic tracing in readers."
+
+    , Option "" ["track-changes"]
+                 (ReqArg
+                  (\arg opt -> do
+                     action <- case arg of
+                            "accept" -> return AcceptChanges
+                            "reject" -> return RejectChanges
+                            "all"    -> return AllChanges
+                            _        -> err 6
+                               ("Unknown option for track-changes: " ++ arg)
+                     return opt { optTrackChanges = action })
+                  "accept|reject|all")
+                 "" -- "Accepting or reject MS Word track-changes.""
+
     , Option "" ["dump-args"]
                  (NoArg
                   (\opt -> return opt { optDumpArgs = True }))
@@ -824,6 +860,7 @@ defaultReaderName fallback (x:xs) =
     ".latex"    -> "latex"
     ".ltx"      -> "latex"
     ".rst"      -> "rst"
+    ".org"      -> "org"
     ".lhs"      -> "markdown+lhs"
     ".db"       -> "docbook"
     ".opml"     -> "opml"
@@ -831,6 +868,7 @@ defaultReaderName fallback (x:xs) =
     ".textile"  -> "textile"
     ".native"   -> "native"
     ".json"     -> "json"
+    ".docx"     -> "docx"
     _           -> defaultReaderName fallback xs
 
 -- Returns True if extension of first source is .lhs
@@ -949,6 +987,8 @@ main = do
               , optAscii                 = ascii
               , optTeXLigatures          = texLigatures
               , optDefaultImageExtension = defaultImageExtension
+              , optTrace                 = trace
+              , optTrackChanges          = trackChanges
              } = opts
 
   when dumpArgs $
@@ -958,7 +998,9 @@ main = do
 
   -- --bibliography implies -F pandoc-citeproc for backwards compatibility:
   let filters' = case M.lookup "bibliography" metadata of
-                       Just _ | all (\f -> takeBaseName f /= "pandoc-citeproc")
+                       Just _ | optCiteMethod opts /= Natbib &&
+                                optCiteMethod opts /= Biblatex &&
+                                all (\f -> takeBaseName f /= "pandoc-citeproc")
                                 filters -> "pandoc-citeproc" : filters
                        _                -> filters
   let plugins = map externalFilter filters'
@@ -973,36 +1015,37 @@ main = do
                   Just _    -> return mbDataDir
 
   -- assign reader and writer based on options and filenames
-  let readerName' = if null readerName
-                      then let fallback = if any isURI sources
-                                             then "html"
-                                             else "markdown"
-                           in  defaultReaderName fallback sources
-                      else readerName
+  let readerName' = case map toLower readerName of
+                          []       -> defaultReaderName
+                                      (if any isURI sources
+                                          then "html"
+                                          else "markdown") sources
+                          "html4"  -> "html"
+                          x        -> x
 
-  let writerName' = if null writerName
-                      then defaultWriterName outputFile
-                      else case writerName of
-                                "epub2"   -> "epub"
-                                "html4"   -> "html"
-                                x         -> x
+  let writerName' = case map toLower writerName of
+                          []        -> defaultWriterName outputFile
+                          "epub2"   -> "epub"
+                          "html4"   -> "html"
+                          x         -> x
 
   let pdfOutput = map toLower (takeExtension outputFile) == ".pdf"
 
   let laTeXOutput = "latex" `isPrefixOf` writerName' ||
                     "beamer" `isPrefixOf` writerName'
 
-  when pdfOutput $ do
-    -- make sure writer is latex or beamer
-    unless laTeXOutput $
-      err 47 $ "cannot produce pdf output with " ++ writerName' ++ " writer"
-    -- check for latex program
-    mbLatex <- findExecutable latexEngine
-    case mbLatex of
-         Nothing  -> err 41 $
-           latexEngine ++ " not found. " ++
-           latexEngine ++ " is needed for pdf output."
-         Just _   -> return ()
+  writer <- if ".lua" `isSuffixOf` writerName'
+               -- note:  use non-lowercased version writerName
+               then return $ IOStringWriter $ writeCustom writerName
+               else case getWriter writerName' of
+                         Left e  -> err 9 $
+                           if writerName' == "pdf"
+                              then e ++ "\nTo create a pdf with pandoc, use " ++
+                               "the latex or beamer writer and specify\n" ++
+                               "an output file with .pdf extension " ++
+                               "(pandoc -t latex -o filename.pdf)."
+                              else e
+                         Right w -> return w
 
   reader <- case getReader readerName' of
      Right r  -> return r
@@ -1034,12 +1077,10 @@ main = do
 
   variables' <- case mathMethod of
                       LaTeXMathML Nothing -> do
-                         s <- readDataFileUTF8 datadir
-                                 ("LaTeXMathML.js")
+                         s <- readDataFileUTF8 datadir "LaTeXMathML.js"
                          return $ ("mathml-script", s) : variables
                       MathML Nothing -> do
-                         s <- readDataFileUTF8 datadir
-                                 ("MathMLinHTML.js")
+                         s <- readDataFileUTF8 datadir "MathMLinHTML.js"
                          return $ ("mathml-script", s) : variables
                       _ -> return variables
 
@@ -1071,6 +1112,8 @@ main = do
                       , readerIndentedCodeClasses = codeBlockClasses
                       , readerApplyMacros = not laTeXOutput
                       , readerDefaultImageExtension = defaultImageExtension
+                      , readerTrace = trace
+                      , readerTrackChanges = trackChanges
                       }
 
   let writerOptions = def { writerStandalone       = standalone',
@@ -1128,15 +1171,21 @@ main = do
              Left e        -> throwIO e
              Right (bs,_)  -> return $ UTF8.toString bs
 
+  let readFiles [] = error "Cannot read archive from stdin"
+      readFiles (x:_) = B.readFile x
+
   let convertTabs = tabFilter (if preserveTabs then 0 else tabStop)
 
   let handleIncludes' = if readerName' == "latex" || readerName' == "latex+lhs"
                            then handleIncludes
                            else return
 
-  doc <- readSources sources >>=
-           handleIncludes' . convertTabs . intercalate "\n" >>=
-           reader readerOpts
+  doc <- case reader of
+          StringReader r-> 
+            readSources sources >>=
+              handleIncludes' . convertTabs . intercalate "\n" >>=
+              r readerOpts
+          ByteStringReader r -> readFiles sources >>= r readerOpts 
 
 
   let doc0 = M.foldWithKey setMeta doc metadata
@@ -1150,16 +1199,29 @@ main = do
       writerFn "-" = UTF8.putStr
       writerFn f   = UTF8.writeFile f
 
-  case getWriter writerName' of
-    Left e -> err 9 e
-    Right (IOStringWriter f) -> f writerOptions doc2 >>= writerFn outputFile
-    Right (IOByteStringWriter f) -> f writerOptions doc2 >>= writeBinary
-    Right (PureStringWriter f)
+  case writer of
+    IOStringWriter f -> f writerOptions doc2 >>= writerFn outputFile
+    IOByteStringWriter f -> f writerOptions doc2 >>= writeBinary
+    PureStringWriter f
       | pdfOutput -> do
+              -- make sure writer is latex or beamer
+              unless laTeXOutput $
+                err 47 $ "cannot produce pdf output with " ++ writerName' ++
+                         " writer"
+
+              -- check for latex program
+              mbLatex <- findExecutable latexEngine
+              when (mbLatex == Nothing) $
+                   err 41 $ latexEngine ++ " not found. " ++
+                     latexEngine ++ " is needed for pdf output."
+
               res <- makePDF latexEngine f writerOptions doc2
               case res of
                    Right pdf -> writeBinary pdf
-                   Left err' -> err 43 $ UTF8.toStringLazy err'
+                   Left err' -> do
+                     B.hPutStr stderr $ err'
+                     B.hPut stderr $ B.pack [10]
+                     err 43 "Error producing PDF from TeX source"
       | otherwise -> selfcontain (f writerOptions doc2 ++
                                   ['\n' | not standalone'])
                       >>= writerFn outputFile . handleEntities

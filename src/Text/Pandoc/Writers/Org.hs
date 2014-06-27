@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-
-Copyright (C) 2006-2010 Puneeth Chaganti <punchagan@gmail.com>
+Copyright (C) 2010-2014 Puneeth Chaganti <punchagan@gmail.com>
+                        and John MacFarlane <jgm@berkeley.edu>
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,7 +20,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 {- |
    Module      : Text.Pandoc.Writers.Org
-   Copyright   : Copyright (C) 2010 Puneeth Chaganti
+   Copyright   : Copyright (C) 2010-2014 Puneeth Chaganti and John MacFarlane
    License     : GNU GPL, version 2 or above
 
    Maintainer  : Puneeth Chaganti <punchagan@gmail.com>
@@ -129,7 +130,7 @@ blockToOrg (Para inlines) = do
 blockToOrg (RawBlock "html" str) =
   return $ blankline $$ "#+BEGIN_HTML" $$
            nest 2 (text str) $$ "#+END_HTML" $$ blankline
-blockToOrg (RawBlock f str) | f == "org" || f == "latex" || f == "tex" =
+blockToOrg (RawBlock f str) | f `elem` ["org", "latex", "tex"] =
   return $ text str
 blockToOrg (RawBlock _ _) = return empty
 blockToOrg HorizontalRule = return $ blankline $$ "--------------" $$ blankline
@@ -271,7 +272,7 @@ inlineToOrg (Math t str) = do
               else "$$" <> text str <> "$$"
 inlineToOrg (RawInline f str) | f == "tex" || f == "latex" = return $ text str
 inlineToOrg (RawInline _ _) = return empty
-inlineToOrg (LineBreak) = return cr -- there's no line break in Org
+inlineToOrg (LineBreak) = return (text "\\\\" <> cr)
 inlineToOrg Space = return space
 inlineToOrg (Link txt (src, _)) = do
   case txt of

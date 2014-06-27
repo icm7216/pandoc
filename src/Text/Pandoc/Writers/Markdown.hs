@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, TupleSections, ScopedTypeVariables #-}
 {-
-Copyright (C) 2006-2013 John MacFarlane <jgm@berkeley.edu>
+Copyright (C) 2006-2014 John MacFarlane <jgm@berkeley.edu>
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 {- |
    Module      : Text.Pandoc.Writers.Markdown
-   Copyright   : Copyright (C) 2006-2013 John MacFarlane
+   Copyright   : Copyright (C) 2006-2014 John MacFarlane
    License     : GNU GPL, version 2 or above
 
    Maintainer  : John MacFarlane <jgm@berkeley.edu>
@@ -316,20 +316,25 @@ blockToMarkdown opts (Div attrs ils) = do
                       contents <> blankline <> "</div>" <> blankline
 blockToMarkdown opts (Plain inlines) = do
   contents <- inlineListToMarkdown opts inlines
-  return $ contents <> cr
+  -- escape if para starts with ordered list marker
+  st <- get
+  let colwidth = if writerWrapText opts
+                    then Just $ writerColumns opts
+                    else Nothing
+  let rendered = render colwidth contents
+  let escapeDelimiter (x:xs) | x `elem` ".()" = '\\':x:xs
+                             | otherwise      = x : escapeDelimiter xs
+      escapeDelimiter []                      = []
+  let contents' = if isEnabled Ext_all_symbols_escapable opts &&
+                     not (stPlain st) && beginsWithOrderedListMarker rendered
+                     then text $ escapeDelimiter rendered
+                     else contents
+  return $ contents' <> cr
 -- title beginning with fig: indicates figure
 blockToMarkdown opts (Para [Image alt (src,'f':'i':'g':':':tit)]) =
   blockToMarkdown opts (Para [Image alt (src,tit)])
-blockToMarkdown opts (Para inlines) = do
-  contents <- inlineListToMarkdown opts inlines
-  -- escape if para starts with ordered list marker
-  st <- get
-  let esc = if isEnabled Ext_all_symbols_escapable opts &&
-               not (stPlain st) &&
-               beginsWithOrderedListMarker (render Nothing contents)
-               then text "\x200B" -- zero-width space, a hack
-               else empty
-  return $ esc <> contents <> blankline
+blockToMarkdown opts (Para inlines) =
+  (<> blankline) `fmap` blockToMarkdown opts (Plain inlines)
 blockToMarkdown opts (RawBlock f str)
   | f == "html" = do
     st <- get
@@ -338,7 +343,7 @@ blockToMarkdown opts (RawBlock f str)
        else return $ if isEnabled Ext_markdown_attribute opts
                         then text (addMarkdownAttribute str) <> text "\n"
                         else text str <> text "\n"
-  | f == "latex" || f == "tex" || f == "markdown" = do
+  | f `elem` ["latex", "tex", "markdown"] = do
     st <- get
     if stPlain st
        then return empty
@@ -392,7 +397,11 @@ blockToMarkdown opts (CodeBlock attribs str) = return $
                                xs -> case maximum $ map length xs of
                                           n | n < 3 -> "~~~~"
                                             | otherwise -> replicate (n+1) '~'
-         backticks = text "```"
+         backticks = text $ case [ln | ln <- lines str, all (=='`') ln] of
+                               [] -> "```"
+                               xs -> case maximum $ map length xs of
+                                          n | n < 3 -> "```"
+                                            | otherwise -> replicate (n+1) '`'
          attrs  = if isEnabled Ext_fenced_code_attributes opts
                      then nowrap $ " " <> attrsToMarkdown attribs
                      else case attribs of
@@ -469,16 +478,24 @@ addMarkdownAttribute s =
 
 pipeTable :: Bool -> [Alignment] -> [Doc] -> [[Doc]] -> State WriterState Doc
 pipeTable headless aligns rawHeaders rawRows = do
+  let sp = text " "
+  let blockFor AlignLeft   x y = lblock (x + 2) (sp <> y) <> lblock 0 empty
+      blockFor AlignCenter x y = cblock (x + 2) (sp <> y) <> lblock 0 empty
+      blockFor AlignRight  x y = rblock (x + 2) (sp <> y) <> lblock 0 empty
+      blockFor _           x y = lblock (x + 2) (sp <> y) <> lblock 0 empty
+  let widths = map (max 3 . maximum . map offset) $ transpose (rawHeaders : rawRows)
   let torow cs = nowrap $ text "|" <>
-                 hcat (intersperse (text "|") $ map chomp cs) <> text "|"
-  let toborder (a, h) = let wid = max (offset h) 3
-                        in  text $ case a of
-                             AlignLeft    -> ':':replicate (wid - 1) '-'
-                             AlignCenter  -> ':':replicate (wid - 2) '-' ++ ":"
-                             AlignRight   -> replicate (wid - 1) '-' ++ ":"
-                             AlignDefault -> replicate wid '-'
+                    hcat (intersperse (text "|") $
+                          zipWith3 blockFor aligns widths (map chomp cs))
+                    <> text "|"
+  let toborder (a, w) = text $ case a of
+                             AlignLeft    -> ':':replicate (w + 1) '-'
+                             AlignCenter  -> ':':replicate w '-' ++ ":"
+                             AlignRight   -> replicate (w + 1) '-' ++ ":"
+                             AlignDefault -> replicate (w + 2) '-'
   let header = if headless then empty else torow rawHeaders
-  let border = torow $ map toborder $ zip aligns rawHeaders
+  let border = nowrap $ text "|" <> hcat (intersperse (text "|") $
+                        map toborder $ zip aligns widths) <> text "|"
   let body   = vcat $ map torow rawRows
   return $ header $$ border $$ body
 
@@ -628,10 +645,11 @@ getReference label (src, tit) = do
     Nothing       -> do
       let label' = case find ((== label) . fst) (stRefs st) of
                       Just _ -> -- label is used; generate numerical label
-                                 case find (\n -> not (any (== [Str (show n)])
-                                           (map fst (stRefs st)))) [1..(10000 :: Integer)] of
-                                      Just x  -> [Str (show x)]
-                                      Nothing -> error "no unique label"
+                             case find (\n -> notElem [Str (show n)]
+                                                      (map fst (stRefs st)))
+                                       [1..(10000 :: Integer)] of
+                                  Just x  -> [Str (show x)]
+                                  Nothing -> error "no unique label"
                       Nothing -> label
       modify (\s -> s{ stRefs = (label', (src,tit)) : stRefs st })
       return label'

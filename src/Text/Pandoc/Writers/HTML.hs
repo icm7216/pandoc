@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings, CPP #-}
 {-# OPTIONS_GHC -fno-warn-deprecations #-}
 {-
-Copyright (C) 2006-2010 John MacFarlane <jgm@berkeley.edu>
+Copyright (C) 2006-2014 John MacFarlane <jgm@berkeley.edu>
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 {- |
    Module      : Text.Pandoc.Writers.HTML
-   Copyright   : Copyright (C) 2006-2010 John MacFarlane
+   Copyright   : Copyright (C) 2006-2014 John MacFarlane
    License     : GNU GPL, version 2 or above
 
    Maintainer  : John MacFarlane <jgm@berkeley.edu>
@@ -40,12 +40,13 @@ import Text.Pandoc.Slides
 import Text.Pandoc.Highlighting ( highlight, styleToCss,
                                   formatHtmlInline, formatHtmlBlock )
 import Text.Pandoc.XML (fromEntities, escapeStringForXML)
+import Network.URI ( parseURIReference, URI(..) )
 import Network.HTTP ( urlEncode )
 import Numeric ( showHex )
 import Data.Char ( ord, toLower )
 import Data.List ( isPrefixOf, intersperse )
 import Data.String ( fromString )
-import Data.Maybe ( catMaybes )
+import Data.Maybe ( catMaybes, fromMaybe )
 import Control.Monad.State
 import Text.Blaze.Html hiding(contents)
 import Text.Blaze.Internal(preEscapedString)
@@ -118,7 +119,7 @@ pandocToHtml opts (Pandoc meta blocks) = do
   let stringifyHTML = escapeStringForXML . stringify
   let authsMeta = map stringifyHTML $ docAuthors meta
   let dateMeta  = stringifyHTML $ docDate meta
-  let slideLevel = maybe (getSlideLevel blocks) id $ writerSlideLevel opts
+  let slideLevel = fromMaybe (getSlideLevel blocks) $ writerSlideLevel opts
   let sects = hierarchicalize $
               if writerSlideVariant opts == NoSlides
                  then blocks
@@ -396,7 +397,10 @@ imageExts = [ "art", "bmp", "cdr", "cdt", "cpt", "cr2", "crw", "djvu", "erf",
 
 treatAsImage :: FilePath -> Bool
 treatAsImage fp =
-  let ext = map toLower $ drop 1 $ takeExtension fp
+  let path = case uriPath `fmap` parseURIReference fp of
+                  Nothing -> fp
+                  Just up -> up
+      ext  = map toLower $ drop 1 $ takeExtension path
   in  null ext || ext `elem` imageExts
 
 -- | Convert Pandoc block element to HTML.
@@ -475,28 +479,22 @@ blockToHtml opts (BlockQuote blocks) =
      else do
        contents <- blockListToHtml opts blocks
        return $ H.blockquote $ nl opts >> contents >> nl opts
-blockToHtml opts (Header level (ident,_,_) lst) = do
+blockToHtml opts (Header level (_,classes,_) lst) = do
   contents <- inlineListToHtml opts lst
   secnum <- liftM stSecNum get
   let contents' = if writerNumberSections opts && not (null secnum)
+                     && "unnumbered" `notElem` classes
                      then (H.span ! A.class_ "header-section-number" $ toHtml
                           $ showSecNum secnum) >> strToHtml " " >> contents
                      else contents
-  let revealSlash = ['/' | writerSlideVariant opts == RevealJsSlides]
-  let contents''  = if writerTableOfContents opts && not (null ident)
-                       then H.a ! A.href (toValue $
-                              '#' : revealSlash ++
-                                    writerIdentifierPrefix opts ++
-                                    ident) $ contents'
-                       else contents'
   return $ case level of
-              1 -> H.h1 contents''
-              2 -> H.h2 contents''
-              3 -> H.h3 contents''
-              4 -> H.h4 contents''
-              5 -> H.h5 contents''
-              6 -> H.h6 contents''
-              _ -> H.p contents''
+              1 -> H.h1 contents'
+              2 -> H.h2 contents'
+              3 -> H.h3 contents'
+              4 -> H.h4 contents'
+              5 -> H.h5 contents'
+              6 -> H.h6 contents'
+              _ -> H.p contents'
 blockToHtml opts (BulletList lst) = do
   contents <- mapM (blockListToHtml opts) lst
   return $ unordList opts contents
@@ -524,7 +522,7 @@ blockToHtml opts (DefinitionList lst) = do
   contents <- mapM (\(term, defs) ->
                   do term' <- if null term
                                  then return mempty
-                                 else liftM (H.dt) $ inlineListToHtml opts term
+                                 else liftM H.dt $ inlineListToHtml opts term
                      defs' <- mapM ((liftM (\x -> H.dd $ (x >> nl opts))) .
                                     blockListToHtml opts) defs
                      return $ mconcat $ nl opts : term' : nl opts :
@@ -539,11 +537,16 @@ blockToHtml opts (Table capt aligns widths headers rows') = do
   let percent w = show (truncate (100*w) :: Integer) ++ "%"
   let coltags = if all (== 0.0) widths
                    then mempty
-                   else mconcat $ map (\w ->
-                          if writerHtml5 opts
-                             then H.col ! A.style (toValue $ "width: " ++ percent w)
-                             else H.col ! A.width (toValue $ percent w) >> nl opts)
-                          widths
+                   else do
+                     H.colgroup $ do
+                       nl opts
+                       mapM_ (\w -> do
+                            if writerHtml5 opts
+                               then H.col ! A.style (toValue $ "width: " ++
+                                                      percent w)
+                               else H.col ! A.width (toValue $ percent w)
+                            nl opts) widths
+                     nl opts
   head' <- if all null headers
               then return mempty
               else do
@@ -756,7 +759,9 @@ inlineToHtml opts inline =
                                             else [A.title $ toValue tit])
                         return $ foldl (!) H5.embed attributes
                         -- note:  null title included, as in Markdown.pl
-    (Note contents)          -> do
+    (Note contents)
+      | writerIgnoreNotes opts -> return mempty
+      | otherwise              -> do
                         st <- get
                         let notes = stNotes st
                         let number = (length notes) + 1

@@ -1,5 +1,5 @@
 {-
-Copyright (C) 2011 John MacFarlane <jgm@berkeley.edu>
+Copyright (C) 2011-2014 John MacFarlane <jgm@berkeley.edu>
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 {- |
    Module      : Text.Pandoc.MIME
-   Copyright   : Copyright (C) 2011 John MacFarlane
+   Copyright   : Copyright (C) 2011-2014 John MacFarlane
    License     : GNU GPL, version 2 or above
 
    Maintainer  : John MacFarlane <jgm@berkeley.edu>
@@ -147,6 +147,7 @@ mimeTypesList = -- List borrowed from happstack-server.
            ,("dxr","application/x-director")
            ,("emb","chemical/x-embl-dl-nucleotide")
            ,("embl","chemical/x-embl-dl-nucleotide")
+           ,("emf","image/x-emf")
            ,("eml","message/rfc822")
            ,("ent","chemical/x-ncbi-asn1-ascii")
            ,("eot","application/vnd.ms-fontobject")
@@ -245,6 +246,7 @@ mimeTypesList = -- List borrowed from happstack-server.
            ,("lzx","application/x-lzx")
            ,("m3u","audio/mpegurl")
            ,("m4a","audio/mpeg")
+           ,("m4v","video/x-m4v")
            ,("maker","application/x-maker")
            ,("man","application/x-troff-man")
            ,("mcif","chemical/x-mmcif")
@@ -465,6 +467,7 @@ mimeTypesList = -- List borrowed from happstack-server.
            ,("wm","video/x-ms-wm")
            ,("wma","audio/x-ms-wma")
            ,("wmd","application/x-ms-wmd")
+           ,("wmf","image/x-wmf")
            ,("wml","text/vnd.wap.wml")
            ,("wmlc","application/vnd.wap.wmlc")
            ,("wmls","text/vnd.wap.wmlscript")

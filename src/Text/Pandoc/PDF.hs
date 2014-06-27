@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, CPP #-}
 {-
-Copyright (C) 2012 John MacFarlane <jgm@berkeley.edu>
+Copyright (C) 2012-2014 John MacFarlane <jgm@berkeley.edu>
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 {- |
    Module      : Text.Pandoc.PDF
-   Copyright   : Copyright (C) 2012 John MacFarlane
+   Copyright   : Copyright (C) 2012-2014 John MacFarlane
    License     : GNU GPL, version 2 or above
 
    Maintainer  : John MacFarlane <jgm@berkeley.edu>
@@ -38,10 +38,11 @@ import qualified Data.ByteString as BS
 import System.Exit (ExitCode (..))
 import System.FilePath
 import System.Directory
+import Data.Digest.Pure.SHA (showDigest, sha1)
 import System.Environment
 import Control.Monad (unless)
 import Data.List (isInfixOf)
-import qualified Data.ByteString.Base64 as B64
+import Data.Maybe (fromMaybe)
 import qualified Text.Pandoc.UTF8 as UTF8
 import Text.Pandoc.Definition
 import Text.Pandoc.Walk (walkM)
@@ -50,6 +51,9 @@ import Text.Pandoc.Options (WriterOptions(..))
 import Text.Pandoc.MIME (extensionFromMimeType)
 import Text.Pandoc.Process (pipeProcess)
 import qualified Data.ByteString.Lazy as BL
+#ifdef _WINDOWS
+import Data.List (intercalate)
+#endif
 
 withTempDir :: String -> (FilePath -> IO a) -> IO a
 withTempDir =
@@ -57,6 +61,11 @@ withTempDir =
   withTempDirectory "."
 #else
   withSystemTempDirectory
+#endif
+
+#ifdef _WINDOWS
+changePathSeparators :: FilePath -> FilePath
+changePathSeparators = intercalate "/" . splitDirectories
 #endif
 
 makePDF :: String              -- ^ pdf creator (pdflatex, lualatex, xelatex)
@@ -87,9 +96,9 @@ handleImage' baseURL tmpdir (Image ils (src,tit)) = do
          res <- fetchItem baseURL src
          case res of
               Right (contents, Just mime) -> do
-                let ext = maybe (takeExtension src) id $
+                let ext = fromMaybe (takeExtension src) $
                           extensionFromMimeType mime
-                let basename = UTF8.toString $ B64.encode $ UTF8.fromString src
+                let basename = showDigest $ sha1 $ BL.fromChunks [contents]
                 let fname = tmpdir </> basename <.> ext
                 BS.writeFile fname contents
                 return $ Image ils (fname,tit)
@@ -107,7 +116,6 @@ tex2pdf' tmpDir program source = do
                    then 3  -- to get page numbers
                    else 2  -- 1 run won't give you PDF bookmarks
   (exit, log', mbPdf) <- runTeXProgram program numruns tmpDir source
-  let msg = "Error producing PDF from TeX source.\n"
   case (exit, mbPdf) of
        (ExitFailure _, _)      -> do
           let logmsg = extractMsg log'
@@ -116,8 +124,8 @@ tex2pdf' tmpDir program source = do
                      x | "! Package inputenc Error" `BC.isPrefixOf` x ->
                            "\nTry running pandoc with --latex-engine=xelatex."
                      _ -> ""
-          return $ Left $ msg <> logmsg <> extramsg
-       (ExitSuccess, Nothing)  -> return $ Left msg
+          return $ Left $ logmsg <> extramsg
+       (ExitSuccess, Nothing)  -> return $ Left ""
        (ExitSuccess, Just pdf) -> return $ Right pdf
 
 (<>) :: ByteString -> ByteString -> ByteString
@@ -145,10 +153,19 @@ runTeXProgram program runsLeft tmpDir source = do
     let file = tmpDir </> "input.tex"
     exists <- doesFileExist file
     unless exists $ UTF8.writeFile file source
+#ifdef _WINDOWS
+    -- note:  we want / even on Windows, for TexLive
+    let tmpDir' = changePathSeparators tmpDir
+    let file' = changePathSeparators file
+#else
+    let tmpDir' = tmpDir
+    let file' = file
+#endif
     let programArgs = ["-halt-on-error", "-interaction", "nonstopmode",
-         "-output-directory", tmpDir, file]
+         "-output-directory", tmpDir', file']
     env' <- getEnvironment
-    let texinputs = maybe (tmpDir ++ ":") ((tmpDir ++ ":") ++)
+    let sep = searchPathSeparator:[]
+    let texinputs = maybe (tmpDir' ++ sep) ((tmpDir' ++ sep) ++)
           $ lookup "TEXINPUTS" env'
     let env'' = ("TEXINPUTS", texinputs) :
                   [(k,v) | (k,v) <- env', k /= "TEXINPUTS"]
@@ -159,7 +176,10 @@ runTeXProgram program runsLeft tmpDir source = do
          let pdfFile = replaceDirectory (replaceExtension file ".pdf") tmpDir
          pdfExists <- doesFileExist pdfFile
          pdf <- if pdfExists
-                   then Just `fmap` B.readFile pdfFile
+                   -- We read PDF as a strict bytestring to make sure that the
+                   -- temp directory is removed on Windows.
+                   -- See https://github.com/jgm/pandoc/issues/1192.
+                   then (Just . B.fromChunks . (:[])) `fmap` BS.readFile pdfFile
                    else return Nothing
          return (exit, out <> err, pdf)
 
