@@ -380,7 +380,7 @@ inlineToOpenDocument o ils
     | SmallCaps   l <- ils = withTextStyle SmallC $ inlinesToOpenDocument o l
     | Quoted    t l <- ils = inQuotes t <$> inlinesToOpenDocument o l
     | Code      _ s <- ils = withTextStyle Pre $ inTextStyle $ preformatted s
-    | Math      t s <- ils = inlinesToOpenDocument o (readTeXMath' t s)
+    | Math      t s <- ils = inlinesToOpenDocument o (texMathToInlines t s)
     | Cite      _ l <- ils = inlinesToOpenDocument o l
     | RawInline f s <- ils = if f == Format "opendocument"
                                 then return $ text s
@@ -504,7 +504,7 @@ paraStyle parent attrs = do
       tight     = if t then [ ("fo:margin-top"          , "0in"    )
                             , ("fo:margin-bottom"       , "0in"    )]
                        else []
-      indent    = if (i /= 0 || b) 
+      indent    = if (i /= 0 || b)
                       then [ ("fo:margin-left"         , indentVal)
                            , ("fo:margin-right"        , "0in"    )
                            , ("fo:text-indent"         , "0in"    )
@@ -534,7 +534,7 @@ paraTableStyles t s (a:xs)
                      [ ("fo:text-align", x)
                      , ("style:justify-single-word", "false")]
 
-data TextStyle = Italic | Bold | Strike | Sub | Sup | SmallC | Pre 
+data TextStyle = Italic | Bold | Strike | Sub | Sup | SmallC | Pre
                deriving ( Eq,Ord )
 
 textStyleAttr :: TextStyle -> [(String,String)]

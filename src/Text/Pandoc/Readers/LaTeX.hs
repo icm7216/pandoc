@@ -41,7 +41,6 @@ import Text.Pandoc.Shared
 import Text.Pandoc.Options
 import Text.Pandoc.Parsing hiding ((<|>), many, optional, space,
                                    mathDisplay, mathInline)
-import Text.Parsec.Prim (ParsecT, runParserT)
 import qualified Text.Pandoc.UTF8 as UTF8
 import Data.Char ( chr, ord )
 import Control.Monad.Trans (lift)
@@ -104,7 +103,7 @@ dimenarg = try $ do
 
 sp :: LP ()
 sp = skipMany1 $ satisfy (\c -> c == ' ' || c == '\t')
-        <|> (try $ newline >>~ lookAhead anyChar >>~ notFollowedBy blankline)
+        <|> (try $ newline <* lookAhead anyChar <* notFollowedBy blankline)
 
 isLowerHex :: Char -> Bool
 isLowerHex x = x >= '0' && x <= '9' || x >= 'a' && x <= 'f'
@@ -808,7 +807,7 @@ rawEnv name = do
 
 ----
 
-type IncludeParser = ParsecT [Char] [String] IO String
+type IncludeParser = ParserT [Char] [String] IO String
 
 -- | Replace "include" commands with file contents.
 handleIncludes :: String -> IO String

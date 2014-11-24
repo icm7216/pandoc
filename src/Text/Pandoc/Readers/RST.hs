@@ -47,7 +47,7 @@ import Text.Pandoc.Builder (Inlines, Blocks, trimInlines, (<>))
 import qualified Text.Pandoc.Builder as B
 import Data.Monoid (mconcat, mempty)
 import Data.Sequence (viewr, ViewR(..))
-import Data.Char (toLower)
+import Data.Char (toLower, isHexDigit)
 
 -- | Parse reStructuredText string and return Pandoc document.
 readRST :: ReaderOptions -- ^ Reader options
@@ -460,7 +460,7 @@ listItem :: RSTParser Int
 listItem start = try $ do
   (markerLength, first) <- rawListItem start
   rest <- many (listContinuation markerLength)
-  blanks <- choice [ try (many blankline >>~ lookAhead start),
+  blanks <- choice [ try (many blankline <* lookAhead start),
                      many1 blankline ]  -- whole list must end with blank.
   -- parsing with ListItemState forces markers at beginning of lines to
   -- count as list item markers, even if not separated by blank space.
@@ -480,7 +480,7 @@ listItem start = try $ do
 
 orderedList :: RSTParser Blocks
 orderedList = try $ do
-  (start, style, delim) <- lookAhead (anyOrderedListMarker >>~ spaceChar)
+  (start, style, delim) <- lookAhead (anyOrderedListMarker <* spaceChar)
   items <- many1 (listItem (orderedListStart style delim))
   let items' = compactify' items
   return $ B.orderedListWith (start, style, delim) items'
@@ -656,9 +656,6 @@ extractUnicodeChar s = maybe Nothing (\c -> Just (c,rest)) mbc
   where (ds,rest) = span isHexDigit s
         mbc = safeRead ('\'':'\\':'x':ds ++ "'")
 
-isHexDigit :: Char -> Bool
-isHexDigit c = c `elem` "0123456789ABCDEFabcdef"
-
 extractCaption :: RSTParser (Inlines, Blocks)
 extractCaption = do
   capt <- trimInlines . mconcat <$> many inline
@@ -747,7 +744,7 @@ simpleReferenceName = do
 
 referenceName :: RSTParser Inlines
 referenceName = quotedReferenceName <|>
-                (try $ simpleReferenceName >>~ lookAhead (char ':')) <|>
+                (try $ simpleReferenceName <* lookAhead (char ':')) <|>
                 unquotedReferenceName
 
 referenceKey :: RSTParser [Char]
@@ -1076,7 +1073,7 @@ explicitLink = try $ do
 
 referenceLink :: RSTParser Inlines
 referenceLink = try $ do
-  (label',ref) <- withRaw (quotedReferenceName <|> simpleReferenceName) >>~
+  (label',ref) <- withRaw (quotedReferenceName <|> simpleReferenceName) <*
                    char '_'
   state <- getState
   let keyTable = stateKeys state

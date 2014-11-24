@@ -37,7 +37,8 @@ import Text.Pandoc.Shared
 import Text.Pandoc.Writers.Shared
 import Text.Pandoc.Templates (renderTemplate')
 import Text.Pandoc.Builder (deleteMeta)
-import Data.List ( isPrefixOf, intersperse, transpose )
+import Data.Maybe (fromMaybe)
+import Data.List ( isPrefixOf, stripPrefix, intersperse, transpose )
 import Network.URI (isURI)
 import Text.Pandoc.Pretty
 import Control.Monad.State
@@ -174,9 +175,9 @@ blockToRST (Para [Image txt (src,'f':'i':'g':':':tit)]) = do
   let alt = ":alt: " <> if null tit then capt else text tit
   return $ hang 3 ".. " $ fig $$ alt $+$ capt $$ blankline
 blockToRST (Para inlines)
-  | LineBreak `elem` inlines = do -- use line block if LineBreaks 
+  | LineBreak `elem` inlines = do -- use line block if LineBreaks
       lns <- mapM inlineListToRST $ splitBy (==LineBreak) inlines
-      return $ (vcat $ map (text "| " <>) lns) <> blankline
+      return $ (vcat $ map (hang 2 (text "| ")) lns) <> blankline
   | otherwise = do
       contents <- inlineListToRST inlines
       return $ contents <> blankline
@@ -238,8 +239,7 @@ blockToRST (Table caption _ widths headers rows) =  do
               middle = hcat $ intersperse sep' blocks
   let makeRow = hpipeBlocks . zipWith lblock widthsInChars
   let head' = makeRow headers'
-  rows' <- mapM (\row -> do cols <- mapM blockListToRST row
-                            return $ makeRow cols) rows
+  let rows' = map makeRow rawRows
   let border ch = char '+' <> char ch <>
                   (hcat $ intersperse (char ch <> char '+' <> char ch) $
                           map (\l -> text $ replicate l ch) widthsInChars) <>
@@ -401,7 +401,7 @@ inlineToRST (Link [Str str] (src, _))
     if "mailto:" `isPrefixOf` src
        then src == escapeURI ("mailto:" ++ str)
        else src == escapeURI str = do
-  let srcSuffix = if isPrefixOf "mailto:" src then drop 7 src else src
+  let srcSuffix = fromMaybe src (stripPrefix "mailto:" src)
   return $ text srcSuffix
 inlineToRST (Link [Image alt (imgsrc,imgtit)] (src, _tit)) = do
   label <- registerImage alt (imgsrc,imgtit) (Just src)
@@ -426,7 +426,7 @@ inlineToRST (Image alternate (source, tit)) = do
   return $ "|" <> label <> "|"
 inlineToRST (Note contents) = do
   -- add to notes in state
-  notes <- get >>= return . stNotes
+  notes <- gets stNotes
   modify $ \st -> st { stNotes = contents:notes }
   let ref = show $ (length notes) + 1
   return $ " [" <> text ref <> "]_"

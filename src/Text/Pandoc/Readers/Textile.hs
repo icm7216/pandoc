@@ -56,7 +56,7 @@ import Text.Pandoc.Builder (Inlines, Blocks, trimInlines)
 import qualified Text.Pandoc.Builder as B
 import Text.Pandoc.Options
 import Text.Pandoc.Parsing
-import Text.Pandoc.Readers.HTML ( htmlTag, isInlineTag, isBlockTag )
+import Text.Pandoc.Readers.HTML ( htmlTag, isBlockTag )
 import Text.Pandoc.Readers.LaTeX ( rawLaTeXInline, rawLaTeXBlock )
 import Text.HTML.TagSoup (parseTags, innerText, fromAttrib, Tag(..))
 import Text.HTML.TagSoup.Match
@@ -133,11 +133,8 @@ blockParsers = [ codeBlock
                , rawLaTeXBlock'
                , maybeExplicitBlock "table" table
                , maybeExplicitBlock "p" para
-               , endBlock
+               , mempty <$ blanklines
                ]
-
-endBlock :: Parser [Char] ParserState Blocks
-endBlock = string "\n\n" >> return mempty
 
 -- | Any block in the order of definition of blockParsers
 block :: Parser [Char] ParserState Blocks
@@ -193,7 +190,7 @@ header = try $ do
   attr <- attributes
   char '.'
   lookAhead whitespace
-  name <- trimInlines . mconcat <$> manyTill inline blockBreak
+  name <- trimInlines . mconcat <$> many inline
   attr' <- registerHeader attr name
   return $ B.headerWith attr' level name
 
@@ -265,8 +262,20 @@ definitionList :: Parser [Char] ParserState Blocks
 definitionList = try $ B.definitionList <$> many1 definitionListItem
 
 -- | List start character.
-listStart :: Parser [Char] st Char
-listStart = oneOf "*#-"
+listStart :: Parser [Char] ParserState ()
+listStart = genericListStart '*'
+        <|> () <$ genericListStart '#'
+        <|> () <$ definitionListStart
+
+genericListStart :: Char -> Parser [Char] st ()
+genericListStart c = () <$ try (many1 (char c) >> whitespace)
+
+definitionListStart :: Parser [Char] ParserState Inlines
+definitionListStart = try $ do
+  char '-'
+  whitespace
+  trimInlines . mconcat <$>
+    many1Till inline (try (string ":=")) <* optional whitespace
 
 listInline :: Parser [Char] ParserState Inlines
 listInline = try (notFollowedBy newline >> inline)
@@ -278,8 +287,7 @@ listInline = try (notFollowedBy newline >> inline)
 -- break.
 definitionListItem :: Parser [Char] ParserState (Inlines, [Blocks])
 definitionListItem = try $ do
-  string "- "
-  term <- mconcat <$> many1Till inline (try (whitespace >> string ":="))
+  term <- definitionListStart
   def' <- multilineDef <|> inlineDef
   return (term, def')
   where inlineDef :: Parser [Char] ParserState [Blocks]
@@ -293,17 +301,12 @@ definitionListItem = try $ do
           ds <- parseFromString parseBlocks (s ++ "\n\n")
           return [ds]
 
--- | This terminates a block such as a paragraph. Because of raw html
--- blocks support, we have to lookAhead for a rawHtmlBlock.
-blockBreak :: Parser [Char] ParserState ()
-blockBreak = try (newline >> blanklines >> return ()) <|>
-             try (optional spaces >> lookAhead rawHtmlBlock >> return ())
-
 -- raw content
 
 -- | A raw Html Block, optionally followed by blanklines
 rawHtmlBlock :: Parser [Char] ParserState Blocks
 rawHtmlBlock = try $ do
+  skipMany spaceChar
   (_,b) <- htmlTag isBlockTag
   optional blanklines
   return $ B.rawBlock "html" b
@@ -317,7 +320,7 @@ rawLaTeXBlock' = do
 
 -- | In textile, paragraphs are separated by blank lines.
 para :: Parser [Char] ParserState Blocks
-para = B.para . trimInlines . mconcat <$> manyTill inline blockBreak
+para = B.para . trimInlines . mconcat <$> many1 inline
 
 -- Tables
 
@@ -488,17 +491,20 @@ str = do
   return $ B.str fullStr
 
 -- | Some number of space chars
-whitespace :: Parser [Char] ParserState Inlines
+whitespace :: Parser [Char] st Inlines
 whitespace = many1 spaceChar >> return B.space <?> "whitespace"
 
 -- | In Textile, an isolated endline character is a line break
 endline :: Parser [Char] ParserState Inlines
 endline = try $ do
-  newline >> notFollowedBy blankline
+  newline
+  notFollowedBy blankline
+  notFollowedBy listStart
+  notFollowedBy rawHtmlBlock
   return B.linebreak
 
 rawHtmlInline :: Parser [Char] ParserState Inlines
-rawHtmlInline = B.rawInline "html" . snd <$> htmlTag isInlineTag
+rawHtmlInline = B.rawInline "html" . snd <$> htmlTag (const True)
 
 -- | Raw LaTeX Inline
 rawLaTeXInline' :: Parser [Char] ParserState Inlines
@@ -550,7 +556,9 @@ escapedTag = B.str <$>
 
 -- | Any special symbol defined in wordBoundaries
 symbol :: Parser [Char] ParserState Inlines
-symbol = B.str . singleton <$> (oneOf wordBoundaries <|> oneOf markupChars)
+symbol = B.str . singleton <$> (notFollowedBy newline *>
+                                notFollowedBy rawHtmlBlock *>
+                                oneOf wordBoundaries)
 
 -- | Inline code
 code :: Parser [Char] ParserState Inlines
@@ -616,7 +624,8 @@ simpleInline border construct = try $ do
   attr <- attributes
   body <- trimInlines . mconcat <$>
           withQuoteContext InSingleQuote
-            (manyTill inline (try border <* notFollowedBy alphaNum))
+            (manyTill (notFollowedBy newline >> inline)
+             (try border <* notFollowedBy alphaNum))
   return $ construct $
         if attr == nullAttr
            then body

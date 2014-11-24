@@ -30,17 +30,18 @@ Conversion of 'Pandoc' documents to ODT.
 -}
 module Text.Pandoc.Writers.ODT ( writeODT ) where
 import Data.IORef
-import Data.List ( isPrefixOf, isSuffixOf )
+import Data.List ( isPrefixOf )
 import Data.Maybe ( fromMaybe )
 import Text.XML.Light.Output
 import Text.TeXMath
 import qualified Data.ByteString.Lazy as B
 import Text.Pandoc.UTF8 ( fromStringLazy )
 import Codec.Archive.Zip
+import Control.Applicative ((<$>))
 import Text.Pandoc.Options ( WriterOptions(..) )
-import Text.Pandoc.Shared ( stringify, readDataFile, fetchItem, warn )
+import Text.Pandoc.Shared ( stringify, readDataFile, fetchItem', warn )
 import Text.Pandoc.ImageSize ( imageSize, sizeInPoints )
-import Text.Pandoc.MIME ( getMimeType )
+import Text.Pandoc.MIME ( getMimeType, extensionFromMimeType )
 import Text.Pandoc.Definition
 import Text.Pandoc.Walk
 import Text.Pandoc.Writers.Shared ( fixDisplayMath )
@@ -50,7 +51,7 @@ import Text.Pandoc.XML
 import Text.Pandoc.Pretty
 import qualified Control.Exception as E
 import Data.Time.Clock.POSIX ( getPOSIXTime )
-import System.FilePath ( takeExtension, takeDirectory )
+import System.FilePath ( takeExtension, takeDirectory, (<.>))
 
 -- | Produce an ODT file from a Pandoc document.
 writeODT :: WriterOptions  -- ^ Writer options
@@ -76,11 +77,7 @@ writeODT opts doc@(Pandoc meta _) = do
                 $ contentEntry : picEntries
   -- construct META-INF/manifest.xml based on archive
   let toFileEntry fp = case getMimeType fp of
-                        Nothing  -> if "Formula-" `isPrefixOf` fp && "/" `isSuffixOf` fp
-                                       then selfClosingTag "manifest:file-entry"
-                                             [("manifest:media-type","application/vnd.oasis.opendocument.formula")
-                                             ,("manifest:full-path",fp)]
-                                       else empty
+                        Nothing  -> empty
                         Just m   -> selfClosingTag "manifest:file-entry"
                                      [("manifest:media-type", m)
                                      ,("manifest:full-path", fp)
@@ -131,17 +128,19 @@ writeODT opts doc@(Pandoc meta _) = do
 
 transformPicMath :: WriterOptions -> IORef [Entry] -> Inline -> IO Inline
 transformPicMath opts entriesRef (Image lab (src,_)) = do
-  res <- fetchItem (writerSourceURL opts) src
+  res <- fetchItem' (writerMediaBag opts) (writerSourceURL opts) src
   case res of
      Left (_ :: E.SomeException) -> do
        warn $ "Could not find image `" ++ src ++ "', skipping..."
        return $ Emph lab
-     Right (img, _) -> do
+     Right (img, mbMimeType) -> do
        let size = imageSize img
        let (w,h) = fromMaybe (0,0) $ sizeInPoints `fmap` size
        let tit' = show w ++ "x" ++ show h
        entries <- readIORef entriesRef
-       let newsrc = "Pictures/" ++ show (length entries) ++ takeExtension src
+       let extension = fromMaybe (takeExtension $ takeWhile (/='?') src)
+                           (mbMimeType >>= extensionFromMimeType)
+       let newsrc = "Pictures/" ++ show (length entries) <.> extension
        let toLazy = B.fromChunks . (:[])
        epochtime <- floor `fmap` getPOSIXTime
        let entry = toEntry newsrc epochtime $ toLazy img
@@ -150,7 +149,7 @@ transformPicMath opts entriesRef (Image lab (src,_)) = do
 transformPicMath _ entriesRef (Math t math) = do
   entries <- readIORef entriesRef
   let dt = if t == InlineMath then DisplayInline else DisplayBlock
-  case texMathToMathML dt math of
+  case writeMathML dt <$> readTeX math of
        Left  _ -> return $ Math t math
        Right r -> do
          let conf = useShortEmptyTags (const False) defaultConfigPP

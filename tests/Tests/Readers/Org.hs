@@ -126,6 +126,18 @@ tests =
                        , (emph "b") <> "."
                        ])
 
+      , "Quotes are forbidden border chars" =:
+          "/'nope/ *nope\"*" =?>
+          para ("/'nope/" <> space <> "*nope\"*")
+
+      , "Commata are forbidden border chars" =:
+          "/nada,/" =?>
+          para "/nada,/"
+
+      , "Markup should work properly after a blank line" =:
+        unlines ["foo", "", "/bar/"] =?>
+        (para $ text "foo") <> (para $ emph $ text "bar")
+
       , "Inline math must stay within three lines" =:
           unlines [ "$a", "b", "c$", "$d", "e", "f", "g$" ] =?>
           para ((math "a\nb\nc") <> space <>
@@ -184,6 +196,18 @@ tests =
       , "Self-link" =:
           "[[http://zeitlens.com/]]" =?>
           (para $ link "http://zeitlens.com/" "" "http://zeitlens.com/")
+
+      , "Absolute file link" =:
+          "[[/url][hi]]" =?>
+          (para $ link "file:///url" "" "hi")
+
+      , "Link to file in parent directory" =:
+          "[[../file.txt][moin]]" =?>
+          (para $ link "../file.txt" "" "moin")
+
+      , "Empty link (for gitit interop)" =:
+          "[[][New Link]]" =?>
+          (para $ link "" "" "New Link")
 
       , "Image link" =:
           "[[sunset.png][dusk.svg]]" =?>
@@ -263,6 +287,18 @@ tests =
       , "Unknown inline LaTeX command" =:
           "\\notacommand{foo}" =?>
           para (rawInline "latex" "\\notacommand{foo}")
+
+      , "MathML symbol in LaTeX-style" =:
+          "There is a hackerspace in Lübeck, Germany, called nbsp (unicode symbol: '\\nbsp')." =?>
+          para ("There is a hackerspace in Lübeck, Germany, called nbsp (unicode symbol: ' ').")
+
+      , "MathML symbol in LaTeX-style, including braces" =:
+          "\\Aacute{}stor" =?>
+          para "Ástor"
+
+      , "MathML copy sign" =:
+          "\\copy" =?>
+          para "©"
 
       , "LaTeX citation" =:
           "\\cite{Coffee}" =?>
@@ -446,6 +482,18 @@ tests =
                   , header 2 ("walk" <> space <> "dog")
                   ]
 
+      , "Comment Trees" =:
+          unlines [ "* COMMENT A comment tree"
+                  , "  Not much going on here"
+                  , "** This will be dropped"
+                  , "* Comment tree above"
+                  ] =?>
+          header 1 "Comment tree above"
+
+      , "Nothing but a COMMENT header" =:
+          "* COMMENT Test" =?>
+          (mempty::Blocks)
+
       , "Paragraph starting with an asterisk" =:
           "*five" =?>
           para "*five"
@@ -574,6 +622,13 @@ tests =
                      , plain "Item2"
                      ]
 
+      , "Unindented *" =:
+          ("- Item1\n" ++
+           "* Item2\n") =?>
+          bulletList [ plain "Item1"
+                     ] <>
+          header 1 "Item2"
+
       , "Multi-line Bullet Lists" =:
           ("- *Fat\n" ++
            "  Tony*\n" ++
@@ -593,7 +648,7 @@ tests =
            "  + Technologic\n" ++
            "  + Robot Rock\n") =?>
           bulletList [ mconcat
-                       [ para "Discovery"
+                       [ plain "Discovery"
                        , bulletList [ plain ("One" <> space <>
                                              "More" <> space <>
                                              "Time")
@@ -604,19 +659,46 @@ tests =
                                     ]
                        ]
                      , mconcat
-                       [ para "Homework"
+                       [ plain "Homework"
                        , bulletList [ plain ("Around" <> space <>
                                              "the" <> space <>
                                              "World")
                                     ]
                        ]
                      , mconcat
-                       [ para ("Human" <> space <> "After" <> space <> "All")
+                       [ plain ("Human" <> space <> "After" <> space <> "All")
                        , bulletList [ plain "Technologic"
                                     , plain ("Robot" <> space <> "Rock")
                                     ]
                        ]
                      ]
+
+      , "Bullet List with Decreasing Indent" =:
+           ("  - Discovery\n\
+            \ - Human After All\n") =?>
+           mconcat [ bulletList [ plain "Discovery" ]
+                   , bulletList [ plain ("Human" <> space <> "After" <> space <> "All")]
+                   ]
+
+      , "Header follows Bullet List" =:
+          ("  - Discovery\n\
+           \  - Human After All\n\
+           \* Homework") =?>
+          mconcat [ bulletList [ plain "Discovery"
+                               , plain ("Human" <> space <> "After" <> space <> "All")
+                               ]
+                  , header 1 "Homework"
+                  ]
+
+      , "Bullet List Unindented with trailing Header" =:
+          ("- Discovery\n\
+           \- Homework\n\
+           \* NotValidListItem") =?>
+          mconcat [ bulletList [ plain "Discovery"
+                               , plain "Homework"
+                               ]
+                  , header 1 "NotValidListItem"
+                  ]
 
       , "Simple Ordered List" =:
           ("1. Item1\n" ++
@@ -654,13 +736,13 @@ tests =
            "   2. Two-Two\n") =?>
           let listStyle = (1, DefaultStyle, DefaultDelim)
               listStructure = [ mconcat
-                                [ para "One"
+                                [ plain "One"
                                 , orderedList [ plain "One-One"
                                               , plain "One-Two"
                                               ]
                                 ]
                               , mconcat
-                                [ para "Two"
+                                [ plain "Two"
                                 , orderedList [ plain "Two-One"
                                               , plain "Two-Two"
                                               ]
@@ -671,14 +753,14 @@ tests =
       , "Ordered List in Bullet List" =:
           ("- Emacs\n" ++
            "  1. Org\n") =?>
-          bulletList [ (para "Emacs") <>
+          bulletList [ (plain "Emacs") <>
                        (orderedList [ plain "Org"])
                      ]
 
       , "Bullet List in Ordered List" =:
           ("1. GNU\n" ++
            "   - Freedom\n") =?>
-          orderedList [ (para "GNU") <> bulletList [ (plain "Freedom") ] ]
+          orderedList [ (plain "GNU") <> bulletList [ (plain "Freedom") ] ]
 
       , "Definition List" =:
           unlines [ "- PLL :: phase-locked loop"
@@ -698,7 +780,9 @@ tests =
                                      ]
                                    ])
                          ]
-
+      , "Definition list with multi-word term" =:
+        " - Elijah Wood :: He plays Frodo" =?>
+         definitionList [ ("Elijah" <> space <> "Wood", [plain $ "He" <> space <> "plays" <> space <> "Frodo"])]
       , "Compact definition list" =:
           unlines [ "- ATP :: adenosine 5' triphosphate"
                   , "- DNA :: deoxyribonucleic acid"
@@ -710,6 +794,16 @@ tests =
           , ("DNA", [ plain $ spcSep [ "deoxyribonucleic", "acid" ] ])
           , ("PCR", [ plain $ spcSep [ "polymerase", "chain", "reaction" ] ])
           ]
+
+      , "Definition List With Trailing Header" =:
+          "- definition :: list\n\
+          \- cool :: defs\n\
+          \* header" =?>
+          mconcat [ definitionList [ ("definition", [plain "list"])
+                                   , ("cool", [plain "defs"])
+                                   ]
+                  , header 1 "header"
+                  ]
 
       , "Loose bullet list" =:
           unlines [ "- apple"
@@ -885,6 +979,66 @@ tests =
                code' = unlines [ "(progn (message \"Hello, World!\")"
                                , "       (+ 23 42))" ]
            in codeBlockWith ("", classes, params) code'
+
+      , "Source block with results and :exports both" =:
+           unlines [ "#+BEGIN_SRC emacs-lisp :exports both"
+                   , "(progn (message \"Hello, World!\")"
+                   , "       (+ 23 42))"
+                   , "#+END_SRC"
+                   , ""
+                   , "#+RESULTS:"
+                   , ": 65"] =?>
+           let classes = [ "commonlisp"  -- as kate doesn't know emacs-lisp syntax
+                         , "rundoc-block"
+                         ]
+               params = [ ("rundoc-language", "emacs-lisp")
+                        , ("rundoc-exports", "both")
+                        ]
+               code' = unlines [ "(progn (message \"Hello, World!\")"
+                               , "       (+ 23 42))" ]
+               results' = "65\n"
+           in codeBlockWith ("", classes, params) code'
+              <>
+              codeBlockWith ("", ["example"], []) results'
+
+      , "Source block with results and :exports code" =:
+           unlines [ "#+BEGIN_SRC emacs-lisp :exports code"
+                   , "(progn (message \"Hello, World!\")"
+                   , "       (+ 23 42))"
+                   , "#+END_SRC"
+                   , ""
+                   , "#+RESULTS:"
+                   , ": 65" ] =?>
+           let classes = [ "commonlisp"  -- as kate doesn't know emacs-lisp syntax
+                         , "rundoc-block"
+                         ]
+               params = [ ("rundoc-language", "emacs-lisp")
+                        , ("rundoc-exports", "code")
+                        ]
+               code' = unlines [ "(progn (message \"Hello, World!\")"
+                               , "       (+ 23 42))" ]
+           in codeBlockWith ("", classes, params) code'
+
+      , "Source block with results and :exports results" =:
+           unlines [ "#+BEGIN_SRC emacs-lisp :exports results"
+                   , "(progn (message \"Hello, World!\")"
+                   , "       (+ 23 42))"
+                   , "#+END_SRC"
+                   , ""
+                   , "#+RESULTS:"
+                   , ": 65" ] =?>
+           let results' = "65\n"
+           in codeBlockWith ("", ["example"], []) results'
+
+      , "Source block with results and :exports none" =:
+           unlines [ "#+BEGIN_SRC emacs-lisp :exports none"
+                   , "(progn (message \"Hello, World!\")"
+                   , "       (+ 23 42))"
+                   , "#+END_SRC"
+                   , ""
+                   , "#+RESULTS:"
+                   , ": 65" ] =?>
+           rawBlock "html" ""
 
       , "Example block" =:
            unlines [ "#+begin_example"

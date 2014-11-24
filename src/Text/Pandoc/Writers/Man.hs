@@ -36,7 +36,8 @@ import Text.Pandoc.Writers.Shared
 import Text.Pandoc.Options
 import Text.Pandoc.Readers.TeXMath
 import Text.Printf ( printf )
-import Data.List ( isPrefixOf, intersperse, intercalate )
+import Data.List ( stripPrefix, intersperse, intercalate )
+import Data.Maybe (fromMaybe)
 import Text.Pandoc.Pretty
 import Text.Pandoc.Builder (deleteMeta)
 import Control.Monad.State
@@ -331,9 +332,9 @@ inlineToMan _ (Code _ str) =
   return $ text $ "\\f[C]" ++ escapeCode str ++ "\\f[]"
 inlineToMan _ (Str str) = return $ text $ escapeString str
 inlineToMan opts (Math InlineMath str) =
-  inlineListToMan opts $ readTeXMath' InlineMath str
+  inlineListToMan opts $ texMathToInlines InlineMath str
 inlineToMan opts (Math DisplayMath str) = do
-  contents <- inlineListToMan opts $ readTeXMath' DisplayMath str
+  contents <- inlineListToMan opts $ texMathToInlines DisplayMath str
   return $ cr <> text ".RS" $$ contents $$ text ".RE"
 inlineToMan _ (RawInline f str)
   | f == Format "man" = return $ text str
@@ -343,7 +344,7 @@ inlineToMan _ (LineBreak) = return $
 inlineToMan _ Space = return space
 inlineToMan opts (Link txt (src, _)) = do
   linktext <- inlineListToMan opts txt
-  let srcSuffix = if isPrefixOf "mailto:" src then drop 7 src else src
+  let srcSuffix = fromMaybe src (stripPrefix "mailto:" src)
   return $ case txt of
            [Str s]
              | escapeURI s == srcSuffix ->

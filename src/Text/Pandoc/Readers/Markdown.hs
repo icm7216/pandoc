@@ -117,6 +117,12 @@ isBlank _    = False
 -- auxiliary functions
 --
 
+-- | Succeeds when we're in list context.
+inList :: MarkdownParser ()
+inList = do
+  ctx <- stateParserContext <$> getState
+  guard (ctx == ListItemState)
+
 isNull :: F Inlines -> Bool
 isNull ils = B.isNull $ runF ils def
 
@@ -141,14 +147,16 @@ nonindentSpaces = do
      then return sps
      else unexpected "indented line"
 
-skipNonindentSpaces :: MarkdownParser ()
+-- returns number of spaces parsed
+skipNonindentSpaces :: MarkdownParser Int
 skipNonindentSpaces = do
   tabStop <- getOption readerTabStop
-  atMostSpaces (tabStop - 1)
+  atMostSpaces (tabStop - 1) <* notFollowedBy (char ' ')
 
-atMostSpaces :: Int -> MarkdownParser ()
-atMostSpaces 0 = notFollowedBy (char ' ')
-atMostSpaces n = (char ' ' >> atMostSpaces (n-1)) <|> return ()
+atMostSpaces :: Int -> MarkdownParser Int
+atMostSpaces n
+  | n > 0     = (char ' ' >> (+1) <$> atMostSpaces (n-1)) <|> return 0
+  | otherwise = return 0
 
 litChar :: MarkdownParser Char
 litChar = escapedChar'
@@ -353,8 +361,7 @@ referenceKey = try $ do
                     notFollowedBy' referenceTitle
                     notFollowedBy' (() <$ reference)
                     many1 $ notFollowedBy space >> litChar
-  let betweenAngles = try $ char '<' >>
-                       manyTill (escapedChar' <|> litChar) (char '>')
+  let betweenAngles = try $ char '<' >> manyTill litChar (char '>')
   src <- try betweenAngles <|> sourceURL
   tit <- option "" referenceTitle
   -- currently we just ignore MMD-style link/image attributes
@@ -571,7 +578,7 @@ attributes :: MarkdownParser Attr
 attributes = try $ do
   char '{'
   spnl
-  attrs <- many (attribute >>~ spnl)
+  attrs <- many (attribute <* spnl)
   char '}'
   return $ foldl (\x f -> f x) nullAttr attrs
 
@@ -688,7 +695,7 @@ birdTrackLine c = try $ do
 --
 
 emailBlockQuoteStart :: MarkdownParser Char
-emailBlockQuoteStart = try $ skipNonindentSpaces >> char '>' >>~ optional (char ' ')
+emailBlockQuoteStart = try $ skipNonindentSpaces >> char '>' <* optional (char ' ')
 
 emailBlockQuote :: MarkdownParser [String]
 emailBlockQuote = try $ do
@@ -718,55 +725,64 @@ blockQuote = do
 bulletListStart :: MarkdownParser ()
 bulletListStart = try $ do
   optional newline -- if preceded by a Plain block in a list context
+  startpos <- sourceColumn <$> getPosition
   skipNonindentSpaces
   notFollowedBy' (() <$ hrule)     -- because hrules start out just like lists
   satisfy isBulletListMarker
-  spaceChar <|> lookAhead newline
-  skipSpaces
+  endpos <- sourceColumn <$> getPosition
+  tabStop <- getOption readerTabStop
+  lookAhead (newline <|> spaceChar)
+  () <$ atMostSpaces (tabStop - (endpos - startpos))
 
 anyOrderedListStart :: MarkdownParser (Int, ListNumberStyle, ListNumberDelim)
 anyOrderedListStart = try $ do
   optional newline -- if preceded by a Plain block in a list context
+  startpos <- sourceColumn <$> getPosition
   skipNonindentSpaces
   notFollowedBy $ string "p." >> spaceChar >> digit  -- page number
-  (guardDisabled Ext_fancy_lists >>
-       do many1 digit
-          char '.'
-          spaceChar
-          return (1, DefaultStyle, DefaultDelim))
-   <|> do (num, style, delim) <- anyOrderedListMarker
-          -- if it could be an abbreviated first name, insist on more than one space
-          if delim == Period && (style == UpperAlpha || (style == UpperRoman &&
-             num `elem` [1, 5, 10, 50, 100, 500, 1000]))
-             then char '\t' <|> (try $ char ' ' >> spaceChar)
-             else spaceChar
-          skipSpaces
-          return (num, style, delim)
+  res <- do guardDisabled Ext_fancy_lists
+            start <- many1 digit >>= safeRead
+            char '.'
+            return (start, DefaultStyle, DefaultDelim)
+     <|> do (num, style, delim) <- anyOrderedListMarker
+            -- if it could be an abbreviated first name,
+            -- insist on more than one space
+            when (delim == Period && (style == UpperAlpha ||
+                 (style == UpperRoman &&
+                  num `elem` [1, 5, 10, 50, 100, 500, 1000]))) $
+               () <$ spaceChar
+            return (num, style, delim)
+  endpos <- sourceColumn <$> getPosition
+  tabStop <- getOption readerTabStop
+  lookAhead (newline <|> spaceChar)
+  atMostSpaces (tabStop - (endpos - startpos))
+  return res
 
 listStart :: MarkdownParser ()
 listStart = bulletListStart <|> (anyOrderedListStart >> return ())
 
--- parse a line of a list item (start = parser for beginning of list item)
 listLine :: MarkdownParser String
 listLine = try $ do
   notFollowedBy' (do indentSpaces
                      many spaceChar
                      listStart)
-  notFollowedBy' $ htmlTag (~== TagClose "div")
+  notFollowedByHtmlCloser
   optional (() <$ indentSpaces)
-  chunks <- manyTill
+  listLineCommon
+
+listLineCommon :: MarkdownParser String
+listLineCommon = concat <$> manyTill
               (  many1 (satisfy $ \c -> c /= '\n' && c /= '<')
              <|> liftM snd (htmlTag isCommentTag)
              <|> count 1 anyChar
               ) newline
-  return $ concat chunks
 
 -- parse raw text for one list item, excluding start marker and continuations
 rawListItem :: MarkdownParser a
             -> MarkdownParser String
 rawListItem start = try $ do
   start
-  first <- listLine
+  first <- listLineCommon
   rest <- many (notFollowedBy listStart >> notFollowedBy blankline >> listLine)
   blanks <- many blankline
   return $ unlines (first:rest) ++ blanks
@@ -781,11 +797,18 @@ listContinuation = try $ do
   blanks <- many blankline
   return $ concat result ++ blanks
 
+notFollowedByHtmlCloser :: MarkdownParser ()
+notFollowedByHtmlCloser = do
+  inHtmlBlock <- stateInHtmlBlock <$> getState
+  case inHtmlBlock of
+        Just t  -> notFollowedBy' $ htmlTag (~== TagClose t)
+        Nothing -> return ()
+
 listContinuationLine :: MarkdownParser String
 listContinuationLine = try $ do
   notFollowedBy blankline
   notFollowedBy' listStart
-  notFollowedBy' $ htmlTag (~== TagClose "div")
+  notFollowedByHtmlCloser
   optional indentSpaces
   result <- anyLine
   return $ result ++ "\n"
@@ -817,8 +840,14 @@ orderedList = try $ do
   items <- fmap sequence $ many1 $ listItem
                  ( try $ do
                      optional newline -- if preceded by Plain block in a list
+                     startpos <- sourceColumn <$> getPosition
                      skipNonindentSpaces
-                     orderedListMarker style delim )
+                     res <- orderedListMarker style delim
+                     endpos <- sourceColumn <$> getPosition
+                     tabStop <- getOption readerTabStop
+                     lookAhead (newline <|> spaceChar)
+                     atMostSpaces (tabStop - (endpos - startpos))
+                     return res )
   start' <- option 1 $ guardEnabled Ext_startnum >> return start
   return $ B.orderedListWith (start', style, delim) <$> fmap compactify' items
 
@@ -840,37 +869,52 @@ defListMarker = do
      else mzero
   return ()
 
-definitionListItem :: MarkdownParser (F (Inlines, [Blocks]))
-definitionListItem = try $ do
-  -- first, see if this has any chance of being a definition list:
-  lookAhead (anyLine >> optional blankline >> defListMarker)
-  term <- trimInlinesF . mconcat <$> manyTill inline newline
-  optional blankline
-  raw <- many1 defRawBlock
-  state <- getState
-  let oldContext = stateParserContext state
-  -- parse the extracted block, which may contain various block elements:
+definitionListItem :: Bool -> MarkdownParser (F (Inlines, [Blocks]))
+definitionListItem compact = try $ do
+  rawLine' <- anyLine
+  raw <- many1 $ defRawBlock compact
+  term <- parseFromString (trimInlinesF . mconcat <$> many inline) rawLine'
   contents <- mapM (parseFromString parseBlocks) raw
-  updateState (\st -> st {stateParserContext = oldContext})
+  optional blanklines
   return $ liftM2 (,) term (sequence contents)
 
-defRawBlock :: MarkdownParser String
-defRawBlock = try $ do
+defRawBlock :: Bool -> MarkdownParser String
+defRawBlock compact = try $ do
+  hasBlank <- option False $ blankline >> return True
   defListMarker
   firstline <- anyLine
-  rawlines <- many (notFollowedBy blankline >> indentSpaces >> anyLine)
-  trailing <- option "" blanklines
-  cont <- liftM concat $ many $ do
-            lns <- many1 $ notFollowedBy blankline >> indentSpaces >> anyLine
-            trl <- option "" blanklines
-            return $ unlines lns ++ trl
-  return $ firstline ++ "\n" ++ unlines rawlines ++ trailing ++ cont
+  let dline = try
+               ( do notFollowedBy blankline
+                    if compact -- laziness not compatible with compact
+                       then () <$ indentSpaces
+                       else (() <$ indentSpaces)
+                             <|> notFollowedBy defListMarker
+                    anyLine )
+  rawlines <- many dline
+  cont <- liftM concat $ many $ try $ do
+            trailing <- option "" blanklines
+            ln <- indentSpaces >> notFollowedBy blankline >> anyLine
+            lns <- many dline
+            return $ trailing ++ unlines (ln:lns)
+  return $ trimr (firstline ++ "\n" ++ unlines rawlines ++ cont) ++
+            if hasBlank || not (null cont) then "\n\n" else ""
 
 definitionList :: MarkdownParser (F Blocks)
-definitionList = do
-  guardEnabled Ext_definition_lists
-  items <- fmap sequence $ many1 definitionListItem
+definitionList = try $ do
+  lookAhead (anyLine >> optional blankline >> defListMarker)
+  compactDefinitionList <|> normalDefinitionList
+
+compactDefinitionList :: MarkdownParser (F Blocks)
+compactDefinitionList = do
+  guardEnabled Ext_compact_definition_lists
+  items <- fmap sequence $ many1 $ definitionListItem True
   return $ B.definitionList <$> fmap compactify'DL items
+
+normalDefinitionList :: MarkdownParser (F Blocks)
+normalDefinitionList = do
+  guardEnabled Ext_definition_lists
+  items <- fmap sequence $ many1 $ definitionListItem False
+  return $ B.definitionList <$> items
 
 --
 -- paragraph block
@@ -888,7 +932,15 @@ para = try $ do
               <|> (guardEnabled Ext_backtick_code_blocks >> () <$ lookAhead codeBlockFenced)
               <|> (guardDisabled Ext_blank_before_header >> () <$ lookAhead header)
               <|> (guardEnabled Ext_lists_without_preceding_blankline >>
+                       -- Avoid creating a paragraph in a nested list.
+                       notFollowedBy' inList >>
                        () <$ lookAhead listStart)
+              <|> do guardEnabled Ext_native_divs
+                     inHtmlBlock <- stateInHtmlBlock <$> getState
+                     case inHtmlBlock of
+                          Just "div" -> () <$
+                                       lookAhead (htmlTag (~== TagClose "div"))
+                          _          -> mzero
             return $ do
               result' <- result
               case B.toList result' of
@@ -914,16 +966,34 @@ htmlElement = rawVerbatimBlock
 htmlBlock :: MarkdownParser (F Blocks)
 htmlBlock = do
   guardEnabled Ext_raw_html
-  res <- (guardEnabled Ext_markdown_in_html_blocks >> rawHtmlBlocks)
-          <|> htmlBlock'
-  return $ return $ B.rawBlock "html" res
+  try (do
+      (TagOpen t attrs) <- lookAhead $ fst <$> htmlTag isBlockTag
+      (guard (t `elem` ["pre","style","script"]) >>
+          (return . B.rawBlock "html") <$> rawVerbatimBlock)
+        <|> (do guardEnabled Ext_markdown_attribute
+                oldMarkdownAttribute <- stateMarkdownAttribute <$> getState
+                markdownAttribute <-
+                   case lookup "markdown" attrs of
+                        Just "0" -> False <$ updateState (\st -> st{
+                                       stateMarkdownAttribute = False })
+                        Just _   -> True <$ updateState (\st -> st{
+                                       stateMarkdownAttribute = True })
+                        Nothing  -> return oldMarkdownAttribute
+                res <- if markdownAttribute
+                          then rawHtmlBlocks
+                          else htmlBlock'
+                updateState $ \st -> st{ stateMarkdownAttribute =
+                                         oldMarkdownAttribute }
+                return res)
+        <|> (guardEnabled Ext_markdown_in_html_blocks >> rawHtmlBlocks))
+    <|> htmlBlock'
 
-htmlBlock' :: MarkdownParser String
+htmlBlock' :: MarkdownParser (F Blocks)
 htmlBlock' = try $ do
     first <- htmlElement
-    finalSpace <- many spaceChar
-    finalNewlines <- many newline
-    return $ first ++ finalSpace ++ finalNewlines
+    skipMany spaceChar
+    optional blanklines
+    return $ return $ B.rawBlock "html" first
 
 strictHtmlBlock :: MarkdownParser String
 strictHtmlBlock = htmlInBalanced (not . isInlineTag)
@@ -934,7 +1004,7 @@ rawVerbatimBlock = try $ do
                                                   ["pre", "style", "script"])
                               (const True))
   contents <- manyTill anyChar (htmlTag (~== TagClose tag))
-  return $ open ++ contents ++ renderTags [TagClose tag]
+  return $ open ++ contents ++ renderTags' [TagClose tag]
 
 rawTeXBlock :: MarkdownParser (F Blocks)
 rawTeXBlock = do
@@ -946,38 +1016,24 @@ rawTeXBlock = do
   spaces
   return $ return result
 
-rawHtmlBlocks :: MarkdownParser String
+rawHtmlBlocks :: MarkdownParser (F Blocks)
 rawHtmlBlocks = do
-  htmlBlocks <- many1 $ try $ do
-                          s <- rawVerbatimBlock <|> try (
-                                do (t,raw) <- htmlTag isBlockTag
-                                   guard $ t ~/= TagOpen "div" [] &&
-                                           t ~/= TagClose "div"
-                                   exts <- getOption readerExtensions
-                                   -- if open tag, need markdown="1" if
-                                   -- markdown_attributes extension is set
-                                   case t of
-                                        TagOpen _ as
-                                          | Ext_markdown_attribute `Set.member`
-                                              exts ->
-                                                if "markdown" `notElem`
-                                                   map fst as
-                                                   then mzero
-                                                   else return $
-                                                     stripMarkdownAttribute raw
-                                          | otherwise -> return raw
-                                        _ -> return raw )
-                          sps <- do sp1 <- many spaceChar
-                                    sp2 <- option "" (blankline >> return "\n")
-                                    sp3 <- many spaceChar
-                                    sp4 <- option "" blanklines
-                                    return $ sp1 ++ sp2 ++ sp3 ++ sp4
-                          -- note: we want raw html to be able to
-                          -- precede a code block, when separated
-                          -- by a blank line
-                          return $ s ++ sps
-  let combined = concat htmlBlocks
-  return $ if last combined == '\n' then init combined else combined
+  (TagOpen tagtype _, raw) <- htmlTag isBlockTag
+  -- try to find closing tag
+  -- we set stateInHtmlBlock so that closing tags that can be either block or
+  -- inline will not be parsed as inline tags
+  oldInHtmlBlock <- stateInHtmlBlock <$> getState
+  updateState $ \st -> st{ stateInHtmlBlock = Just tagtype }
+  let closer = htmlTag (\x -> x ~== TagClose tagtype)
+  contents <- mconcat <$> many (notFollowedBy' closer >> block)
+  result <-
+    (closer >>= \(_, rawcloser) -> return (
+                return (B.rawBlock "html" $ stripMarkdownAttribute raw) <>
+                contents <>
+                return (B.rawBlock "html" rawcloser)))
+      <|> return (return (B.rawBlock "html" raw) <> contents)
+  updateState $ \st -> st{ stateInHtmlBlock = oldInHtmlBlock }
+  return result
 
 -- remove markdown="1" attribute
 stripMarkdownAttribute :: String -> String
@@ -1165,7 +1221,7 @@ gridPart ch = do
   return (length dashes, length dashes + 1)
 
 gridDashedLines :: Char -> Parser [Char] st [(Int,Int)]
-gridDashedLines ch = try $ char '+' >> many1 (gridPart ch) >>~ blankline
+gridDashedLines ch = try $ char '+' >> many1 (gridPart ch) <* blankline
 
 removeFinalBar :: String -> String
 removeFinalBar =
@@ -1390,8 +1446,7 @@ escapedChar = do
 ltSign :: MarkdownParser (F Inlines)
 ltSign = do
   guardDisabled Ext_raw_html
-    <|> guardDisabled Ext_markdown_in_html_blocks
-    <|> (notFollowedBy' (htmlTag isBlockTag) >> return ())
+    <|> (notFollowedByHtmlCloser >> notFollowedBy' (htmlTag isBlockTag))
   char '<'
   return $ return $ B.str "<"
 
@@ -1436,13 +1491,26 @@ math =  (return . B.displayMath <$> (mathDisplay >>= applyMacros'))
 enclosure :: Char
           -> MarkdownParser (F Inlines)
 enclosure c = do
+  -- we can't start an enclosure with _ if after a string and
+  -- the intraword_underscores extension is enabled:
+  guardDisabled Ext_intraword_underscores
+    <|> guard (c == '*')
+    <|> (guard =<< notAfterString)
   cs <- many1 (char c)
   (return (B.str cs) <>) <$> whitespace
-    <|> case length cs of
+    <|> do
+        case length cs of
              3  -> three c
              2  -> two   c mempty
              1  -> one   c mempty
              _  -> return (return $ B.str cs)
+
+ender :: Char -> Int -> MarkdownParser ()
+ender c n = try $ do
+  count n (char c)
+  guard (c == '*')
+    <|> guardDisabled Ext_intraword_underscores
+    <|> notFollowedBy alphaNum
 
 -- Parse inlines til you hit one c or a sequence of two cs.
 -- If one c, emit emph and then parse two.
@@ -1450,38 +1518,33 @@ enclosure c = do
 -- Otherwise, emit ccc then the results.
 three :: Char -> MarkdownParser (F Inlines)
 three c = do
-  contents <- mconcat <$> many (notFollowedBy (char c) >> inline)
-  (try (string [c,c,c]) >> return ((B.strong . B.emph) <$> contents))
-    <|> (try (string [c,c]) >> one c (B.strong <$> contents))
-    <|> (char c >> two c (B.emph <$> contents))
+  contents <- mconcat <$> many (notFollowedBy (ender c 1) >> inline)
+  (ender c 3 >> return ((B.strong . B.emph) <$> contents))
+    <|> (ender c 2 >> one c (B.strong <$> contents))
+    <|> (ender c 1 >> two c (B.emph <$> contents))
     <|> return (return (B.str [c,c,c]) <> contents)
 
 -- Parse inlines til you hit two c's, and emit strong.
 -- If you never do hit two cs, emit ** plus inlines parsed.
 two :: Char -> F Inlines -> MarkdownParser (F Inlines)
 two c prefix' = do
-  let ender = try $ string [c,c]
-  contents <- mconcat <$> many (try $ notFollowedBy ender >> inline)
-  (ender >> return (B.strong <$> (prefix' <> contents)))
+  contents <- mconcat <$> many (try $ notFollowedBy (ender c 2) >> inline)
+  (ender c 2 >> return (B.strong <$> (prefix' <> contents)))
     <|> return (return (B.str [c,c]) <> (prefix' <> contents))
 
 -- Parse inlines til you hit a c, and emit emph.
 -- If you never hit a c, emit * plus inlines parsed.
 one :: Char -> F Inlines -> MarkdownParser (F Inlines)
 one c prefix' = do
-  contents <- mconcat <$> many (  (notFollowedBy (char c) >> inline)
+  contents <- mconcat <$> many (  (notFollowedBy (ender c 1) >> inline)
                            <|> try (string [c,c] >>
-                                    notFollowedBy (char c) >>
+                                    notFollowedBy (ender c 1) >>
                                     two c mempty) )
-  (char c >> return (B.emph <$> (prefix' <> contents)))
+  (ender c 1 >> return (B.emph <$> (prefix' <> contents)))
     <|> return (return (B.str [c]) <> (prefix' <> contents))
 
 strongOrEmph :: MarkdownParser (F Inlines)
-strongOrEmph =  enclosure '*' <|> (checkIntraword >> enclosure '_')
-  where  checkIntraword = do
-           exts <- getOption readerExtensions
-           when (Ext_intraword_underscores `Set.member` exts) $ do
-             guard =<< notAfterString
+strongOrEmph =  enclosure '*' <|> enclosure '_'
 
 -- | Parses a list of inlines between start and end delimiters.
 inlinesBetween :: (Show b)
@@ -1491,7 +1554,7 @@ inlinesBetween :: (Show b)
 inlinesBetween start end =
   (trimInlinesF . mconcat) <$> try (start >> many1Till inner end)
     where inner      = innerSpace <|> (notFollowedBy' (() <$ whitespace) >> inline)
-          innerSpace = try $ whitespace >>~ notFollowedBy' end
+          innerSpace = try $ whitespace <* notFollowedBy' end
 
 strikeout :: MarkdownParser (F Inlines)
 strikeout = fmap B.strikeout <$>
@@ -1555,13 +1618,13 @@ endline = try $ do
   newline
   notFollowedBy blankline
   -- parse potential list-starts differently if in a list:
-  st <- getState
-  when (stateParserContext st == ListItemState) $ notFollowedBy listStart
+  notFollowedBy (inList >> listStart)
   guardDisabled Ext_lists_without_preceding_blankline <|> notFollowedBy listStart
   guardEnabled Ext_blank_before_blockquote <|> notFollowedBy emailBlockQuoteStart
   guardEnabled Ext_blank_before_header <|> notFollowedBy (char '#') -- atx header
   guardDisabled Ext_backtick_code_blocks <|>
      notFollowedBy (() <$ (lookAhead (char '`') >> codeBlockFenced))
+  notFollowedByHtmlCloser
   (eof >> return mempty)
     <|> (guardEnabled Ext_hard_line_breaks >> return (return B.linebreak))
     <|> (guardEnabled Ext_ignore_line_breaks >> return mempty)
@@ -1586,8 +1649,10 @@ source :: MarkdownParser (String, String)
 source = do
   char '('
   skipSpaces
-  let urlChunk = try $ notFollowedBy (oneOf "\"')") >>
-                          (parenthesizedChars <|> count 1 litChar)
+  let urlChunk =
+            try parenthesizedChars
+        <|> (notFollowedBy (oneOf " )") >> (count 1 litChar))
+        <|> try (many1 spaceChar <* notFollowedBy (oneOf "\"')"))
   let sourceURL = (unwords . words . concat) <$> many urlChunk
   let betweenAngles = try $
          char '<' >> manyTill litChar (char '>')
@@ -1732,7 +1797,7 @@ inBrackets parser = do
 
 spanHtml :: MarkdownParser (F Inlines)
 spanHtml = try $ do
-  guardEnabled Ext_markdown_in_html_blocks
+  guardEnabled Ext_native_spans
   (TagOpen _ attrs, _) <- htmlTag (~== TagOpen "span" [])
   contents <- mconcat <$> manyTill inline (htmlTag (~== TagClose "span"))
   let ident = fromMaybe "" $ lookup "id" attrs
@@ -1747,14 +1812,19 @@ spanHtml = try $ do
 
 divHtml :: MarkdownParser (F Blocks)
 divHtml = try $ do
-  guardEnabled Ext_markdown_in_html_blocks
+  guardEnabled Ext_native_divs
   (TagOpen _ attrs, rawtag) <- htmlTag (~== TagOpen "div" [])
+  -- we set stateInHtmlBlock so that closing tags that can be either block or
+  -- inline will not be parsed as inline tags
+  oldInHtmlBlock <- stateInHtmlBlock <$> getState
+  updateState $ \st -> st{ stateInHtmlBlock = Just "div" }
   bls <- option "" (blankline >> option "" blanklines)
   contents <- mconcat <$>
               many (notFollowedBy' (htmlTag (~== TagClose "div")) >> block)
   closed <- option False (True <$ htmlTag (~== TagClose "div"))
   if closed
      then do
+       updateState $ \st -> st{ stateInHtmlBlock = oldInHtmlBlock }
        let ident = fromMaybe "" $ lookup "id" attrs
        let classes = maybe [] words $ lookup "class" attrs
        let keyvals = [(k,v) | (k,v) <- attrs, k /= "id" && k /= "class"]
@@ -1765,10 +1835,17 @@ divHtml = try $ do
 rawHtmlInline :: MarkdownParser (F Inlines)
 rawHtmlInline = do
   guardEnabled Ext_raw_html
+  inHtmlBlock <- stateInHtmlBlock <$> getState
+  let isCloseBlockTag t = case inHtmlBlock of
+                               Just t' -> t ~== TagClose t'
+                               Nothing -> False
   mdInHtml <- option False $
-                guardEnabled Ext_markdown_in_html_blocks >> return True
+                (    guardEnabled Ext_markdown_in_html_blocks
+                 <|> guardEnabled Ext_markdown_attribute
+                ) >> return True
   (_,result) <- htmlTag $ if mdInHtml
-                             then isInlineTag
+                             then (\x -> isInlineTag x &&
+                                         not (isCloseBlockTag x))
                              else not . isTextTag
   return $ return $ B.rawInline "html" result
 

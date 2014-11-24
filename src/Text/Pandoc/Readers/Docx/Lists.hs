@@ -121,7 +121,7 @@ handleListParagraphs (
       in
        handleListParagraphs ((Div attr1 (blks1 ++ [newDiv2])) : blks)
 handleListParagraphs (blk:blks) = blk : (handleListParagraphs blks)
-                  
+
 separateBlocks' :: Block -> [[Block]] -> [[Block]]
 separateBlocks' blk ([] : []) = [[blk]]
 separateBlocks' b@(BulletList _) acc = (init acc) ++ [(last acc) ++ [b]]
@@ -139,7 +139,7 @@ flatToBullets' :: Integer -> [Block] -> [Block]
 flatToBullets' _ [] = []
 flatToBullets' num xs@(b : elems)
   | getLevelN b == num = b : (flatToBullets' num elems)
-  | otherwise = 
+  | otherwise =
     let bNumId = getNumIdN b
         bLevel = getLevelN b
         (children, remaining) =
@@ -160,9 +160,15 @@ flatToBullets' num xs@(b : elems)
 flatToBullets :: [Block] -> [Block]
 flatToBullets elems = flatToBullets' (-1) elems
 
+singleItemHeaderToHeader :: Block -> Block
+singleItemHeaderToHeader (OrderedList _ [[h@(Header _ _ _)]]) = h
+singleItemHeaderToHeader blk = blk
+
+
 blocksToBullets :: [Block] -> [Block]
 blocksToBullets blks =
-  bottomUp removeListDivs $ 
+  map singleItemHeaderToHeader $
+  bottomUp removeListDivs $
   flatToBullets $ (handleListParagraphs blks)
 
 plainParaInlines :: Block -> [Inline]
@@ -216,12 +222,8 @@ removeListDivs' blk = [blk]
 
 removeListDivs :: [Block] -> [Block]
 removeListDivs = concatMap removeListDivs'
-  
+
 
 
 blocksToDefinitions :: [Block] -> [Block]
 blocksToDefinitions = blocksToDefinitions' [] []
-
-    
-    
-    

@@ -28,7 +28,7 @@
 \stop[a2]
 \stop[a2]
 
-## URLs with spaces
+## URLs with spaces and punctuation
 
 [foo](/bar and baz)
 [foo](/bar
@@ -41,6 +41,8 @@
 [baz]: /foo foo
 [bam]:  /foo fee   
 [bork]:  /foo/zee zob   (title)
+
+[Ward's method.](http://en.wikipedia.org/wiki/Ward's_method)
 
 ## Horizontal rules with spaces at end
 
@@ -58,6 +60,8 @@
 
 $\$2 + \$3$
 
+$x = \text{the $n$th root of $y$}$
+
 This should not be math:
 
 $PATH 90 $PATH
@@ -69,6 +73,22 @@ $PATH 90 $PATH
 - two
 -->
 - three
+
+## Indented code at beginning of list
+
+-       code
+        code
+
+  1.    code
+        code
+
+  12345678.    code
+        code
+
+  -     code
+        code
+
+  -    no code
 
 ## Backslash newline
 
@@ -155,6 +175,8 @@ Link to [Explicit header attributes].
 But this is not a link to [My other header], since the reference is defined.
 
 ## Explicit header attributes {#foobar .baz key="val"}
+
+> ## Header attributes inside block quote {#foobar .baz key="val"}
 
 ## Line blocks
 

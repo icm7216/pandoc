@@ -19,8 +19,12 @@
 % use upquote if available, for straight quotes in verbatim environments
 \IfFileExists{upquote.sty}{\usepackage{upquote}}{}
 % use microtype if available
-\IfFileExists{microtype.sty}{\usepackage{microtype}}{}
+\IfFileExists{microtype.sty}{%
+\usepackage{microtype}
+\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
 \usepackage{fancyvrb}
+\VerbatimFootnotes
 \usepackage{graphicx}
 \makeatletter
 \def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
@@ -66,7 +70,7 @@
 This is a set of tests for pandoc. Most of them are adapted from John Gruber's
 markdown test suite.
 
-\begin{center}\rule{3in}{0.4pt}\end{center}
+\begin{center}\rule{0.5\linewidth}{\linethickness}\end{center}
 
 \section{Headers}\label{headers}
 
@@ -91,7 +95,7 @@ with no blank line
 
 with no blank line
 
-\begin{center}\rule{3in}{0.4pt}\end{center}
+\begin{center}\rule{0.5\linewidth}{\linethickness}\end{center}
 
 \section{Paragraphs}\label{paragraphs}
 
@@ -105,7 +109,7 @@ Here's one with a bullet. * criminey.
 
 There should be a hard line break\\here.
 
-\begin{center}\rule{3in}{0.4pt}\end{center}
+\begin{center}\rule{0.5\linewidth}{\linethickness}\end{center}
 
 \section{Block Quotes}\label{block-quotes}
 
@@ -150,7 +154,7 @@ This should not be a block quote: 2 \textgreater{} 1.
 
 And a following paragraph.
 
-\begin{center}\rule{3in}{0.4pt}\end{center}
+\begin{center}\rule{0.5\linewidth}{\linethickness}\end{center}
 
 \section{Code Blocks}\label{code-blocks}
 
@@ -174,7 +178,7 @@ And:
 These should not be escaped:  \$ \\ \> \[ \{
 \end{verbatim}
 
-\begin{center}\rule{3in}{0.4pt}\end{center}
+\begin{center}\rule{0.5\linewidth}{\linethickness}\end{center}
 
 \section{Lists}\label{lists}
 
@@ -482,7 +486,7 @@ M.A.~2007
 
 B. Williams
 
-\begin{center}\rule{3in}{0.4pt}\end{center}
+\begin{center}\rule{0.5\linewidth}{\linethickness}\end{center}
 
 \section{Definition Lists}\label{definition-lists}
 
@@ -647,7 +651,7 @@ Code:
 
 Hr's:
 
-\begin{center}\rule{3in}{0.4pt}\end{center}
+\begin{center}\rule{0.5\linewidth}{\linethickness}\end{center}
 
 \section{Inline Markup}\label{inline-markup}
 
@@ -679,7 +683,7 @@ H\textsubscript{many~of~them}O.
 These should not be superscripts or subscripts, because of the unescaped
 spaces: a\^{}b c\^{}d, a\textasciitilde{}b c\textasciitilde{}d.
 
-\begin{center}\rule{3in}{0.4pt}\end{center}
+\begin{center}\rule{0.5\linewidth}{\linethickness}\end{center}
 
 \section{Smart quotes, ellipses, dashes}\label{smart-quotes-ellipses-dashes}
 
@@ -700,7 +704,7 @@ Dashes between numbers: 5--7, 255--66, 1987--1999.
 
 Ellipses\ldots{}and\ldots{}and\ldots{}.
 
-\begin{center}\rule{3in}{0.4pt}\end{center}
+\begin{center}\rule{0.5\linewidth}{\linethickness}\end{center}
 
 \section{LaTeX}\label{latex}
 
@@ -709,20 +713,20 @@ Ellipses\ldots{}and\ldots{}and\ldots{}.
 \item
   \cite[22-23]{smith.1899}
 \item
-  $2+2=4$
+  \(2+2=4\)
 \item
-  $x \in y$
+  \(x \in y\)
 \item
-  $\alpha \wedge \omega$
+  \(\alpha \wedge \omega\)
 \item
-  $223$
+  \(223\)
 \item
-  $p$-Tree
+  \(p\)-Tree
 \item
   Here's some display math:
   \[\frac{d}{dx}f(x)=\lim_{h\to 0}\frac{f(x+h)-f(x)}{h}\]
 \item
-  Here's one that has a line break in it: $\alpha + \omega \times x^2$.
+  Here's one that has a line break in it: \(\alpha + \omega \times x^2\).
 \end{itemize}
 
 These shouldn't be math:
@@ -748,7 +752,7 @@ Dog    & 2      \\
 Cat    & 1      \\ \hline
 \end{tabular}
 
-\begin{center}\rule{3in}{0.4pt}\end{center}
+\begin{center}\rule{0.5\linewidth}{\linethickness}\end{center}
 
 \section{Special Characters}\label{special-characters}
 
@@ -810,7 +814,7 @@ Plus: +
 
 Minus: -
 
-\begin{center}\rule{3in}{0.4pt}\end{center}
+\begin{center}\rule{0.5\linewidth}{\linethickness}\end{center}
 
 \section{Links}\label{links}
 
@@ -888,7 +892,8 @@ With an ampersand: \url{http://example.com/?foo=1\&bar=2}
   It should.
 \end{itemize}
 
-An e-mail address: \href{mailto:nobody@nowhere.net}{nobody@nowhere.net}
+An e-mail address:
+\href{mailto:nobody@nowhere.net}{\nolinkurl{nobody@nowhere.net}}
 
 \begin{quote}
 Blockquoted: \url{http://example.com/}
@@ -901,7 +906,7 @@ Auto-links should not occur here:
 or here: <http://example.com/>
 \end{verbatim}
 
-\begin{center}\rule{3in}{0.4pt}\end{center}
+\begin{center}\rule{0.5\linewidth}{\linethickness}\end{center}
 
 \section{Images}\label{images}
 
@@ -915,7 +920,7 @@ From ``Voyage dans la Lune'' by Georges Melies (1902):
 
 Here is a movie \includegraphics{movie.jpg} icon.
 
-\begin{center}\rule{3in}{0.4pt}\end{center}
+\begin{center}\rule{0.5\linewidth}{\linethickness}\end{center}
 
 \section{Footnotes}\label{footnotes}
 

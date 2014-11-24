@@ -569,7 +569,8 @@ endline = () <$ try (newline <*
 
 imageIdentifiers :: [MWParser ()]
 imageIdentifiers = [sym (identifier ++ ":") | identifier <- identifiers]
-    where identifiers = ["File", "Image", "Archivo", "Datei", "Fichier"]
+    where identifiers = ["File", "Image", "Archivo", "Datei", "Fichier",
+                         "Bild"]
 
 image :: MWParser Inlines
 image = try $ do
@@ -634,7 +635,7 @@ inlinesBetween :: (Show b) => MWParser a -> MWParser b -> MWParser Inlines
 inlinesBetween start end =
   (trimInlines . mconcat) <$> try (start >> many1Till inner end)
     where inner      = innerSpace <|> (notFollowedBy' (() <$ whitespace) >> inline)
-          innerSpace = try $ whitespace >>~ notFollowedBy' end
+          innerSpace = try $ whitespace <* notFollowedBy' end
 
 emph :: MWParser Inlines
 emph = B.emph <$> nested (inlinesBetween start end)

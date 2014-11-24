@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, CPP #-}
+{-# LANGUAGE OverloadedStrings, CPP, ScopedTypeVariables #-}
 {-
 Copyright (C) 2012-2014 John MacFarlane <jgm@berkeley.edu>
 
@@ -30,7 +30,6 @@ Conversion of LaTeX documents to PDF.
 -}
 module Text.Pandoc.PDF ( makePDF ) where
 
-import System.IO.Temp
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as B
 import qualified Data.ByteString.Lazy.Char8 as BC
@@ -40,27 +39,22 @@ import System.FilePath
 import System.Directory
 import Data.Digest.Pure.SHA (showDigest, sha1)
 import System.Environment
-import Control.Monad (unless)
+import Control.Monad (unless, (<=<))
+import qualified Control.Exception as E
+import Control.Applicative ((<$))
 import Data.List (isInfixOf)
 import Data.Maybe (fromMaybe)
 import qualified Text.Pandoc.UTF8 as UTF8
 import Text.Pandoc.Definition
 import Text.Pandoc.Walk (walkM)
-import Text.Pandoc.Shared (fetchItem, warn)
+import Text.Pandoc.Shared (fetchItem', warn, withTempDir)
 import Text.Pandoc.Options (WriterOptions(..))
-import Text.Pandoc.MIME (extensionFromMimeType)
+import Text.Pandoc.MIME (extensionFromMimeType, getMimeType)
 import Text.Pandoc.Process (pipeProcess)
 import qualified Data.ByteString.Lazy as BL
+import qualified Codec.Picture as JP
 #ifdef _WINDOWS
 import Data.List (intercalate)
-#endif
-
-withTempDir :: String -> (FilePath -> IO a) -> IO a
-withTempDir =
-#ifdef _WINDOWS
-  withTempDirectory "."
-#else
-  withSystemTempDirectory
 #endif
 
 #ifdef _WINDOWS
@@ -74,26 +68,26 @@ makePDF :: String              -- ^ pdf creator (pdflatex, lualatex, xelatex)
         -> Pandoc              -- ^ document
         -> IO (Either ByteString ByteString)
 makePDF program writer opts doc = withTempDir "tex2pdf." $ \tmpdir -> do
-  doc' <- handleImages (writerSourceURL opts) tmpdir doc
+  doc' <- handleImages opts tmpdir doc
   let source = writer opts doc'
   tex2pdf' tmpdir program source
 
-handleImages :: Maybe String  -- ^ source base URL
+handleImages :: WriterOptions
              -> FilePath      -- ^ temp dir to store images
              -> Pandoc        -- ^ document
              -> IO Pandoc
-handleImages baseURL tmpdir = walkM (handleImage' baseURL tmpdir)
+handleImages opts tmpdir = walkM (convertImages tmpdir) <=< walkM (handleImage' opts tmpdir)
 
-handleImage' :: Maybe String
+handleImage' :: WriterOptions
              -> FilePath
              -> Inline
              -> IO Inline
-handleImage' baseURL tmpdir (Image ils (src,tit)) = do
+handleImage' opts tmpdir (Image ils (src,tit)) = do
     exists <- doesFileExist src
     if exists
        then return $ Image ils (src,tit)
        else do
-         res <- fetchItem baseURL src
+         res <- fetchItem' (writerMediaBag opts) (writerSourceURL opts) src
          case res of
               Right (contents, Just mime) -> do
                 let ext = fromMaybe (takeExtension src) $
@@ -106,6 +100,35 @@ handleImage' baseURL tmpdir (Image ils (src,tit)) = do
                 warn $ "Could not find image `" ++ src ++ "', skipping..."
                 return $ Image ils (src,tit)
 handleImage' _ _ x = return x
+
+convertImages :: FilePath -> Inline -> IO Inline
+convertImages tmpdir (Image ils (src, tit)) = do
+  img <- convertImage tmpdir src
+  newPath <-
+    case img of
+      Left e -> src <$
+                 warn ("Unable to convert image `" ++ src ++ "':\n" ++ e)
+      Right fp -> return fp
+  return (Image ils (newPath, tit))
+convertImages _ x = return x
+
+-- Convert formats which do not work well in pdf to png
+convertImage :: FilePath -> FilePath -> IO (Either String FilePath)
+convertImage tmpdir fname =
+  case mime of
+    Just "image/png" -> doNothing
+    Just "image/jpeg" -> doNothing
+    Just "application/pdf" -> doNothing
+    _ -> JP.readImage fname >>= \res ->
+          case res of
+               Left msg  -> return $ Left msg
+               Right img ->
+                 E.catch (Right fileOut <$ JP.savePngImage fileOut img) $
+                     \(e :: E.SomeException) -> return (Left (show e))
+  where
+    fileOut = replaceDirectory (replaceExtension fname (".png")) tmpdir
+    mime = getMimeType fname
+    doNothing = return (Right fname)
 
 tex2pdf' :: FilePath                        -- ^ temp directory for output
          -> String                          -- ^ tex program

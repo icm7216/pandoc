@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, CPP #-}
+{-# LANGUAGE OverloadedStrings, CPP, ViewPatterns #-}
 {-# OPTIONS_GHC -fno-warn-deprecations #-}
 {-
 Copyright (C) 2006-2014 John MacFarlane <jgm@berkeley.edu>
@@ -40,7 +40,7 @@ import Text.Pandoc.Slides
 import Text.Pandoc.Highlighting ( highlight, styleToCss,
                                   formatHtmlInline, formatHtmlBlock )
 import Text.Pandoc.XML (fromEntities, escapeStringForXML)
-import Network.URI ( parseURIReference, URI(..) )
+import Network.URI ( parseURIReference, URI(..), unEscapeString )
 import Network.HTTP ( urlEncode )
 import Numeric ( showHex )
 import Data.Char ( ord, toLower )
@@ -60,9 +60,12 @@ import qualified Text.Blaze.XHtml1.Transitional.Attributes as A
 import Text.Blaze.Renderer.String (renderHtml)
 import Text.TeXMath
 import Text.XML.Light.Output
+import Text.XML.Light (unode, elChildren, add_attr, unqual)
+import qualified Text.XML.Light as XML
 import System.FilePath (takeExtension)
 import Data.Monoid
 import Data.Aeson (Value)
+import Control.Applicative ((<$>))
 
 data WriterState = WriterState
     { stNotes            :: [Html]  -- ^ List of notes
@@ -70,11 +73,13 @@ data WriterState = WriterState
     , stQuotes           :: Bool    -- ^ <q> tag is used
     , stHighlighting     :: Bool    -- ^ Syntax highlighting is used
     , stSecNum           :: [Int]   -- ^ Number of current section
+    , stElement          :: Bool    -- ^ Processing an Element
     }
 
 defaultWriterState :: WriterState
 defaultWriterState = WriterState {stNotes= [], stMath = False, stQuotes = False,
-                                  stHighlighting = False, stSecNum = []}
+                                  stHighlighting = False, stSecNum = [],
+                                  stElement = False}
 
 -- Helpers to render HTML with the appropriate function.
 
@@ -154,6 +159,10 @@ pandocToHtml opts (Pandoc meta blocks) = do
                               H.script ! A.src (toValue url)
                                        ! A.type_ "text/javascript"
                                        $ mempty
+                           KaTeX js css ->
+                              (H.script ! A.src (toValue js) $ mempty) <>
+                              (H.link ! A.rel "stylesheet" ! A.href (toValue css)) <>
+                              (H.script ! A.type_ "text/javascript" $ toHtml renderKaTeX)
                            _ -> case lookup "mathml-script" (writerVariables opts) of
                                       Just s | not (writerHtml5 opts) ->
                                         H.script ! A.type_ "text/javascript"
@@ -235,6 +244,9 @@ showSecNum = concat . intersperse "." . map show
 -- | Converts an Element to a list item for a table of contents,
 -- retrieving the appropriate identifier from state.
 elementToListItem :: WriterOptions -> Element -> State WriterState (Maybe Html)
+-- Don't include the empty headers created in slide shows
+-- shows when an hrule is used to separate slides without a new title:
+elementToListItem _ (Sec _ _ _ [Str "\0"] _) = return Nothing
 elementToListItem opts (Sec lev num (id',classes,_) headerText subsecs)
   | lev <= writerTOCDepth opts = do
   let num' = zipWith (+) num (writerNumberOffset opts ++ repeat 0)
@@ -270,7 +282,13 @@ elementToHtml slideLevel opts (Sec level num (id',classes,keyvals) title' elemen
   let titleSlide = slide && level < slideLevel
   header' <- if title' == [Str "\0"]  -- marker for hrule
                 then return mempty
-                else blockToHtml opts (Header level' (id',classes,keyvals) title')
+                else do
+                  modify (\st -> st{ stElement = True})
+                  res <- blockToHtml opts
+                           (Header level' (id',classes,keyvals) title')
+                  modify (\st -> st{ stElement = False})
+                  return res
+
   let isSec (Sec _ _ _ _ _) = True
       isSec (Blk _)         = False
   let isPause (Blk x) = x == Para [Str ".",Space,Str ".",Space,Str "."]
@@ -338,10 +356,10 @@ parseMailto s = do
        _ -> fail "not a mailto: URL"
 
 -- | Obfuscate a "mailto:" link.
-obfuscateLink :: WriterOptions -> String -> String -> Html
+obfuscateLink :: WriterOptions -> Html -> String -> Html
 obfuscateLink opts txt s | writerEmailObfuscation opts == NoObfuscation =
-  H.a ! A.href (toValue s) $ toHtml txt
-obfuscateLink opts txt s =
+  H.a ! A.href (toValue s) $ txt
+obfuscateLink opts (renderHtml -> txt) s =
   let meth = writerEmailObfuscation opts
       s' = map toLower (take 7 s) ++ drop 7 s
   in  case parseMailto s' of
@@ -357,13 +375,13 @@ obfuscateLink opts txt s =
                 ReferenceObfuscation ->
                      -- need to use preEscapedString or &'s are escaped to &amp; in URL
                      preEscapedString $ "<a href=\"" ++ (obfuscateString s')
-                     ++ "\">" ++ (obfuscateString txt) ++ "</a>"
+                     ++ "\" class=\"email\">" ++ (obfuscateString txt) ++ "</a>"
                 JavascriptObfuscation ->
                      (H.script ! A.type_ "text/javascript" $
                      preEscapedString ("\n<!--\nh='" ++
                      obfuscateString domain ++ "';a='" ++ at' ++ "';n='" ++
                      obfuscateString name' ++ "';e=n+a+h;\n" ++
-                     "document.write('<a h'+'ref'+'=\"ma'+'ilto'+':'+e+'\">'+" ++
+                     "document.write('<a h'+'ref'+'=\"ma'+'ilto'+':'+e+'\" clas'+'s=\"em' + 'ail\">'+" ++
                      linkText  ++ "+'<\\/'+'a'+'>');\n// -->\n")) >>
                      H.noscript (preEscapedString $ obfuscateString altText)
                 _ -> error $ "Unknown obfuscation method: " ++ show meth
@@ -429,9 +447,11 @@ blockToHtml opts (Div attr@(_,classes,_) bs) = do
   let contents' = nl opts >> contents >> nl opts
   return $
      if "notes" `elem` classes
-        then case writerSlideVariant opts of
-                  RevealJsSlides -> addAttrs opts attr $ H5.aside $ contents'
-                  NoSlides       -> addAttrs opts attr $ H.div $ contents'
+        then let opts' = opts{ writerIncremental = False } in
+             -- we don't want incremental output inside speaker notes
+             case writerSlideVariant opts of
+                  RevealJsSlides -> addAttrs opts' attr $ H5.aside $ contents'
+                  NoSlides       -> addAttrs opts' attr $ H.div $ contents'
                   _              -> mempty
         else addAttrs opts attr $ H.div $ contents'
 blockToHtml _ (RawBlock f str)
@@ -479,7 +499,7 @@ blockToHtml opts (BlockQuote blocks) =
      else do
        contents <- blockListToHtml opts blocks
        return $ H.blockquote $ nl opts >> contents >> nl opts
-blockToHtml opts (Header level (_,classes,_) lst) = do
+blockToHtml opts (Header level attr@(_,classes,_) lst) = do
   contents <- inlineListToHtml opts lst
   secnum <- liftM stSecNum get
   let contents' = if writerNumberSections opts && not (null secnum)
@@ -487,7 +507,9 @@ blockToHtml opts (Header level (_,classes,_) lst) = do
                      then (H.span ! A.class_ "header-section-number" $ toHtml
                           $ showSecNum secnum) >> strToHtml " " >> contents
                      else contents
-  return $ case level of
+  inElement <- gets stElement
+  return $ (if inElement then id else addAttrs opts attr)
+         $ case level of
               1 -> H.h1 contents'
               2 -> H.h2 contents'
               3 -> H.h3 contents'
@@ -609,6 +631,18 @@ inlineListToHtml :: WriterOptions -> [Inline] -> State WriterState Html
 inlineListToHtml opts lst =
   mapM (inlineToHtml opts) lst >>= return . mconcat
 
+-- | Annotates a MathML expression with the tex source
+annotateMML :: XML.Element -> String -> XML.Element
+annotateMML e tex = math (unode "semantics" [cs, unode "annotation" (annotAttrs, tex)])
+  where
+    cs = case elChildren e of
+          [] -> unode "mrow" ()
+          [x] -> x
+          xs -> unode "mrow" xs
+    math = add_attr (XML.Attr (unqual "xmlns") "http://www.w3.org/1998/Math/MathML") . unode "math"
+    annotAttrs = [XML.Attr (unqual "encoding") "application/x-tex"]
+
+
 -- | Convert Pandoc inline element to HTML.
 inlineToHtml :: WriterOptions -> Inline -> State WriterState Html
 inlineToHtml opts inline =
@@ -698,18 +732,22 @@ inlineToHtml opts inline =
                                               else DisplayBlock
                                   let conf = useShortEmptyTags (const False)
                                                defaultConfigPP
-                                  case texMathToMathML dt str of
-                                        Right r -> return $ preEscapedString $
-                                                    ppcElement conf r
-                                        Left  _ -> inlineListToHtml opts
-                                                   (readTeXMath' t str) >>= return .
-                                                     (H.span ! A.class_ "math")
+                                  case writeMathML dt <$> readTeX str of
+                                        Right r  -> return $ preEscapedString $
+                                            ppcElement conf (annotateMML r str)
+                                        Left _   -> inlineListToHtml opts
+                                            (texMathToInlines t str) >>=
+                                            return .  (H.span ! A.class_ "math")
                                MathJax _ -> return $ H.span ! A.class_ "math" $ toHtml $
                                   case t of
                                     InlineMath  -> "\\(" ++ str ++ "\\)"
                                     DisplayMath -> "\\[" ++ str ++ "\\]"
+                               KaTeX _ _ -> return $ H.span ! A.class_ "math" $
+                                  toHtml (case t of
+                                            InlineMath -> str
+                                            DisplayMath -> "\\displaystyle " ++ str)
                                PlainMath -> do
-                                  x <- inlineListToHtml opts (readTeXMath' t str)
+                                  x <- inlineListToHtml opts (texMathToInlines t str)
                                   let m = H.span ! A.class_ "math" $ x
                                   let brtag = if writerHtml5 opts then H5.br else H.br
                                   return  $ case t of
@@ -723,13 +761,9 @@ inlineToHtml opts inline =
                                _             -> return mempty
       | f == Format "html" -> return $ preEscapedString str
       | otherwise          -> return mempty
-    (Link [Str str] (s,_)) | "mailto:" `isPrefixOf` s &&
-                             s == escapeURI ("mailto" ++ str) ->
-                        -- autolink
-                        return $ obfuscateLink opts str s
     (Link txt (s,_)) | "mailto:" `isPrefixOf` s -> do
                         linkText <- inlineListToHtml opts txt
-                        return $ obfuscateLink opts (renderHtml linkText) s
+                        return $ obfuscateLink opts linkText s
     (Link txt (s,tit)) -> do
                         linkText <- inlineListToHtml opts txt
                         let s' = case s of
@@ -737,9 +771,12 @@ inlineToHtml opts inline =
                                             RevealJsSlides -> '#':'/':xs
                                       _ -> s
                         let link = H.a ! A.href (toValue s') $ linkText
+                        let link' = if txt == [Str (unEscapeString s)]
+                                       then link ! A.class_ "uri"
+                                       else link
                         return $ if null tit
-                                    then link
-                                    else link ! A.title (toValue tit)
+                                    then link'
+                                    else link' ! A.title (toValue tit)
     (Image txt (s,tit)) | treatAsImage s -> do
                         let alternate' = stringify txt
                         let attributes = [A.src $ toValue s] ++
@@ -810,3 +847,14 @@ blockListToNote opts ref blocks =
                               Just EPUB3 -> noteItem ! customAttribute "epub:type" "footnote"
                               _          -> noteItem
          return $ nl opts >> noteItem'
+
+-- Javascript snippet to render all KaTeX elements
+renderKaTeX :: String
+renderKaTeX = unlines [
+    "window.onload = function(){var mathElements = document.getElementsByClassName(\"math\");"
+  , "for (var i=0; i < mathElements.length; i++)"
+  , "{"
+  , " var texText = mathElements[i].firstChild"
+  , " katex.render(texText.data, mathElements[i])"
+  , "}}"
+  ]

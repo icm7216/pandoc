@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ScopedTypeVariables, PatternGuards #-}
 {-
 Copyright (C) 2012-2014 John MacFarlane <jgm@berkeley.edu>
 
@@ -29,7 +29,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 Conversion of 'Pandoc' documents to docx.
 -}
 module Text.Pandoc.Writers.Docx ( writeDocx ) where
-import Data.Maybe (fromMaybe)
 import Data.List ( intercalate, isPrefixOf, isSuffixOf )
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
@@ -39,6 +38,10 @@ import qualified Text.Pandoc.UTF8 as UTF8
 import Text.Pandoc.Compat.Monoid ((<>))
 import Codec.Archive.Zip
 import Data.Time.Clock.POSIX
+import Data.Time.Clock
+import Data.Time.Format
+import System.Environment
+import System.Locale
 import Text.Pandoc.Definition
 import Text.Pandoc.Generic
 import Text.Pandoc.ImageSize
@@ -49,7 +52,7 @@ import Text.Pandoc.Readers.TeXMath
 import Text.Pandoc.Highlighting ( highlight )
 import Text.Pandoc.Walk
 import Text.Highlighting.Kate.Types ()
-import Text.XML.Light
+import Text.XML.Light as XML
 import Text.TeXMath
 import Control.Monad.State
 import Text.Highlighting.Kate
@@ -57,9 +60,10 @@ import Data.Unique (hashUnique, newUnique)
 import System.Random (randomRIO)
 import Text.Printf (printf)
 import qualified Control.Exception as E
-import Text.Pandoc.MIME (getMimeType, extensionFromMimeType)
-import Control.Applicative ((<|>))
-import Data.Maybe (mapMaybe)
+import Text.Pandoc.MIME (MimeType, getMimeType, getMimeTypeDef,
+                         extensionFromMimeType)
+import Control.Applicative ((<$>), (<|>), (<*>))
+import Data.Maybe (fromMaybe, mapMaybe)
 
 data ListMarker = NoMarker
                 | BulletMarker
@@ -91,10 +95,16 @@ data WriterState = WriterState{
        , stFootnotes      :: [Element]
        , stSectionIds     :: [String]
        , stExternalLinks  :: M.Map String String
-       , stImages         :: M.Map FilePath (String, String, Maybe String, Element, B.ByteString)
+       , stImages         :: M.Map FilePath (String, String, Maybe MimeType, Element, B.ByteString)
        , stListLevel      :: Int
        , stListNumId      :: Int
        , stLists          :: [ListMarker]
+       , stInsId          :: Int
+       , stDelId          :: Int
+       , stInDel          :: Bool
+       , stChangesAuthor  :: String
+       , stChangesDate    :: String
+       , stPrintWidth     :: Integer
        }
 
 defaultWriterState :: WriterState
@@ -108,13 +118,25 @@ defaultWriterState = WriterState{
       , stListLevel      = -1
       , stListNumId      = 1
       , stLists          = [NoMarker]
+      , stInsId          = 1
+      , stDelId          = 1
+      , stInDel          = False
+      , stChangesAuthor  = "unknown"
+      , stChangesDate    = "1969-12-31T19:00:00Z"
+      , stPrintWidth     = 1
       }
 
 type WS a = StateT WriterState IO a
 
 mknode :: Node t => String -> [(String,String)] -> t -> Element
 mknode s attrs =
-  add_attrs (map (\(k,v) -> Attr (unqual k) v) attrs) . node (unqual s)
+  add_attrs (map (\(k,v) -> Attr (nodename k) v) attrs) .  node (nodename s)
+
+nodename :: String -> QName
+nodename s = QName{ qName = name, qURI = Nothing, qPrefix = prefix }
+ where (name, prefix) = case break (==':') s of
+                             (xs,[])    -> (xs, Nothing)
+                             (ys, _:zs) -> (zs, Just ys)
 
 toLazy :: B.ByteString -> BL.ByteString
 toLazy = BL.fromChunks . (:[])
@@ -123,6 +145,31 @@ renderXml :: Element -> BL.ByteString
 renderXml elt = BL8.pack "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" <>
   UTF8.fromStringLazy (showElement elt)
 
+renumIdMap :: Int -> [Element] -> M.Map String String
+renumIdMap _ [] = M.empty
+renumIdMap n (e:es)
+  | Just oldId <- findAttr (QName "Id" Nothing Nothing) e =
+      M.insert oldId ("rId" ++ (show n)) (renumIdMap (n+1) es)
+  | otherwise = renumIdMap n es
+
+replaceAttr :: (QName -> Bool) -> String -> [XML.Attr] -> [XML.Attr]
+replaceAttr _ _ [] = []
+replaceAttr f val (a:as) | f (attrKey a) =
+                             (XML.Attr (attrKey a) val) : (replaceAttr f val as)
+                         | otherwise = a : (replaceAttr f val as)
+
+renumId :: (QName -> Bool) -> (M.Map String String) -> Element -> Element
+renumId f renumMap e
+  | Just oldId <- findAttrBy f e
+  , Just newId <- M.lookup oldId renumMap =
+    let attrs' = replaceAttr f newId (elAttribs e)
+    in
+     e { elAttribs = attrs' }
+  | otherwise = e
+
+renumIds :: (QName -> Bool) -> (M.Map String String) -> [Element] -> [Element]
+renumIds f renumMap = map (renumId f renumMap)
+
 -- | Produce an Docx file from a Pandoc document.
 writeDocx :: WriterOptions  -- ^ Writer options
           -> Pandoc         -- ^ Document to convert
@@ -130,27 +177,45 @@ writeDocx :: WriterOptions  -- ^ Writer options
 writeDocx opts doc@(Pandoc meta _) = do
   let datadir = writerUserDataDir opts
   let doc' = walk fixDisplayMath doc
+  username <- lookup "USERNAME" <$> getEnvironment
+  utctime <- getCurrentTime
   refArchive <- liftM (toArchive . toLazy) $
        case writerReferenceDocx opts of
              Just f  -> B.readFile f
              Nothing -> readDataFile datadir "reference.docx"
-  distArchive <- liftM (toArchive . toLazy) $ readDataFile Nothing "reference.docx"
+  distArchive <- liftM (toArchive . toLazy) $ readDataFile datadir "reference.docx"
+
+  parsedDoc <- parseXml refArchive distArchive "word/document.xml"
+  let wname f qn = qPrefix qn == Just "w" && f (qName qn)
+  let mbsectpr = filterElementName (wname (=="sectPr")) parsedDoc
+
+  -- Gets the template size
+  let mbpgsz = mbsectpr >>= (filterElementName (wname (=="pgSz")))
+  let mbAttrSzWidth = (elAttribs <$> mbpgsz) >>= (lookupAttrBy ((=="w") . qName))
+
+  let mbpgmar = mbsectpr >>= (filterElementName (wname (=="pgMar")))
+  let mbAttrMarLeft = (elAttribs <$> mbpgmar) >>= (lookupAttrBy ((=="left") . qName))
+  let mbAttrMarRight = (elAttribs <$> mbpgmar) >>= (lookupAttrBy ((=="right") . qName))
+
+  -- Get the avaible area (converting the size and the margins to int and
+  -- doing the difference
+  let pgContentWidth = (-) <$> (read <$> mbAttrSzWidth ::Maybe Integer)
+                       <*> (
+                         (+) <$> (read <$> mbAttrMarRight ::Maybe Integer)
+                         <*> (read <$> mbAttrMarLeft ::Maybe Integer)
+                       )
 
   ((contents, footnotes), st) <- runStateT (writeOpenXML opts{writerWrapText = False} doc')
-                       defaultWriterState
-  epochtime <- floor `fmap` getPOSIXTime
+                       defaultWriterState{ stChangesAuthor = fromMaybe "unknown" username
+                                         , stChangesDate   = formatTime defaultTimeLocale "%FT%XZ" utctime
+                                         , stPrintWidth = (maybe 420 (\x -> quot x 20) pgContentWidth) }
+
+  let epochtime = floor $ utcTimeToPOSIXSeconds utctime
   let imgs = M.elems $ stImages st
 
   -- create entries for images in word/media/...
   let toImageEntry (_,path,_,_,img) = toEntry ("word/" ++ path) epochtime $ toLazy img
   let imageEntries = map toImageEntry imgs
-
-  -- adjust contents to add sectPr from reference.docx
-  parsedDoc <- parseXml refArchive distArchive "word/document.xml"
-  let wname f qn = qPrefix qn == Just "w" && f (qName qn)
-  let mbsectpr = filterElementName (wname (=="sectPr")) parsedDoc
-
-  let sectpr = maybe (mknode "w:sectPr" [] $ ()) id mbsectpr
 
   let stdAttributes =
             [("xmlns:w","http://schemas.openxmlformats.org/wordprocessingml/2006/main")
@@ -163,9 +228,6 @@ writeDocx opts doc@(Pandoc meta _) = do
             ,("xmlns:pic","http://schemas.openxmlformats.org/drawingml/2006/picture")
             ,("xmlns:wp","http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing")]
 
-  let contents' = contents ++ [sectpr]
-  let docContents = mknode "w:document" stdAttributes
-                    $ mknode "w:body" [] $ contents'
 
   parsedRels <- parseXml refArchive distArchive "word/_rels/document.xml.rels"
   let isHeaderNode e = findAttr (QName "Type" Nothing Nothing) e == Just "http://schemas.openxmlformats.org/officeDocument/2006/relationships/header"
@@ -173,7 +235,7 @@ writeDocx opts doc@(Pandoc meta _) = do
   let headers = filterElements isHeaderNode parsedRels
   let footers = filterElements isFooterNode parsedRels
 
-  let extractTarget e = findAttr (QName "Target" Nothing Nothing) e
+  let extractTarget = findAttr (QName "Target" Nothing Nothing)
 
   -- we create [Content_Types].xml and word/_rels/document.xml.rels
   -- from scratch rather than reading from reference.docx,
@@ -185,11 +247,10 @@ writeDocx opts doc@(Pandoc meta _) = do
   let mkOverrideNode (part', contentType') = mknode "Override"
                [("PartName",part'),("ContentType",contentType')] ()
   let mkImageOverride (_, imgpath, mbMimeType, _, _) =
-             mkOverrideNode ("/word/" ++ imgpath,
-                             fromMaybe "application/octet-stream" mbMimeType)
-  let mkMediaOverride imgpath = mkOverrideNode ('/':imgpath,
-                                 fromMaybe "application/octet-stream"
-                                   $ getMimeType imgpath)
+          mkOverrideNode ("/word/" ++ imgpath,
+                          fromMaybe "application/octet-stream" mbMimeType)
+  let mkMediaOverride imgpath =
+          mkOverrideNode ('/':imgpath, getMimeTypeDef imgpath)
   let overrides = map mkOverrideNode (
                   [("/word/webSettings.xml",
                     "application/vnd.openxmlformats-officedocument.wordprocessingml.webSettings+xml")
@@ -233,7 +294,7 @@ writeDocx opts doc@(Pandoc meta _) = do
                                           [("Type",url')
                                           ,("Id",id')
                                           ,("Target",target')] ()
-  let baserels = map toBaseRel
+  let baserels' = map toBaseRel
                     [("http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering",
                       "rId1",
                       "numbering.xml")
@@ -255,8 +316,12 @@ writeDocx opts doc@(Pandoc meta _) = do
                     ,("http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes",
                       "rId7",
                       "footnotes.xml")
-                    ] ++
-                    headers ++ footers
+                    ]
+
+  let idMap = renumIdMap (length baserels' + 1) (headers ++ footers)
+  let renumHeaders = renumIds (\q -> qName q == "Id") idMap headers
+  let renumFooters = renumIds (\q -> qName q == "Id") idMap footers
+  let baserels = baserels' ++ renumHeaders ++ renumFooters
   let toImgRel (ident,path,_,_,_) =  mknode "Relationship" [("Type","http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"),("Id",ident),("Target",path)] ()
   let imgrels = map toImgRel imgs
   let toLinkRel (src,ident) =  mknode "Relationship" [("Type","http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"),("Id",ident),("Target",src),("TargetMode","External") ] ()
@@ -264,6 +329,23 @@ writeDocx opts doc@(Pandoc meta _) = do
   let reldoc = mknode "Relationships" [("xmlns","http://schemas.openxmlformats.org/package/2006/relationships")] $ baserels ++ imgrels ++ linkrels
   let relEntry = toEntry "word/_rels/document.xml.rels" epochtime
         $ renderXml reldoc
+
+
+  -- adjust contents to add sectPr from reference.docx
+  let sectpr = case mbsectpr of
+        Just sectpr' -> let cs = renumIds
+                                 (\q -> qName q == "id" && qPrefix q == Just "r")
+                                 idMap
+                                 (elChildren sectpr')
+                        in
+                         add_attrs (elAttribs sectpr') $ mknode "w:sectPr" [] cs
+        Nothing      -> (mknode "w:sectPr" [] ())
+
+  -- let sectpr = fromMaybe (mknode "w:sectPr" [] ()) mbsectpr'
+  let contents' = contents ++ [sectpr]
+  let docContents = mknode "w:document" stdAttributes
+                    $ mknode "w:body" [] contents'
+
 
 
   -- word/document.xml
@@ -277,7 +359,7 @@ writeDocx opts doc@(Pandoc meta _) = do
   -- footnote rels
   let footnoteRelEntry = toEntry "word/_rels/footnotes.xml.rels" epochtime
         $ renderXml $ mknode "Relationships" [("xmlns","http://schemas.openxmlformats.org/package/2006/relationships")]
-        $ linkrels
+        linkrels
 
   -- styles
   let newstyles = styleToOpenXml $ writerHighlightStyle opts
@@ -297,7 +379,8 @@ writeDocx opts doc@(Pandoc meta _) = do
                        -- otherwise things break:
                        [Elem e | e <- allElts
                                , qName (elName e) == "abstractNum" ] ++
-                       [Elem e | e <- allElts, qName (elName e) == "num" ] }
+                       [Elem e | e <- allElts
+                               , qName (elName e) == "num" ] }
   let docPropsPath = "docProps/core.xml"
   let docProps = mknode "cp:coreProperties"
           [("xmlns:cp","http://schemas.openxmlformats.org/package/2006/metadata/core-properties")
@@ -308,8 +391,8 @@ writeDocx opts doc@(Pandoc meta _) = do
           $ mknode "dc:title" [] (stringify $ docTitle meta)
           : mknode "dc:creator" [] (intercalate "; " (map stringify $ docAuthors meta))
           : maybe []
-             (\x -> [ mknode "dcterms:created" [("xsi:type","dcterms:W3CDTF")] $ x
-                    , mknode "dcterms:modified" [("xsi:type","dcterms:W3CDTF")] $ x
+             (\x -> [ mknode "dcterms:created" [("xsi:type","dcterms:W3CDTF")] x
+                    , mknode "dcterms:modified" [("xsi:type","dcterms:W3CDTF")] x
                     ]) (normalizeDate $ stringify $ docDate meta)
   let docPropsEntry = toEntry docPropsPath epochtime $ renderXml docProps
 
@@ -340,7 +423,7 @@ writeDocx opts doc@(Pandoc meta _) = do
   settingsEntry <- entryFromArchive distArchive "word/settings.xml"
   webSettingsEntry <- entryFromArchive refArchive "word/webSettings.xml"
   headerFooterEntries <- mapM (entryFromArchive refArchive) $
-                     mapMaybe (\e -> fmap ("word/" ++) $ extractTarget e)
+                     mapMaybe (fmap ("word/" ++) . extractTarget)
                      (headers ++ footers)
   let miscRelEntries = [ e | e <- zEntries refArchive
                        , "word/_rels/" `isPrefixOf` (eRelativePath e)
@@ -470,7 +553,7 @@ mkLvl marker lvl =
           patternFor _ s = s ++ "."
 
 getNumId :: WS Int
-getNumId = ((999 +) . length) `fmap` gets stLists
+getNumId = (((baseListId - 1) +) . length) `fmap` gets stLists
 
 -- | Convert Pandoc document to two lists of
 -- OpenXML elements (the main document and footnotes).
@@ -481,17 +564,30 @@ writeOpenXML opts (Pandoc meta blocks) = do
                                   _ -> []
   let auths = docAuthors meta
   let dat = docDate meta
+  let abstract' = case lookupMeta "abstract" meta of
+                       Just (MetaBlocks bs) -> bs
+                       Just (MetaInlines ils) -> [Plain ils]
+                       _ -> []
+  let subtitle' = case lookupMeta "subtitle" meta of
+                       Just (MetaBlocks [Plain xs]) -> xs
+                       Just (MetaBlocks [Para  xs]) -> xs
+                       Just (MetaInlines xs)        -> xs
+                       _ -> []
   title <- withParaProp (pStyle "Title") $ blocksToOpenXML opts [Para tit | not (null tit)]
-  authors <- withParaProp (pStyle "Authors") $ blocksToOpenXML opts
-                 [Para (intercalate [LineBreak] auths) | not (null auths)]
+  subtitle <- withParaProp (pStyle "Subtitle") $ blocksToOpenXML opts [Para subtitle' | not (null subtitle')]
+  authors <- withParaProp (pStyle "Author") $ blocksToOpenXML opts $
+       map Para auths
   date <- withParaProp (pStyle "Date") $ blocksToOpenXML opts [Para dat | not (null dat)]
+  abstract <- if null abstract'
+                 then return []
+                 else withParaProp (pStyle "Abstract") $ blocksToOpenXML opts abstract'
   let convertSpace (Str x : Space : Str y : xs) = Str (x ++ " " ++ y) : xs
       convertSpace (Str x : Str y : xs) = Str (x ++ y) : xs
       convertSpace xs = xs
-  let blocks' = bottomUp convertSpace $ blocks
+  let blocks' = bottomUp convertSpace blocks
   doc' <- blocksToOpenXML opts blocks'
   notes' <- reverse `fmap` gets stFootnotes
-  let meta' = title ++ authors ++ date
+  let meta' = title ++ subtitle ++ authors ++ date ++ abstract
   return (meta' ++ doc', notes')
 
 -- | Convert a list of Pandoc blocks to OpenXML.
@@ -512,10 +608,17 @@ getUniqueId = liftIO $ (show . (+ 20) . hashUnique) `fmap` newUnique
 -- | Convert a Pandoc block element to OpenXML.
 blockToOpenXML :: WriterOptions -> Block -> WS [Element]
 blockToOpenXML _ Null = return []
+blockToOpenXML opts (Div (_,["references"],_) bs) = do
+  let (hs, bs') = span isHeaderBlock bs
+  header <- blocksToOpenXML opts hs
+  -- We put the Bibliography style on paragraphs after the header
+  rest <- withParaProp (pStyle "Bibliography") $ blocksToOpenXML opts bs'
+  return (header ++ rest)
 blockToOpenXML opts (Div _ bs) = blocksToOpenXML opts bs
 blockToOpenXML opts (Header lev (ident,_,_) lst) = do
-  contents <- withParaProp (pStyle $ "Heading" ++ show lev) $
-               blockToOpenXML opts (Para lst)
+  paraProps <- withParaProp (pStyle $ "Heading" ++ show lev) $
+               getParaProps False
+  contents <- inlinesToOpenXML opts lst
   usedIdents <- gets stSectionIds
   let bookmarkName = if null ident
                         then uniqueIdent lst usedIdents
@@ -525,7 +628,7 @@ blockToOpenXML opts (Header lev (ident,_,_) lst) = do
   let bookmarkStart = mknode "w:bookmarkStart" [("w:id", id')
                                                ,("w:name",bookmarkName)] ()
   let bookmarkEnd = mknode "w:bookmarkEnd" [("w:id", id')] ()
-  return $ [bookmarkStart] ++ contents ++ [bookmarkEnd]
+  return [mknode "w:p" [] (paraProps ++ [bookmarkStart, bookmarkEnd] ++ contents)]
 blockToOpenXML opts (Plain lst) = withParaProp (pStyle "Compact")
   $ blockToOpenXML opts (Para lst)
 -- title beginning with fig: indicates that the image is a figure
@@ -565,13 +668,12 @@ blockToOpenXML opts (Table caption aligns widths headers rows) = do
   let cellToOpenXML (al, cell) = withParaProp (alignmentFor al)
                                     $ blocksToOpenXML opts cell
   headers' <- mapM cellToOpenXML $ zip aligns headers
-  rows' <- mapM (\cells -> mapM cellToOpenXML $ zip aligns cells)
-           $ rows
+  rows' <- mapM (mapM cellToOpenXML . zip aligns) rows
   let borderProps = mknode "w:tcPr" []
                     [ mknode "w:tcBorders" []
                       $ mknode "w:bottom" [("w:val","single")] ()
                     , mknode "w:vAlign" [("w:val","bottom")] () ]
-  let emptyCell = [mknode "w:p" [] [mknode "w:pPr" [] $
+  let emptyCell = [mknode "w:p" [] [mknode "w:pPr" []
                     [mknode "w:pStyle" [("w:val","Compact")] ()]]]
   let mkcell border contents = mknode "w:tc" []
                             $ [ borderProps | border ] ++
@@ -580,12 +682,15 @@ blockToOpenXML opts (Table caption aligns widths headers rows) = do
                                else contents
   let mkrow border cells = mknode "w:tr" [] $ map (mkcell border) cells
   let textwidth = 7920  -- 5.5 in in twips, 1/20 pt
+  let fullrow = 5000 -- 100% specified in pct
+  let rowwidth = fullrow * sum widths
   let mkgridcol w = mknode "w:gridCol"
-                       [("w:w", show $ (floor (textwidth * w) :: Integer))] ()
+                       [("w:w", show (floor (textwidth * w) :: Integer))] ()
   return $
-    [ mknode "w:tbl" []
+    mknode "w:tbl" []
       ( mknode "w:tblPr" []
-        ( [ mknode "w:tblStyle" [("w:val","TableNormal")] () ] ++
+        (   mknode "w:tblStyle" [("w:val","TableNormal")] () :
+            mknode "w:tblW" [("w:type", "pct"), ("w:w", show rowwidth)] () :
           [ mknode "w:tblCaption" [("w:val", captionStr)] ()
           | not (null caption) ] )
       : mknode "w:tblGrid" []
@@ -594,8 +699,7 @@ blockToOpenXML opts (Table caption aligns widths headers rows) = do
             else map mkgridcol widths)
       : [ mkrow True headers' | not (all null headers) ] ++
       map (mkrow False) rows'
-      )
-    ] ++ caption'
+      ) : caption'
 blockToOpenXML opts (BulletList lst) = do
   let marker = BulletMarker
   addList marker
@@ -662,7 +766,7 @@ getTextProps = do
   props <- gets stTextProperties
   return $ if null props
               then []
-              else [mknode "w:rPr" [] $ props]
+              else [mknode "w:rPr" [] props]
 
 pushTextProp :: Element -> WS ()
 pushTextProp d = modify $ \s -> s{ stTextProperties = d : stTextProperties s }
@@ -708,20 +812,49 @@ withParaProp d p = do
 formattedString :: String -> WS [Element]
 formattedString str = do
   props <- getTextProps
+  inDel <- gets stInDel
   return [ mknode "w:r" [] $
              props ++
-             [ mknode "w:t" [("xml:space","preserve")] str ] ]
+             [ mknode (if inDel then "w:delText" else "w:t")
+               [("xml:space","preserve")] str ] ]
 
 -- | Convert an inline element to OpenXML.
 inlineToOpenXML :: WriterOptions -> Inline -> WS [Element]
 inlineToOpenXML _ (Str str) = formattedString str
 inlineToOpenXML opts Space = inlineToOpenXML opts (Str " ")
-inlineToOpenXML opts (Span (_,classes,_) ils) = do
-  let off x = withTextProp (mknode x [("w:val","0")] ())
-  ((if "csl-no-emph" `elem` classes then off "w:i" else id) .
-   (if "csl-no-strong" `elem` classes then off "w:b" else id) .
-   (if "csl-no-smallcaps" `elem` classes then off "w:smallCaps" else id))
-   $ inlinesToOpenXML opts ils
+inlineToOpenXML opts (Span (_,classes,kvs) ils)
+  | "insertion" `elem` classes = do
+    defaultAuthor <- gets stChangesAuthor
+    defaultDate <- gets stChangesDate
+    let author = fromMaybe defaultAuthor (lookup "author" kvs)
+        date   = fromMaybe defaultDate (lookup "date" kvs)
+    insId <- gets stInsId
+    modify $ \s -> s{stInsId = (insId + 1)}
+    x <- inlinesToOpenXML opts ils
+    return [ mknode "w:ins" [("w:id", (show insId)),
+                             ("w:author", author),
+                             ("w:date", date)]
+             x ]
+  | "deletion" `elem` classes = do
+    defaultAuthor <- gets stChangesAuthor
+    defaultDate <- gets stChangesDate
+    let author = fromMaybe defaultAuthor (lookup "author" kvs)
+        date   = fromMaybe defaultDate (lookup "date" kvs)
+    delId <- gets stDelId
+    modify $ \s -> s{stDelId = (delId + 1)}
+    modify $ \s -> s{stInDel = True}
+    x <- inlinesToOpenXML opts ils
+    modify $ \s -> s{stInDel = False}
+    return [ mknode "w:del" [("w:id", (show delId)),
+                             ("w:author", author),
+                             ("w:date", date)]
+             x ]
+  | otherwise = do
+    let off x = withTextProp (mknode x [("w:val","0")] ())
+    ((if "csl-no-emph" `elem` classes then off "w:i" else id) .
+     (if "csl-no-strong" `elem` classes then off "w:b" else id) .
+     (if "csl-no-smallcaps" `elem` classes then off "w:smallCaps" else id))
+      $ inlinesToOpenXML opts ils
 inlineToOpenXML opts (Strong lst) =
   withTextProp (mknode "w:b" [] ()) $ inlinesToOpenXML opts lst
 inlineToOpenXML opts (Emph lst) =
@@ -751,9 +884,9 @@ inlineToOpenXML opts (Math mathType str) = do
   let displayType = if mathType == DisplayMath
                        then DisplayBlock
                        else DisplayInline
-  case texMathToOMML displayType str of
+  case writeOMML displayType <$> readTeX str of
         Right r -> return [r]
-        Left  _ -> inlinesToOpenXML opts (readTeXMath' mathType str)
+        Left  _ -> inlinesToOpenXML opts (texMathToInlines mathType str)
 inlineToOpenXML opts (Cite _ lst) = inlinesToOpenXML opts lst
 inlineToOpenXML opts (Code attrs str) =
   withTextProp (rStyle "VerbatimChar")
@@ -810,11 +943,13 @@ inlineToOpenXML opts (Link txt (src,_)) = do
   return [ mknode "w:hyperlink" [("r:id",id')] contents ]
 inlineToOpenXML opts (Image alt (src, tit)) = do
   -- first, check to see if we've already done this image
+  pageWidth <- gets stPrintWidth
   imgs <- gets stImages
   case M.lookup src imgs of
     Just (_,_,_,elt,_) -> return [elt]
     Nothing -> do
-      res <- liftIO $ fetchItem (writerSourceURL opts) src
+      res <- liftIO $
+               fetchItem' (writerMediaBag opts) (writerSourceURL opts) src
       case res of
         Left (_ :: E.SomeException) -> do
           liftIO $ warn $ "Could not find image `" ++ src ++ "', skipping..."
@@ -825,7 +960,7 @@ inlineToOpenXML opts (Image alt (src, tit)) = do
           let size = imageSize img
           let (xpt,ypt) = maybe (120,120) sizeInPoints size
           -- 12700 emu = 1 pt
-          let (xemu,yemu) = (xpt * 12700, ypt * 12700)
+          let (xemu,yemu) = fitToPage (xpt * 12700, ypt * 12700) (pageWidth * 12700)
           let cNvPicPr = mknode "pic:cNvPicPr" [] $
                            mknode "a:picLocks" [("noChangeArrowheads","1"),("noChangeAspect","1")] ()
           let nvPicPr  = mknode "pic:nvPicPr" []
@@ -890,3 +1025,13 @@ parseXml refArchive distArchive relpath =
          >>= parseXMLDoc . UTF8.toStringLazy . fromEntry) of
             Just d  -> return d
             Nothing -> fail $ relpath ++ " corrupt or missing in reference docx"
+
+-- | Scales the image to fit the page
+-- sizes are passed in emu
+fitToPage :: (Integer, Integer) -> Integer -> (Integer, Integer)
+fitToPage (x, y) pageWidth
+  -- Fixes width to the page width and scales the height
+  | x > pageWidth = 
+    (pageWidth, round $ 
+      ((fromIntegral pageWidth) / ((fromIntegral :: Integer -> Double) x)) * (fromIntegral y))
+  | otherwise = (x, y)

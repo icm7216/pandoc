@@ -39,6 +39,7 @@ import Text.Pandoc.Templates (renderTemplate')
 import Text.Pandoc.XML ( escapeStringForXML )
 import Data.List ( intercalate )
 import Control.Monad.State
+import Control.Applicative ((<$>))
 import Data.Char ( isSpace )
 
 data WriterState = WriterState {
@@ -164,14 +165,22 @@ blockToTextile opts (BlockQuote blocks) = do
   return $ "<blockquote>\n\n" ++ contents ++ "\n</blockquote>\n"
 
 blockToTextile opts (Table [] aligns widths headers rows') |
-         all (==0) widths && all (`elem` [AlignLeft,AlignDefault]) aligns = do
+         all (==0) widths = do
   hs <- mapM (liftM (("_. " ++) . stripTrailingNewlines) . blockListToTextile opts) headers
   let cellsToRow cells = "|" ++ intercalate "|" cells ++ "|"
-  let header = if all null headers then "" else cellsToRow hs
-  let rowToCells = mapM (liftM stripTrailingNewlines . blockListToTextile opts)
+  let header = if all null headers then "" else cellsToRow hs ++ "\n"
+  let blocksToCell (align, bs) = do
+        contents <- stripTrailingNewlines <$> blockListToTextile opts bs
+        let alignMarker = case align of
+                               AlignLeft    -> "<. "
+                               AlignRight   -> ">. "
+                               AlignCenter  -> "=. "
+                               AlignDefault -> ""
+        return $ alignMarker ++ contents
+  let rowToCells = mapM blocksToCell . zip aligns
   bs <- mapM rowToCells rows'
   let body = unlines $ map cellsToRow bs
-  return $ header ++ "\n" ++ body ++ "\n"
+  return $ header ++ body
 
 blockToTextile opts (Table capt aligns widths headers rows') = do
   let alignStrings = map alignmentToString aligns
@@ -404,8 +413,10 @@ inlineToTextile _ (Str str) = return $ escapeStringForTextile str
 inlineToTextile _ (Math _ str) =
   return $ "<span class=\"math\">" ++ escapeStringForXML str ++ "</math>"
 
-inlineToTextile _ (RawInline f str)
+inlineToTextile opts (RawInline f str)
   | f == Format "html" || f == Format "textile" = return str
+  | (f == Format "latex" || f == Format "tex") &&
+     isEnabled Ext_raw_tex opts                 = return str
   | otherwise                                   = return ""
 
 inlineToTextile _ (LineBreak) = return "\n"

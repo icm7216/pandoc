@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, PatternGuards #-}
 {-
 Copyright (C) 2006-2014 John MacFarlane <jgm@berkeley.edu>
 
@@ -37,8 +37,9 @@ import Text.Pandoc.Writers.Shared
 import Text.Pandoc.Options
 import Text.Pandoc.Templates (renderTemplate')
 import Text.Pandoc.Readers.TeXMath
-import Data.List ( isPrefixOf, intercalate, isSuffixOf )
+import Data.List ( stripPrefix, isPrefixOf, intercalate, isSuffixOf )
 import Data.Char ( toLower )
+import Control.Applicative ((<$>))
 import Data.Monoid ( Any(..) )
 import Text.Pandoc.Highlighting ( languages, languagesByExtension )
 import Text.Pandoc.Pretty
@@ -293,14 +294,14 @@ inlineToDocbook _ (Code _ str) =
   inTagsSimple "literal" $ text (escapeStringForXML str)
 inlineToDocbook opts (Math t str)
   | isMathML (writerHTMLMathMethod opts) =
-    case texMathToMathML dt str of
-      Right r -> inTagsSimple tagtype
-                 $ text $ Xml.ppcElement conf
-                 $ fixNS
-                 $ removeAttr r
-      Left  _ -> inlinesToDocbook opts
-                 $ readTeXMath' t str
-  | otherwise = inlinesToDocbook opts $ readTeXMath' t str
+    case writeMathML dt <$> readTeX str of
+      Right r  -> inTagsSimple tagtype
+                  $ text $ Xml.ppcElement conf
+                  $ fixNS
+                  $ removeAttr r
+      Left _   -> inlinesToDocbook opts
+                  $ texMathToInlines t str
+  | otherwise = inlinesToDocbook opts $ texMathToInlines t str
      where (dt, tagtype) = case t of
                             InlineMath  -> (DisplayInline,"inlineequation")
                             DisplayMath -> (DisplayBlock,"informalequation")
@@ -312,19 +313,19 @@ inlineToDocbook _ (RawInline f x) | f == "html" || f == "docbook" = text x
                                   | otherwise                     = empty
 inlineToDocbook _ LineBreak = text "\n"
 inlineToDocbook _ Space = space
-inlineToDocbook opts (Link txt (src, _)) =
-  if isPrefixOf "mailto:" src
-     then let src' = drop 7 src
-              emailLink = inTagsSimple "email" $ text $
-                          escapeStringForXML $ src'
-          in  case txt of
-               [Str s] | escapeURI s == src' -> emailLink
-               _             -> inlinesToDocbook opts txt <+>
-                                  char '(' <> emailLink <> char ')'
-     else (if isPrefixOf "#" src
-              then inTags False "link" [("linkend", drop 1 src)]
-              else inTags False "ulink" [("url", src)]) $
-          inlinesToDocbook opts txt
+inlineToDocbook opts (Link txt (src, _))
+  | Just email <- stripPrefix "mailto:" src =
+      let emailLink = inTagsSimple "email" $ text $
+                      escapeStringForXML $ email
+      in  case txt of
+           [Str s] | escapeURI s == email -> emailLink
+           _             -> inlinesToDocbook opts txt <+>
+                              char '(' <> emailLink <> char ')'
+  | otherwise =
+      (if isPrefixOf "#" src
+            then inTags False "link" [("linkend", drop 1 src)]
+            else inTags False "ulink" [("url", src)]) $
+        inlinesToDocbook opts txt
 inlineToDocbook _ (Image _ (src, tit)) =
   let titleDoc = if null tit
                    then empty

@@ -49,6 +49,8 @@ import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Default
 import Text.Pandoc.Highlighting (Style, pygments)
+import Text.Pandoc.MediaBag (MediaBag)
+import Data.Monoid
 
 -- | Individually selectable syntax extensions.
 data Extension =
@@ -75,6 +77,8 @@ data Extension =
     | Ext_backtick_code_blocks    -- ^ Github style ``` code blocks
     | Ext_inline_code_attributes  -- ^ Allow attributes on inline code
     | Ext_markdown_in_html_blocks -- ^ Interpret as markdown inside HTML blocks
+    | Ext_native_divs             -- ^ Use Div blocks for contents of <div> tags
+    | Ext_native_spans            -- ^ Use Span inlines for contents of <span>
     | Ext_markdown_attribute      -- ^ Interpret text inside HTML as markdown
                                   --   iff container has attribute 'markdown'
     | Ext_escaped_line_breaks     -- ^ Treat a backslash at EOL as linebreak
@@ -84,6 +88,8 @@ data Extension =
     | Ext_lists_without_preceding_blankline -- ^ Allow lists without preceding blank
     | Ext_startnum            -- ^ Make start number of ordered list significant
     | Ext_definition_lists    -- ^ Definition lists as in pandoc, mmd, php
+    | Ext_compact_definition_lists  -- ^ Definition lists without
+                               -- space between items, and disallow laziness
     | Ext_example_lists       -- ^ Markdown-style numbered examples
     | Ext_all_symbols_escapable  -- ^ Make all non-alphanumerics escapable
     | Ext_intraword_underscores  -- ^ Treat underscore inside word as literal
@@ -102,6 +108,7 @@ data Extension =
     | Ext_mmd_header_identifiers -- ^ Multimarkdown style header identifiers [myid]
     | Ext_implicit_header_references -- ^ Implicit reference links for headers
     | Ext_line_blocks         -- ^ RST style line blocks
+    | Ext_epub_html_exts      -- ^ Recognise the EPUB extended version of HTML
     deriving (Show, Read, Enum, Eq, Ord, Bounded)
 
 pandocExtensions :: Set Extension
@@ -126,6 +133,8 @@ pandocExtensions = Set.fromList
   , Ext_backtick_code_blocks
   , Ext_inline_code_attributes
   , Ext_markdown_in_html_blocks
+  , Ext_native_divs
+  , Ext_native_spans
   , Ext_escaped_line_breaks
   , Ext_fancy_lists
   , Ext_startnum
@@ -163,7 +172,6 @@ githubMarkdownExtensions = Set.fromList
   , Ext_raw_html
   , Ext_tex_math_single_backslash
   , Ext_fenced_code_blocks
-  , Ext_fenced_code_attributes
   , Ext_auto_identifiers
   , Ext_ascii_identifiers
   , Ext_backtick_code_blocks
@@ -199,7 +207,6 @@ strictExtensions = Set.fromList
 data ReaderOptions = ReaderOptions{
          readerExtensions      :: Set Extension  -- ^ Syntax extensions
        , readerSmart           :: Bool -- ^ Smart punctuation
-       , readerStrict          :: Bool -- ^ FOR TRANSITION ONLY
        , readerStandalone      :: Bool -- ^ Standalone document with header
        , readerParseRaw        :: Bool -- ^ Parse raw HTML, LaTeX
        , readerColumns         :: Int  -- ^ Number of columns in terminal
@@ -219,7 +226,6 @@ instance Default ReaderOptions
   where def = ReaderOptions{
                  readerExtensions            = pandocExtensions
                , readerSmart                 = False
-               , readerStrict                = False
                , readerStandalone            = False
                , readerParseRaw              = False
                , readerColumns               = 80
@@ -245,6 +251,7 @@ data HTMLMathMethod = PlainMath
                     | WebTeX String               -- url of TeX->image script.
                     | MathML (Maybe String)       -- url of MathMLinHTML.js
                     | MathJax String              -- url of MathJax.js
+                    | KaTeX String String -- url of stylesheet and katex.js
                     deriving (Show, Read, Eq)
 
 data CiteMethod = Citeproc                        -- use citeproc to render them
@@ -314,7 +321,8 @@ data WriterOptions = WriterOptions
   , writerEpubChapterLevel :: Int            -- ^ Header level for chapters (separate files)
   , writerTOCDepth         :: Int            -- ^ Number of levels to include in TOC
   , writerReferenceODT     :: Maybe FilePath -- ^ Path to reference ODT if specified
-  , writerReferenceDocx    :: Maybe FilePath -- ^ Ptah to reference DOCX if specified
+  , writerReferenceDocx    :: Maybe FilePath -- ^ Path to reference DOCX if specified
+  , writerMediaBag         :: MediaBag       -- ^ Media collected by docx or epub reader
   } deriving Show
 
 instance Default WriterOptions where
@@ -357,6 +365,7 @@ instance Default WriterOptions where
                       , writerTOCDepth         = 3
                       , writerReferenceODT     = Nothing
                       , writerReferenceDocx    = Nothing
+                      , writerMediaBag         = mempty
                       }
 
 -- | Returns True if the given extension is enabled.
