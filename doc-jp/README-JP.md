@@ -1,12 +1,12 @@
 % Pandocユーザーズガイド 日本語版
 % John MacFarlane; Yuki Fujiwara
-% January 19, 2013
+% May 16, 2014
 
 原著：John MacFarlane
 
-バージョン：1.9.4.5
+原著バージョン：1.12.4.2
 
-翻訳：Yuki Fujiwara（2014年1月29日）
+翻訳：Yuki Fujiwara（2014年6月27日）
 
 書式
 ====
@@ -29,6 +29,7 @@ Pandocは [Haskell] で書かれたライブラリおよびコマンドライン
 * [MediaWiki markup]
 * [Haddock markup]
 * [OPML]
+* [Emacs Org-mode]
 * [DocBook]
 
 出力形式は以下の通りです：
@@ -54,7 +55,9 @@ Pandocは [Haskell] で書かれたライブラリおよびコマンドライン
 * [groff man]ページ
 * [Emacs Org-Mode]
 * [AsciiDoc]
+* [InDesign ICML]
 * HTMLスライドショー：[Slidy]、[Slideous]、[DZSlides]、[reveal.js]、[S5] 
+* PDF出力（LaTeXがインストールされているシステムで使用できます）
 
 Pandocによる拡張Markdown書式は以下を含みます：脚注、表、柔軟な順序付きリスト、
 定義リスト、囲まれた(fenced)コードブロック、上付き文字、下付き文字、取り消し線、
@@ -199,6 +202,7 @@ Pandocはオプション `-f markdown_strict --email-obfuscation=references` が
 	* `html` (HTML)
 	* `docbook` (DocBook)
 	* `opml` (OPML)
+	* `org` (Emacs Org-mode)
 	* `mediawiki` (MediaWikiマークアップ)
 	* `haddock` (Haddockマークアップ)
 	* `latex` (LaTeX)
@@ -247,6 +251,7 @@ Pandocはオプション `-f markdown_strict --email-obfuscation=references` が
 	* `epub3` (EPUB v3)
 	* `fb2` (FictionBook2 e-book)
 	* `asciidoc` (AsciiDoc)
+	* `icml` (InDesign ICML)
 	* `slidy` (Slidy HTML and javascript スライドショー)
 	* `slideous` (Slideous HTML and javascript スライドショー)
 	* `dzslides` (DZSlides HTML5 + javascript スライドショー)
@@ -443,7 +448,7 @@ Readerのオプション {#reader-options}
     複数のファイルを含めるために、このオプションを複数回指定することができます。オプションを指定した順番通りに、出力ファイルの文書本文末尾へも追加されます。
     このオプションにより、`--standalone`も暗黙に指定されます。
 
-特定のWriterに影響を与えるオプション  [options-affecting-specific-writers]
+特定のWriterに影響を与えるオプション  {#options-affecting-specific-writers}
 --------------------------------
 
 `--self-contained`
@@ -656,9 +661,13 @@ Readerのオプション {#reader-options}
 
 `--natbib`
 :   latex出力において、natbibパッケージを引用に利用します。
+	このオプションは`pandoc-citeproc`フィルタやPDF出力とともに使うものではありません。
+	pdflatexとbibtexでLaTeXファイルを処理する際に使用することを想定しています。
 
 `--biblatex`
 :   latex出力において、BibLaTeXを引用に利用します。
+	このオプションは`pandoc-citeproc`フィルタやPDF出力とともに使うものではありません。
+	pdflatexとbibtex（またはbiber）でLaTeXファイルを処理する際に使用することを想定しています。
 
 HTMLにおける数式の表示  {#math-rendering-in-html}
 --------------------
@@ -762,9 +771,9 @@ HTMLにおける数式の表示  {#math-rendering-in-html}
 `slidy-url`
 :   Slidy文書のベースURL（デフォルトは`http://www.w3.org/Talks/Tools/Slidy2`）
 `slideous-url`
-:   Slideous文書のベースURL（デフォルトは`default`）
+:   Slideous文書のベースURL（デフォルトは`slideous`）
 `s5-url`
-:   S5文書のベースURL（デフォルトは`ui/default`）
+:   S5文書のベースURL（デフォルトは`s5/default`）
 `revealjs-url`
 :   reveal.js文書のベースURL（デフォルトは`reveal.js`）
 `theme`
@@ -779,6 +788,15 @@ HTMLにおける数式の表示  {#math-rendering-in-html}
 :   LaTeXにおけるdocumentclassのオプション（例：`oneside`）；複数の値を繰り返し指定することができます
 `geometry`
 :   LaTeXにおける`geometry`クラスのオプション（例：`margin=1in`）；複数の値を繰り返し指定することができます
+`linestretch`
+:	行間の空白の調整（`setspace`パッケージが必要です）
+`fontfamily`
+:	LaTeX文書で私用するフォントパッケージ（pdflatexにて有効）:
+	TeXLiveには`bookman` (Bookman)、`utopia`または`fourier` (Utopia)、
+	`fouriernc` (New Century Schoolbook)、`times`または`txfonts` (Times)、
+	`mathpazo`または`pxfonts`または`mathpple` (Palatino)、
+	`libertine` (Linux Libertine)、`arev` (Arev Sans)、
+	そしてデフォルトフォントの `lmodern`、その他があります。
 `mainfont`, `sansfont`, `monofont`, `mathfont`
 :   LaTeX文書のフォント（XeLaTeXまたはLuaLaTeXのみで有効）
 `colortheme`
@@ -795,6 +813,8 @@ HTMLにおける数式の表示  {#math-rendering-in-html}
 :   LaTeX文書においてリンクを脚注として表示
 `biblio-style`
 :   LaTeXにおける参考文献のスタイル（`--natbib`とともに使用する際に）
+`biblio-files`
+:	LaTeXで使用する参考文献ファイル（`--natbib`または`--biblatex`オプションで使用）
 `section`
 :   manページにおけるセクション番号
 `header`
@@ -868,6 +888,8 @@ Markdownは本来、HTMLを生成することを目的として設計された�
 **拡張: `escaped_line_breaks`**
 
 改行のあとのバックスラッシュも強制改行になります。
+
+注意：マルチラインテーブルまたはグリッドテーブルのセルでは、この拡張は強制改行を行う唯一の手段になります。なぜならこれらのセル内では、行末のスペースが無視されるからです。
 
 ヘッダ  {#headers}
 -------
@@ -1554,7 +1576,7 @@ Pandocはこれを「コンパクトなリスト」（「ひとつめ」「ふ�
     % 著者 (複数の場合はセミコロンで区切る)
     % 日付
 
-これらは通常のテキストではなく文書の情報として認識されます。（例えば、スタンドアローンなLaTeXまたはHTMLのタイトルに使われます。）このブロックには「タイトルのみ」「タイトル、著者」「タイトル、著者、日付」のいずれかの組み合わせを含めることができます。もし「著者のみ」（タイトルなし）をブロックに含めたい倍は、空行を入れる必要があります：
+これらは通常のテキストではなく文書の情報として認識されます。（例えば、スタンドアローンなLaTeXまたはHTMLのタイトルに使われます。）このブロックには「タイトルのみ」「タイトル、著者」「タイトル、著者、日付」のいずれかの組み合わせを含めることができます。もし「著者のみ」（タイトルなし）をブロックに含めたい場合は、空行を入れる必要があります：
 
     %
     % 著者
@@ -1630,7 +1652,7 @@ YAMLメタデータブロックは正当なYAMLオブジェクトであり、最
     <p>これは概要です。</p>
     <p>2つの段落で構成されています。</p>
 
-注意：上記の例はデフォルトテンプレートでは正しく動きません。このテンプレート中の変数`author`はシンプルなリストまたは文字列を仮定しており、その他の多くのテンプレートではそもそも変数`abstract`がありません。これらの変数を使うには、適切な変数を用いたカスタムテンプレートを使用する必要があるでしょう。例を示します：
+注意：デフォルトテンプレートにおける変数`author`には単純なリストまたは文字列が入ることを仮定しています。上記の例に示したような複雑な構造のauthorフィールドを利用するには、下記のようなカスタムテンプレートを使用する必要があるでしょう：
 
     $for(author)$
     $if(author.name)$
@@ -1639,10 +1661,6 @@ YAMLメタデータブロックは正当なYAMLオブジェクトであり、最
     $author$
     $endif$
     $endfor$
-
-    $if(abstract)$
-    Abstract: $abstract$
-    $endif$
 
 バックスラッシュ・エスケープ  {#backslash-escapes}
 ------------------------
@@ -1932,7 +1950,7 @@ URLは任意で不等号記号で囲むこともできます：
 
     [my website]: http://foo.bar.baz
 
-注意：`Markdown.pl`や多くのMarkdown処理系では、参照リンクの定義はリストアイテムや引用のように、他のブロックに対して入れ子にすることができません。Pandocでは任意の見た目上の制限としています。よって、以下の例はPandocでは期待通り動きますが、他の処理系では動きません：
+注意：`Markdown.pl`や多くのMarkdown処理系では、参照リンクの定義はリストアイテムや引用のように、他のブロックに対して入れ子にすることができません。Pandocでは、一貫性がないように見えるこのような制約を取り除いています。よって、以下の例はPandocでは期待通り動きますが、他の処理系では動きません：
 
     > My block [quote].
     >
@@ -2067,7 +2085,9 @@ PandocのMarkdownでは脚注を付けることができます。下記の文法
 
 デフォルトでは、`pandoc-citeproc`はChicago author-dateフォーマットが引用および参考文献に使われます。他のスタイルを使用したい場合は、[CSL] 1.0 スタイルファイルを探し、`csl`メタデータフィールドに指定する必要があります。CSLスタイルファイルの作成および修正のための入門ガイドは <http://citationstyles.org/downloads/primer.html> を参照してください。CSLスタイルファイルのリポジトリは <https://github.com/citation-style-language/styles> で手に入ります。もっと楽に探したい場合は <http://zotero.org/styles> もご覧ください。
 
-引用は角括弧の中に入れることができ、各内部要素はセミコロンで区切られます。それぞれの引用はキーを持つ必要があり、「`@` + 引用の識別子（データベースから）」という形式で構成され、オプションとして接頭辞、locator、接尾辞をつけることができます。例を示します：
+引用は角括弧の中に入れることができ、各内部要素はセミコロンで区切られます。それぞれの引用はキーを持つ必要があり、「`@` + 引用の識別子（データベースから）」という形式で構成され、オプションとして接頭辞、locator、接尾辞をつけることができます。引用のキーは英字または`_`で始まり、その後に英数字、`_`または記号(`:.#$%&-+?<>~/`)が続く必要があります。
+
+例を示します：
 
     Blah blah [see @doe99, pp. 33-35; also @smith04, ch. 1].
 
@@ -2092,6 +2112,19 @@ PandocのMarkdownでは脚注を付けることができます。下記の文法
     # References
 
 文献リストはこのヘッダの後に配置されます。
+
+注意：このセクションに番号が付かないように、`unnumbered`クラスがこのヘッダに追加されます。
+
+この文献リストに本文で引用されていない項目を含めたい場合は、ダミーの`nocite`メタデータフィールドを定義し、下記のように引用を置くことができます：
+
+    ---
+    nocite:
+     | @item1, @item2
+    ...
+
+    @item3
+
+この例では、文書には引用として`item3`のみが含まれますが、文献リストには`item1`、`item2`、`item3`が含まれます。
 
 Pandoc標準以外の拡張  {#non-pandoc-extensions}
 ------------------
@@ -2126,7 +2159,7 @@ Pandoc標準以外の拡張  {#non-pandoc-extensions}
              複数行を置くことができます。
 
 詳細はMultiMarkdownのドキュメンテーションを参照してください。
-注意：Title, Author, DateのみがPandocで解釈されます。その他のブロックは無視されます。もし`pandoc_title_block`または`yaml_metadata_block`が指定された場合は、それらが`mmd_title_block`よりも優先されます。
+もし`pandoc_title_block`または`yaml_metadata_block`が指定された場合は、それらが`mmd_title_block`よりも優先されます。
 
   [MultiMarkdown]: http://fletcherpenney.net/multimarkdown/
 
@@ -2439,9 +2472,10 @@ Nathan Gass, Jonathan Daugherty, Jérémy Bobbio, Justin Bogner, qerub,
 Christopher Sawicki, Kelsey Hightower, Masayoshi Takahashi, Antoine
 Latter, Ralf Stephan, Eric Seidel, B. Scott Michel, Gavin Beatty,
 Sergey Astanin, Arlo O'Keeffe, Denis Laxalde, Brent Yorgey, David Lazar,
-Jamie F. Olson.
+Jamie F. Olson, Matthew Pickering, Albert Krewinkel, mb21, Jesse
+Rosenthal.
 
-日本語版翻訳： Yuki Fujiwara (@sky_y)
+日本語版翻訳： Yuki Fujiwara (@sky_y), yubiquita, nilquebe, shoulderpower
 
 [markdown]: http://daringfireball.net/projects/markdown/
 [reStructuredText]: http://docutils.sourceforge.net/docs/ref/rst/introduction.html
@@ -2478,3 +2512,4 @@ Jamie F. Olson.
 [Lua]: http://www.lua.org
 [marc relators]: http://www.loc.gov/marc/relators/relaterm.html
 [RFC5646]: http://tools.ietf.org/html/rfc5646
+[InDesign ICML]: https://www.adobe.com/content/dam/Adobe/en/devnet/indesign/cs55-docs/IDML/idml-specification.pdf
