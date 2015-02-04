@@ -124,11 +124,12 @@ getDefaultTemplate :: (Maybe FilePath) -- ^ User data directory to search first
                    -> String           -- ^ Name of writer
                    -> IO (Either E.IOException String)
 getDefaultTemplate user writer = do
-  let format = takeWhile (`notElem` "+-") writer  -- strip off extensions
+  let format = takeWhile (`notElem` ("+-" :: String)) writer  -- strip off extensions
   case format of
        "native" -> return $ Right ""
        "json"   -> return $ Right ""
        "docx"   -> return $ Right ""
+       "fb2"    -> return $ Right ""
        "odt"    -> getDefaultTemplate user "opendocument"
        "markdown_strict"   -> getDefaultTemplate user "markdown"
        "multimarkdown"     -> getDefaultTemplate user "markdown"
@@ -287,7 +288,7 @@ reservedWords :: [Text]
 reservedWords = ["else","endif","for","endfor","sep"]
 
 skipEndline :: Parser ()
-skipEndline = P.try $ P.skipMany (P.satisfy (`elem` " \t")) >> P.char '\n' >> return ()
+skipEndline = P.try $ P.skipMany (P.satisfy (`elem` (" \t" :: String))) >> P.char '\n' >> return ()
 
 pConditional :: Parser Template
 pConditional = do

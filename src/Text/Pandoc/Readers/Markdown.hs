@@ -79,11 +79,7 @@ readMarkdownWithWarnings :: ReaderOptions -- ^ Reader options
                          -> String        -- ^ String to parse (assuming @'\n'@ line endings)
                          -> (Pandoc, [String])
 readMarkdownWithWarnings opts s =
-  (readWith parseMarkdownWithWarnings) def{ stateOptions = opts } (s ++ "\n\n")
- where parseMarkdownWithWarnings = do
-         doc <- parseMarkdown
-         warnings <- stateWarnings <$> getState
-         return (doc, warnings)
+    (readWithWarnings parseMarkdown) def{ stateOptions = opts } (s ++ "\n\n")
 
 trimInlinesF :: F Inlines -> F Inlines
 trimInlinesF = liftM trimInlines
@@ -342,12 +338,6 @@ parseMarkdown = do
   let meta = runF (stateMeta' st) st
   let Pandoc _ bs = B.doc $ runF blocks st
   return $ Pandoc meta bs
-
-addWarning :: Maybe SourcePos -> String -> MarkdownParser ()
-addWarning mbpos msg =
-  updateState $ \st -> st{
-    stateWarnings = (msg ++ maybe "" (\pos -> " " ++ show pos) mbpos) :
-                     stateWarnings st }
 
 referenceKey :: MarkdownParser (F Blocks)
 referenceKey = try $ do
@@ -1685,9 +1675,10 @@ referenceLink :: (String -> String -> Inlines -> Inlines)
               -> (F Inlines, String) -> MarkdownParser (F Inlines)
 referenceLink constructor (lab, raw) = do
   sp <- (True <$ lookAhead (char ' ')) <|> return False
-  (ref,raw') <- try
-           (skipSpaces >> optional (newline >> skipSpaces) >> reference)
-           <|> return (mempty, "")
+  (ref,raw') <- option (mempty, "") $
+      lookAhead (try (spnl >> normalCite >> return (mempty, "")))
+      <|>
+      try (spnl >> reference)
   let labIsRef = raw' == "" || raw' == "[]"
   let key = toKey $ if labIsRef then raw else raw'
   parsedRaw <- parseFromString (mconcat <$> many inline) raw'

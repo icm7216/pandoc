@@ -105,7 +105,7 @@ keyToRST :: ([Inline], (String, String))
          -> State WriterState Doc
 keyToRST (label, (src, _)) = do
   label' <- inlineListToRST label
-  let label'' = if ':' `elem` (render Nothing label')
+  let label'' = if ':' `elem` ((render Nothing label') :: String)
                    then char '`' <> label' <> char '`'
                    else label'
   return $ nowrap $ ".. _" <> label'' <> ": " <> text src
@@ -173,7 +173,7 @@ blockToRST (Para [Image txt (src,'f':'i':'g':':':tit)]) = do
   capt <- inlineListToRST txt
   let fig = "figure:: " <> text src
   let alt = ":alt: " <> if null tit then capt else text tit
-  return $ hang 3 ".. " $ fig $$ alt $+$ capt $$ blankline
+  return $ hang 3 ".. " (fig $$ alt $+$ capt) $$ blankline
 blockToRST (Para inlines)
   | LineBreak `elem` inlines = do -- use line block if LineBreaks
       lns <- mapM inlineListToRST $ splitBy (==LineBreak) inlines
@@ -252,7 +252,7 @@ blockToRST (Table caption _ widths headers rows) =  do
 blockToRST (BulletList items) = do
   contents <- mapM bulletListItemToRST items
   -- ensure that sublists have preceding blank line
-  return $ blankline $$ vcat contents $$ blankline
+  return $ blankline $$ chomp (vcat contents) $$ blankline
 blockToRST (OrderedList (start, style', delim) items) = do
   let markers = if start == 1 && style' == DefaultStyle && delim == DefaultDelim
                    then take (length items) $ repeat "#."
@@ -264,11 +264,11 @@ blockToRST (OrderedList (start, style', delim) items) = do
   contents <- mapM (\(item, num) -> orderedListItemToRST item num) $
               zip markers' items
   -- ensure that sublists have preceding blank line
-  return $ blankline $$ vcat contents $$ blankline
+  return $ blankline $$ chomp (vcat contents) $$ blankline
 blockToRST (DefinitionList items) = do
   contents <- mapM definitionListItemToRST items
   -- ensure that sublists have preceding blank line
-  return $ blankline $$ vcat contents $$ blankline
+  return $ blankline $$ chomp (vcat contents) $$ blankline
 
 -- | Convert bullet list item (list of blocks) to RST.
 bulletListItemToRST :: [Block] -> State WriterState Doc
@@ -333,12 +333,12 @@ inlineListToRST lst =
         okAfterComplex :: Inline -> Bool
         okAfterComplex Space = True
         okAfterComplex LineBreak = True
-        okAfterComplex (Str (c:_)) = isSpace c || c `elem` "-.,:;!?\\/'\")]}>–—"
+        okAfterComplex (Str (c:_)) = isSpace c || c `elem` ("-.,:;!?\\/'\")]}>–—" :: String)
         okAfterComplex _ = False
         okBeforeComplex :: Inline -> Bool
         okBeforeComplex Space = True
         okBeforeComplex LineBreak = True
-        okBeforeComplex (Str (c:_)) = isSpace c || c `elem` "-:/'\"<([{–—"
+        okBeforeComplex (Str (c:_)) = isSpace c || c `elem` ("-:/'\"<([{–—" :: String)
         okBeforeComplex _ = False
         isComplex :: Inline -> Bool
         isComplex (Emph _) = True

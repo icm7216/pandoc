@@ -206,7 +206,7 @@ stringToLaTeX  ctx (x:xs) = do
        '€' -> "\\euro{}" ++ rest
        '{' -> "\\{" ++ rest
        '}' -> "\\}" ++ rest
-       '$' -> "\\$" ++ rest
+       '$' | not isUrl -> "\\$" ++ rest
        '%' -> "\\%" ++ rest
        '&' -> "\\&" ++ rest
        '_' | not isUrl -> "\\_" ++ rest
@@ -240,7 +240,7 @@ toLabel z = go `fmap` stringToLaTeX URLString z
  where go [] = ""
        go (x:xs)
          | (isLetter x || isDigit x) && isAscii x = x:go xs
-         | elem x "-+=:;." = x:go xs
+         | elem x ("-+=:;." :: String) = x:go xs
          | otherwise = "ux" ++ printf "%x" (ord x) ++ go xs
 
 -- | Puts contents into LaTeX command.
@@ -545,10 +545,16 @@ fixLineBreaks' ils = case splitBy (== LineBreak) ils of
   where tohbox ys = RawInline "tex" "\\hbox{\\strut " : ys ++
                     [RawInline "tex" "}"]
 
+-- We also change display math to inline math, since display
+-- math breaks in simple tables.
+displayMathToInline :: Inline -> Inline
+displayMathToInline (Math DisplayMath x) = Math InlineMath x
+displayMathToInline x = x
+
 tableCellToLaTeX :: Bool -> (Double, Alignment, [Block])
                  -> State WriterState Doc
 tableCellToLaTeX _      (0,     _,     blocks) =
-  blockListToLaTeX $ walk fixLineBreaks blocks
+  blockListToLaTeX $ walk fixLineBreaks $ walk displayMathToInline blocks
 tableCellToLaTeX header (width, align, blocks) = do
   modify $ \st -> st{ stInMinipage = True, stNotes = [] }
   cellContents <- blockListToLaTeX blocks
@@ -613,6 +619,7 @@ sectionHeader :: Bool    -- True for unnumbered
 sectionHeader unnumbered ref level lst = do
   txt <- inlineListToLaTeX lst
   lab <- text `fmap` toLabel ref
+  plain <- stringToLaTeX TextString $ foldl (++) "" $ map stringify lst
   let noNote (Note _) = Str ""
       noNote x        = x
   let lstNoNotes = walk noNote lst
@@ -625,7 +632,12 @@ sectionHeader unnumbered ref level lst = do
                  then return empty
                  else do
                    return $ brackets txtNoNotes
-  let stuffing = star <> optional <> braces txt
+  let contents = if render Nothing txt == plain
+                    then braces txt
+                    else braces (text "\\texorpdfstring"
+                         <> braces txt
+                         <> braces (text plain))
+  let stuffing = star <> optional <> contents
   book <- gets stBook
   opts <- gets stOptions
   let level' = if book || writerChapters opts then level - 1 else level
@@ -669,7 +681,7 @@ sectionHeader unnumbered ref level lst = do
 inlineListToLaTeX :: [Inline]  -- ^ Inlines to convert
                   -> State WriterState Doc
 inlineListToLaTeX lst =
-  mapM inlineToLaTeX (fixLineInitialSpaces lst)
+  mapM inlineToLaTeX (fixBreaks $ fixLineInitialSpaces lst)
     >>= return . hcat
     -- nonbreaking spaces (~) in LaTeX don't work after line breaks,
     -- so we turn nbsps after hard breaks to \hspace commands.
@@ -681,7 +693,15 @@ inlineListToLaTeX lst =
        fixNbsps s = let (ys,zs) = span (=='\160') s
                     in  replicate (length ys) hspace ++ [Str zs]
        hspace = RawInline "latex" "\\hspace*{0.333em}"
-
+       -- linebreaks after blank lines cause problems:
+       fixBreaks [] = []
+       fixBreaks ys@(LineBreak : LineBreak : _) =
+         case span (== LineBreak) ys of
+               (lbs, rest) -> RawInline "latex"
+                               ("\\\\[" ++ show (length lbs) ++
+                                "\\baselineskip]") : fixBreaks rest
+       fixBreaks (y:ys) = y : fixBreaks ys
+ 
 isQuoted :: Inline -> Bool
 isQuoted (Quoted _ _) = True
 isQuoted _ = False
@@ -746,8 +766,10 @@ inlineToLaTeX (Code (_,classes,_) str) = do
                   Nothing -> rawCode
                   Just  h -> modify (\st -> st{ stHighlighting = True }) >>
                              return (text h)
-         rawCode = liftM (text . (\s -> "\\texttt{" ++ s ++ "}"))
+         rawCode = liftM (text . (\s -> "\\texttt{" ++ escapeSpaces s ++ "}"))
                           $ stringToLaTeX CodeString str
+           where
+             escapeSpaces =  concatMap (\c -> if c == ' ' then "\\ " else [c])
 inlineToLaTeX (Quoted qt lst) = do
   contents <- inlineListToLaTeX lst
   csquotes <- liftM stCsquotes get

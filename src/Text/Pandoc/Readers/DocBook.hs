@@ -70,8 +70,8 @@ List of all DocBook tags, with [x] indicating implemented,
 [x] book - A book
 [x] bookinfo - Meta-information for a Book
 [x] bridgehead - A free-floating heading
-[ ] callout - A “called out” description of a marked Area
-[ ] calloutlist - A list of Callouts
+[x] callout - A “called out” description of a marked Area
+[x] calloutlist - A list of Callouts
 [x] caption - A caption
 [x] caution - A note of caution
 [x] chapter - A chapter, as of a book
@@ -81,7 +81,7 @@ List of all DocBook tags, with [x] indicating implemented,
 [ ] citerefentry - A citation to a reference page
 [ ] citetitle - The title of a cited work
 [ ] city - The name of a city in an address
-[ ] classname - The name of a class, in the object-oriented programming sense
+[x] classname - The name of a class, in the object-oriented programming sense
 [ ] classsynopsis - The syntax summary for a class definition
 [ ] classsynopsisinfo - Information supplementing the contents of
     a ClassSynopsis
@@ -169,9 +169,9 @@ List of all DocBook tags, with [x] indicating implemented,
 [ ] guibutton - The text on a button in a GUI
 [ ] guiicon - Graphic and/or text appearing as a icon in a GUI
 [ ] guilabel - The text of a label in a GUI
-[ ] guimenu - The name of a menu in a GUI
-[ ] guimenuitem - The name of a terminal menu item in a GUI
-[ ] guisubmenu - The name of a submenu in a GUI
+[x] guimenu - The name of a menu in a GUI
+[x] guimenuitem - The name of a terminal menu item in a GUI
+[x] guisubmenu - The name of a submenu in a GUI
 [ ] hardware - A physical part of a computer system
 [ ] highlights - A summary of the main points of the discussed component
 [ ] holder - The name of the individual or organization that holds a copyright
@@ -206,10 +206,10 @@ List of all DocBook tags, with [x] indicating implemented,
     other dingbat
 [ ] itermset - A set of index terms in the meta-information of a document
 [ ] jobtitle - The title of an individual in an organization
-[ ] keycap - The text printed on a key on a keyboard
+[x] keycap - The text printed on a key on a keyboard
 [ ] keycode - The internal, frequently numeric, identifier for a key
     on a keyboard
-[ ] keycombo - A combination of input actions
+[x] keycombo - A combination of input actions
 [ ] keysym - The symbolic name of a key on a keyboard
 [ ] keyword - One of a set of keywords describing the content of a document
 [ ] keywordset - A set of keywords describing the content of a document
@@ -237,7 +237,7 @@ List of all DocBook tags, with [x] indicating implemented,
 [x] mediaobject - A displayed media object (video, audio, image, etc.)
 [ ] mediaobjectco - A media object that contains callouts
 [x] member - An element of a simple list
-[ ] menuchoice - A selection or series of selections from a menu
+[x] menuchoice - A selection or series of selections from a menu
 [ ] methodname - The name of a method
 [ ] methodparam - Parameters to a method
 [ ] methodsynopsis - A syntax summary for a method
@@ -471,7 +471,7 @@ List of all DocBook tags, with [x] indicating implemented,
 [ ] token - A unit of information
 [x] tr - A row in an HTML table
 [ ] trademark - A trademark
-[ ] type - The classification of a value
+[x] type - The classification of a value
 [x] ulink - A link that addresses its target by means of a URL
     (Uniform Resource Locator)
 [x] uri - A Uniform Resource Identifier
@@ -603,7 +603,7 @@ isBlockElement (Elem e) = qName (elName e) `elem` blocktags
            "important","caution","note","tip","warning","qandadiv",
            "question","answer","abstract","itemizedlist","orderedlist",
            "variablelist","article","book","table","informaltable",
-           "screen","programlisting","example"]
+           "screen","programlisting","example","calloutlist"]
 isBlockElement _ = False
 
 -- Trim leading and trailing newline characters
@@ -712,6 +712,7 @@ parseBlock (Elem e) =
         "question" -> addToStart (strong (str "Q:") <> str " ") <$> getBlocks e
         "answer" -> addToStart (strong (str "A:") <> str " ") <$> getBlocks e
         "abstract" -> blockQuote <$> getBlocks e
+        "calloutlist" -> bulletList <$> callouts
         "itemizedlist" -> bulletList <$> listitems
         "orderedlist" -> do
           let listStyle = case attrValue "numeration" e of
@@ -772,11 +773,6 @@ parseBlock (Elem e) =
                                 x    -> [x]
            return $ codeBlockWith (attrValue "id" e, classes', [])
                   $ trimNl $ strContentRecursive e
-         strContentRecursive = strContent . (\e' -> e'{ elContent =
-                                               map elementToStr $ elContent e' })
-         elementToStr :: Content -> Content
-         elementToStr (Elem e') = Text $ CData CDataText (strContentRecursive e') Nothing
-         elementToStr x = x
          parseBlockquote = do
             attrib <- case filterChild (named "attribution") e of
                              Nothing  -> return mempty
@@ -785,6 +781,7 @@ parseBlock (Elem e) =
             contents <- getBlocks e
             return $ blockQuote (contents <> attrib)
          listitems = mapM getBlocks $ filterChildren (named "listitem") e
+         callouts = mapM getBlocks $ filterChildren (named "callout") e
          deflistitems = mapM parseVarListEntry $ filterChildren
                      (named "varlistentry") e
          parseVarListEntry e' = do
@@ -871,12 +868,21 @@ parseBlock (Elem e) =
                                       Nothing -> return mempty
                      modify $ \st -> st{ dbSectionLevel = n }
                      b <- getBlocks e
+                     let ident = attrValue "id" e
                      modify $ \st -> st{ dbSectionLevel = n - 1 }
-                     return $ header n' headerText <> b
+                     return $ headerWith (ident,[],[]) n' headerText <> b
          metaBlock = acceptingMetadata (getBlocks e) >> return mempty
 
 getInlines :: Element -> DB Inlines
 getInlines e' = (trimInlines . mconcat) <$> (mapM parseInline $ elContent e')
+
+strContentRecursive :: Element -> String
+strContentRecursive = strContent .
+  (\e' -> e'{ elContent = map elementToStr $ elContent e' })
+
+elementToStr :: Content -> Content
+elementToStr (Elem e') = Text $ CData CDataText (strContentRecursive e') Nothing
+elementToStr x = x
 
 parseInline :: Content -> DB Inlines
 parseInline (Text (CData _ s _)) = return $ text s
@@ -901,6 +907,7 @@ parseInline (Elem e) =
                         else doubleQuoted contents
         "simplelist" -> simpleList
         "segmentedlist" -> segmentedList
+        "classname" -> codeWithLang
         "code" -> codeWithLang
         "filename" -> codeWithLang
         "literal" -> codeWithLang
@@ -920,6 +927,10 @@ parseInline (Elem e) =
         "constant" -> codeWithLang
         "userinput" -> codeWithLang
         "varargs" -> return $ code "(...)"
+        "keycap" -> return (str $ strContent e)
+        "keycombo" -> keycombo <$> (mapM parseInline $ elContent e)
+        "menuchoice" -> menuchoice <$> (mapM parseInline $
+                                        filter isGuiMenu $ elContent e)
         "xref" -> return $ str "?" -- so at least you know something is there
         "email" -> return $ link ("mailto:" ++ strContent e) ""
                           $ str $ strContent e
@@ -959,7 +970,7 @@ parseInline (Elem e) =
            let classes' = case attrValue "language" e of
                                "" -> []
                                l  -> [l]
-           return $ codeWith (attrValue "id" e,classes',[]) $ strContent e
+           return $ codeWith (attrValue "id" e,classes',[]) $ strContentRecursive e
          simpleList = (mconcat . intersperse (str "," <> space)) <$> mapM getInlines
                          (filterChildren (named "member") e)
          segmentedList = do
@@ -974,3 +985,10 @@ parseInline (Elem e) =
                          then mempty
                          else strong tit <> linebreak
            return $ linebreak <> tit' <> segs
+         keycombo = spanWith ("",["keycombo"],[]) .
+                    mconcat . intersperse (str "+")
+         menuchoice = spanWith ("",["menuchoice"],[]) .
+                    mconcat . intersperse (text " > ")
+         isGuiMenu (Elem x) = named "guimenu" x || named "guisubmenu" x ||
+                              named "guimenuitem" x
+         isGuiMenu _        = False

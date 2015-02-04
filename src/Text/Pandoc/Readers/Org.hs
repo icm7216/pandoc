@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-
 Copyright (C) 2014 Albert Krewinkel <tarleb@moltkeplatz.de>
 
@@ -1142,20 +1143,25 @@ applyCustomLinkFormat link = do
     formatter <- M.lookup linkType <$> asksF orgStateLinkFormatters
     return $ maybe link ($ drop 1 rest) formatter
 
+-- TODO: might be a lot smarter/cleaner to use parsec and ADTs for this kind
+-- of parsing.
 linkToInlinesF :: String -> Inlines -> F Inlines
 linkToInlinesF s =
   case s of
     ""      -> pure . B.link "" ""
     ('#':_) -> pure . B.link s ""
     _ | isImageFilename s     -> const . pure $ B.image s "" ""
+    _ | isFileLink s          -> pure . B.link (dropLinkType s) ""
     _ | isUri s               -> pure . B.link s ""
-    _ | isRelativeFilePath s  -> pure . B.link s ""
     _ | isAbsoluteFilePath s  -> pure . B.link ("file://" ++ s) ""
-    _ -> \title -> do
-           anchorB <- (s `elem`) <$> asksF orgStateAnchorIds
-           if anchorB
-             then pure $ B.link ('#':s) "" title
-             else pure $ B.emph title
+    _ | isRelativeFilePath s  -> pure . B.link s ""
+    _                         -> internalLink s
+
+isFileLink :: String -> Bool
+isFileLink s = ("file:" `isPrefixOf` s) && not ("file://" `isPrefixOf` s)
+
+dropLinkType :: String -> String
+dropLinkType = tail . snd . break (== ':')
 
 isRelativeFilePath :: String -> Bool
 isRelativeFilePath s = (("./" `isPrefixOf` s) || ("../" `isPrefixOf` s)) &&
@@ -1163,7 +1169,7 @@ isRelativeFilePath s = (("./" `isPrefixOf` s) || ("../" `isPrefixOf` s)) &&
 
 isUri :: String -> Bool
 isUri s = let (scheme, path) = break (== ':') s
-          in all (\c -> isAlphaNum c || c `elem` ".-") scheme
+          in all (\c -> isAlphaNum c || c `elem` (".-" :: String)) scheme
              && not (null path)
 
 isAbsoluteFilePath :: String -> Bool
@@ -1177,6 +1183,13 @@ isImageFilename filename =
  where
    imageExtensions = [ "jpeg" , "jpg" , "png" , "gif" , "svg" ]
    protocols = [ "file", "http", "https" ]
+
+internalLink :: String -> Inlines -> F Inlines
+internalLink link title = do
+  anchorB <- (link `elem`) <$> asksF orgStateAnchorIds
+  if anchorB
+    then return $ B.link ('#':link) "" title
+    else return $ B.emph title
 
 -- | Parse an anchor like @<<anchor-id>>@ and return an empty span with
 -- @anchor-id@ set as id.  Legal anchors in org-mode are defined through
@@ -1202,7 +1215,7 @@ solidify :: String -> String
 solidify = map replaceSpecialChar
  where replaceSpecialChar c
            | isAlphaNum c    = c
-           | c `elem` "_.-:" = c
+           | c `elem` ("_.-:" :: String) = c
            | otherwise       = '-'
 
 -- | Parses an inline code block and marks it as an babel block.
@@ -1453,7 +1466,7 @@ inlineLaTeX = try $ do
    parseAsMathMLSym :: String -> Maybe Inlines
    parseAsMathMLSym cs = B.str <$> MathMLEntityMap.getUnicode (clean cs)
     -- dropWhileEnd would be nice here, but it's not available before base 4.5
-    where clean = reverse . dropWhile (`elem` "{}") . reverse . drop 1
+    where clean = reverse . dropWhile (`elem` ("{}" :: String)) . reverse . drop 1
 
    state :: ParserState
    state = def{ stateOptions = def{ readerParseRaw = True }}

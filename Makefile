@@ -5,6 +5,7 @@ ifeq "${makemanpages}" ""
 endif
 setup=dist/setup/setup
 MANPAGES=man/man1/pandoc.1 man/man5/pandoc_markdown.5
+PREFIX ?= /usr/local
 
 quick:
 	cabal configure --enable-tests --disable-optimization
@@ -39,7 +40,10 @@ dist: man
 	cd pandoc-${version}
 	cabal configure ${CABALARGS} && cabal build && cabal test && cd .. && rm -rf "pandoc-${version}"
 
-man: ${MANPAGES}
+debpkg:
+	./make_deb.sh
+
+man: $(MANPAGES)
 
 osxpkg:
 	./make_osx_package.sh
@@ -52,6 +56,7 @@ osxpkg:
 
 clean:
 	cabal clean
-	-rm ${MANPAGES}
+	-rm $(MANPAGES)
+	-rm -rf $(BINDIST) $(BINDIST).tar.gz
 
-.PHONY: deps quick full install man clean test bench haddock osxpkg dist prof
+.PHONY: deps quick full install man clean test bench haddock osxpkg dist bindist prof

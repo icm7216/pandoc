@@ -1,4 +1,4 @@
-{-# LANGUAGE PatternGuards, CPP, ScopedTypeVariables, ViewPatterns #-}
+{-# LANGUAGE PatternGuards, CPP, ScopedTypeVariables, ViewPatterns, FlexibleContexts #-}
 {-
 Copyright (C) 2010-2014 John MacFarlane <jgm@berkeley.edu>
 
@@ -41,10 +41,10 @@ import qualified Data.ByteString.Lazy.Char8 as B8
 import qualified Text.Pandoc.UTF8 as UTF8
 import Text.Pandoc.SelfContained ( makeSelfContained )
 import Codec.Archive.Zip ( emptyArchive, addEntryToArchive, eRelativePath, fromEntry                         , Entry, toEntry, fromArchive)
-import Control.Applicative ((<$>))
+import Control.Applicative ((<$>), (<$))
 import Data.Time.Clock.POSIX ( getPOSIXTime )
 import Data.Time (getCurrentTime,UTCTime, formatTime)
-import System.Locale ( defaultTimeLocale )
+import Text.Pandoc.Compat.Locale ( defaultTimeLocale )
 import Text.Pandoc.Shared ( trimr, renderTags', safeRead, uniqueIdent, trim
                           , normalizeDate, readDataFile, stringify, warn
                           , hierarchicalize, fetchItem' )
@@ -57,7 +57,7 @@ import Text.Pandoc.Options ( WriterOptions(..)
 import Text.Pandoc.Definition
 import Text.Pandoc.Walk (walk, walkM)
 import Control.Monad.State (modify, get, execState, State, put, evalState)
-import Control.Monad (foldM, when, mplus, liftM)
+import Control.Monad (foldM, mplus, liftM)
 import Text.XML.Light ( unode, Element(..), unqual, Attr(..), add_attrs
                       , strContent, lookupAttr, Node(..), QName(..), parseXML
                       , onlyElems, node, ppElement)
@@ -343,7 +343,6 @@ writeEPUB opts doc@(Pandoc meta _) = do
                   , writerStandalone = True
                   , writerSectionDivs = True
                   , writerHtml5 = epub3
-                  , writerTableOfContents = False -- we always have one in epub
                   , writerVariables = vars
                   , writerHTMLMathMethod =
                        if epub3
@@ -570,8 +569,7 @@ writeEPUB opts doc@(Pandoc meta _) = do
 
   let navMapFormatter :: Int -> String -> String -> [Element] -> Element
       navMapFormatter n tit src subs = unode "navPoint" !
-               [("id", "navPoint-" ++ show n)
-               ,("playOrder", show n)] $
+               [("id", "navPoint-" ++ show n)] $
                   [ unode "navLabel" $ unode "text" tit
                   , unode "content" ! [("src", src)] $ ()
                   ] ++ subs
@@ -613,13 +611,34 @@ writeEPUB opts doc@(Pandoc meta _) = do
 
   let navtag = if epub3 then "nav" else "div"
   let navBlocks = [RawBlock (Format "html") $ ppElement $
-                   unode navtag ! [("epub:type","toc") | epub3] $
+                   unode navtag ! ([("epub:type","toc") | epub3] ++
+                                   [("id","toc")]) $
                     [ unode "h1" ! [("id","toc-title")] $ plainTitle
                     , unode "ol" ! [("class","toc")] $ evalState (mapM (navPointNode navXhtmlFormatter) secs) 1]]
+  let landmarks = if epub3
+                     then [RawBlock (Format "html") $ ppElement $
+                            unode "nav" ! [("epub:type","landmarks")
+                                          ,("hidden","hidden")] $
+                            [ unode "ol" $
+                              [ unode "li"
+                                [ unode "a" ! [("href", "cover.xhtml")
+                                              ,("epub:type", "cover")] $
+                                  "Cover"] |
+                                  epubCoverImage metadata /= Nothing
+                              ] ++
+                              [ unode "li"
+                                [ unode "a" ! [("href", "#toc")
+                                              ,("epub:type", "toc")] $
+                                    "Table of contents"
+                                ] | writerTableOfContents opts
+                              ]
+                            ]
+                          ]
+                     else []
   let navData = renderHtml $ writeHtml opts'
             (Pandoc (setMeta "title"
                      (walk removeNote $ fromList $ docTitle' meta) nullMeta)
-               navBlocks)
+               (navBlocks ++ landmarks))
   let navEntry = mkEntry "nav.xhtml" navData
 
   -- mimetype
@@ -875,20 +894,27 @@ addIdentifiers bs = evalState (mapM go bs) []
 -- was "header-1" might turn into "ch006.xhtml#header".
 correlateRefs :: Int -> [Block] -> [(String,String)]
 correlateRefs chapterHeaderLevel bs =
-  identTable $ execState (mapM_ go bs)
+  identTable $ execState (walkM goBlock bs >>= walkM goInline)
     IdentState{ chapterNumber = 0
               , identTable = [] }
- where go :: Block -> State IdentState ()
-       go (Header n (ident,_,_) _) = do
-          when (n <= chapterHeaderLevel) $
-              modify $ \s -> s{ chapterNumber = chapterNumber s + 1 }
+ where goBlock :: Block -> State IdentState Block
+       goBlock x@(Header n (ident,_,_) _) = x <$ addIdentifier (Just n) ident
+       goBlock x@(Div (ident,_,_) _) = x <$ addIdentifier Nothing ident
+       goBlock x = return x
+       goInline :: Inline -> State IdentState Inline
+       goInline x@(Span (ident,_,_) _) = x <$ addIdentifier Nothing ident
+       goInline x = return x
+       addIdentifier mbHeaderLevel ident = do
+          case mbHeaderLevel of
+               Just n | n <= chapterHeaderLevel ->
+                    modify $ \s -> s{ chapterNumber = chapterNumber s + 1 }
+               _ -> return ()
           st <- get
           let chapterid = showChapter (chapterNumber st) ++
-                          if n <= chapterHeaderLevel
-                             then ""
-                             else '#' : ident
+                          case mbHeaderLevel of
+                               Just n | n <= chapterHeaderLevel -> ""
+                               _ -> '#' : ident
           modify $ \s -> s{ identTable = (ident, chapterid) : identTable st }
-       go _ = return ()
 
 -- Replace internal link references using the table produced
 -- by correlateRefs.
@@ -1196,4 +1222,3 @@ docTitle' meta = fromMaybe [] $ go <$> lookupMeta "title" meta
                    _ -> []
         go (MetaList xs) = concatMap go xs
         go _ = []
-
